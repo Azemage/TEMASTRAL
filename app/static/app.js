@@ -257,6 +257,21 @@ function renderBalanceTab(data) {
   `;
 }
 
+function renderConvergenceSummary(convergence) {
+  if (!convergence || !convergence.dominant_dispositor) {
+    return "<p>Aucune convergence claire : les chaînes de dispositeurs se répartissent entre plusieurs planètes finales.</p>";
+  }
+  const { dominant_dispositor, dominant_count, total_chains, level } = convergence;
+  const label = planetLabel(dominant_dispositor);
+  const summary = `<p class="convergence-summary">🔑 <strong>Dispositeur final du thème : ${label}</strong> (${dominant_count} planète${dominant_count > 1 ? "s" : ""} sur ${total_chains} convergent vers lui)</p>`;
+
+  if (level === "forte" || level === "notable") {
+    const badge = level === "forte" ? "Convergence forte — planète clé de voûte" : "Convergence notable";
+    return `${summary}<div class="convergence-alert convergence-${level}">⚡ ${badge} : la majorité des chaînes de maîtrise du thème se referment sur ${label}. C'est un pattern peu fréquent statistiquement — cette planète mérite d'être lue comme un axe central du thème, pas seulement comme une planète parmi d'autres.</div>`;
+  }
+  return summary;
+}
+
 function renderDispositorsSection(analysis, title) {
   if (!analysis) return "";
   const dispositorRows = analysis.dispositors
@@ -282,6 +297,7 @@ function renderDispositorsSection(analysis, title) {
 
   return `
     <h3>${title}</h3>
+    ${renderConvergenceSummary(analysis.convergence)}
     <table>
       <thead><tr><th>Planète</th><th>Signe occupé</th><th>Maître trad. / moderne</th><th>Auto-disposée</th></tr></thead>
       <tbody>${dispositorRows}</tbody>

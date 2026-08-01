@@ -54,6 +54,12 @@ explique-le brièvement.
 ou la mort) : reformule toujours en dynamique psychologique ou en tendance nuancée.
 5. Structure la lecture avec des sections Markdown (##) correspondant aux zones \
 demandées ci-dessous.
+6. Regarde le champ `convergence` de `dispositors_traditional` et `dispositors_modern` dans \
+les données. Si son `level` vaut 'forte' ou 'notable', la majorité des chaînes de \
+dispositeurs du thème se referment sur une même planète (`dominant_dispositor`) : \
+signale explicitement ce pattern comme une planète clé de voûte du thème, dont les \
+qualités colorent une grande partie de la personnalité, plutôt que de la traiter comme \
+une planète parmi d'autres.
 
 ZONES À COUVRIR DANS CETTE LECTURE :
 {focus_descriptions}

@@ -131,10 +131,20 @@ class MutualReception(BaseModel):
     system: str
 
 
+class DispositorConvergence(BaseModel):
+    final_dispositor_counts: dict[str, int]
+    dominant_dispositor: str | None
+    dominant_count: int
+    total_chains: int
+    convergence_ratio: float
+    level: str  # "forte" | "notable" | "aucune"
+
+
 class DispositorsAnalysis(BaseModel):
     dispositors: list[Dispositor]
     dispositor_chains: list[DispositorChain]
     mutual_receptions: list[MutualReception]
+    convergence: DispositorConvergence
 
 
 class NatalChartComputed(BaseModel):
