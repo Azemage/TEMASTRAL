@@ -1,0 +1,26 @@
+{
+  "description": "Significations des 12 maisons, utilisées comme contexte pour les prompts d'interprétation LLM",
+  "houses": [
+    { "number": 1, "name_fr": "Maison I", "keyword": "identité", "themes": ["apparence", "personnalité", "vitalité", "premières impressions"] },
+    { "number": 2, "name_fr": "Maison II", "keyword": "ressources", "themes": ["argent", "valeurs personnelles", "possessions", "estime de soi"] },
+    { "number": 3, "name_fr": "Maison III", "keyword": "communication", "themes": ["fratrie", "apprentissage", "déplacements courts", "expression"] },
+    { "number": 4, "name_fr": "Maison IV", "keyword": "foyer", "themes": ["famille", "mère (ou parent nourricier)", "racines", "vie privée"] },
+    { "number": 5, "name_fr": "Maison V", "keyword": "création", "themes": ["enfants", "romance", "plaisir", "expression créative", "jeu"] },
+    { "number": 6, "name_fr": "Maison VI", "keyword": "quotidien", "themes": ["travail", "santé", "routines", "service"] },
+    { "number": 7, "name_fr": "Maison VII", "keyword": "partenariat", "themes": ["mariage", "associés", "partenaire romantique", "contrats"] },
+    { "number": 8, "name_fr": "Maison VIII", "keyword": "transformation", "themes": ["intimité", "ressources partagées", "crises", "psychologie profonde"] },
+    { "number": 9, "name_fr": "Maison IX", "keyword": "expansion", "themes": ["voyages lointains", "philosophie", "études supérieures", "croyances"] },
+    { "number": 10, "name_fr": "Maison X", "keyword": "vocation", "themes": ["carrière", "réputation", "statut social", "père (ou parent autorité, selon tradition)"] },
+    { "number": 11, "name_fr": "Maison XI", "keyword": "communauté", "themes": ["amis", "groupes", "projets d'avenir", "espoirs"] },
+    { "number": 12, "name_fr": "Maison XII", "keyword": "transcendance", "themes": ["inconscient", "épreuves cachées", "spiritualité", "isolement"] }
+  ],
+  "derived_house_reference_points": {
+    "partner": 7,
+    "mother": 4,
+    "father": 10,
+    "children": 5,
+    "siblings": 3,
+    "friends": 11
+  },
+  "notes": "La maison du père varie selon les traditions (M10 en moderne, M4 parfois attribuée au père en tradition hellénistique). Prévoir un paramètre de configuration plutôt qu'un choix figé."
+}

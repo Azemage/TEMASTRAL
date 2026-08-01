@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Temastral — Lecture de carte natale</title>
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+  <header class="app-header">
+    <h1>✨ Temastral</h1>
+    <p>Calcul de thème natal (Swiss Ephemeris) &amp; lecture interprétée par IA</p>
+  </header>
+
+  <main>
+    <section id="form-section" class="card">
+      <h2>1. Données de naissance</h2>
+      <form id="birth-form">
+        <div class="form-row">
+          <label for="subject_name">Nom (optionnel)</label>
+          <input type="text" id="subject_name" placeholder="Ex. Benoît" />
+        </div>
+
+        <div class="form-row">
+          <label for="birth_date">Date de naissance</label>
+          <input type="date" id="birth_date" required />
+        </div>
+
+        <div class="form-row">
+          <label for="birth_time">Heure de naissance</label>
+          <input type="time" id="birth_time" step="1" value="12:00:00" />
+          <label class="checkbox-label">
+            <input type="checkbox" id="time_unknown" />
+            Heure inconnue (maisons/angles approximatifs)
+          </label>
+        </div>
+
+        <div class="form-row">
+          <label for="city_search">Ville de naissance</label>
+          <div class="search-row">
+            <input type="text" id="city_search" placeholder="Ex. Lyon, France" />
+            <button type="button" id="search-city-btn">Rechercher</button>
+          </div>
+          <div id="city-results" class="city-results"></div>
+        </div>
+
+        <div class="form-row triple">
+          <div>
+            <label for="latitude">Latitude</label>
+            <input type="number" step="0.0001" id="latitude" required />
+          </div>
+          <div>
+            <label for="longitude">Longitude</label>
+            <input type="number" step="0.0001" id="longitude" required />
+          </div>
+          <div>
+            <label for="timezone">Fuseau horaire (IANA)</label>
+            <input type="text" id="timezone" placeholder="Europe/Paris" required />
+          </div>
+        </div>
+
+        <details>
+          <summary>Options avancées</summary>
+          <div class="form-row triple">
+            <div>
+              <label for="house_system">Système de maisons</label>
+              <select id="house_system">
+                <option value="placidus" selected>Placidus</option>
+                <option value="whole_sign">Signes intégraux</option>
+                <option value="koch">Koch</option>
+                <option value="equal">Maisons égales</option>
+                <option value="regiomontanus">Regiomontanus</option>
+              </select>
+            </div>
+            <div>
+              <label for="rulership_system">Dispositeurs</label>
+              <select id="rulership_system">
+                <option value="both" selected>Traditionnel + moderne</option>
+                <option value="traditional">Traditionnel</option>
+                <option value="modern">Moderne</option>
+              </select>
+            </div>
+            <div>
+              <label for="optional_points">Points additionnels</label>
+              <select id="optional_points" multiple size="4">
+                <option value="north_node" selected>Nœud Nord</option>
+                <option value="south_node" selected>Nœud Sud</option>
+                <option value="chiron">Chiron</option>
+                <option value="lilith_mean">Lilith moyenne</option>
+              </select>
+            </div>
+          </div>
+        </details>
+
+        <button type="submit" id="submit-btn">Calculer le thème natal</button>
+      </form>
+      <p id="form-error" class="error"></p>
+    </section>
+
+    <section id="results-section" class="card hidden">
+      <h2>2. Thème natal</h2>
+      <div id="chart-summary"></div>
+
+      <div class="tabs">
+        <button class="tab-btn active" data-tab="planets">Planètes</button>
+        <button class="tab-btn" data-tab="houses">Maisons</button>
+        <button class="tab-btn" data-tab="aspects">Aspects</button>
+        <button class="tab-btn" data-tab="balance">Éléments</button>
+        <button class="tab-btn" data-tab="dispositors">Dispositeurs</button>
+      </div>
+
+      <div id="tab-planets" class="tab-panel"></div>
+      <div id="tab-houses" class="tab-panel hidden"></div>
+      <div id="tab-aspects" class="tab-panel hidden"></div>
+      <div id="tab-balance" class="tab-panel hidden"></div>
+      <div id="tab-dispositors" class="tab-panel hidden"></div>
+    </section>
+
+    <section id="reading-section" class="card hidden">
+      <h2>3. Lecture interprétée</h2>
+      <div class="form-row">
+        <label>Zones à couvrir</label>
+        <div class="focus-checkboxes">
+          <label><input type="checkbox" name="focus" value="general" checked /> Vue d'ensemble</label>
+          <label><input type="checkbox" name="focus" value="love" /> Amour</label>
+          <label><input type="checkbox" name="focus" value="career" /> Carrière</label>
+          <label><input type="checkbox" name="focus" value="family" /> Famille</label>
+        </div>
+      </div>
+      <button id="generate-reading-btn">Générer la lecture</button>
+      <p id="reading-error" class="error"></p>
+      <div id="reading-output" class="reading-output"></div>
+    </section>
+  </main>
+
+  <footer>
+    <p>Calculs déterministes (Swiss Ephemeris) — l'interprétation est générée par un modèle de langage et doit être lue comme un éclairage, pas une prédiction absolue.</p>
+  </footer>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

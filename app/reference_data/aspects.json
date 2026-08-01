@@ -1,0 +1,18 @@
+{
+  "description": "Définition des aspects astrologiques : angle, nature, orbe par défaut",
+  "major_aspects": [
+    { "name": "conjunction", "name_fr": "conjonction", "angle": 0, "default_orb": 8, "nature": "variable" },
+    { "name": "sextile", "name_fr": "sextile", "angle": 60, "default_orb": 5, "nature": "harmonieux" },
+    { "name": "square", "name_fr": "carré", "angle": 90, "default_orb": 7, "nature": "tendu" },
+    { "name": "trine", "name_fr": "trigone", "angle": 120, "default_orb": 7, "nature": "harmonieux" },
+    { "name": "opposition", "name_fr": "opposition", "angle": 180, "default_orb": 8, "nature": "tendu" }
+  ],
+  "minor_aspects": [
+    { "name": "semi_sextile", "name_fr": "semi-sextile", "angle": 30, "default_orb": 2, "nature": "mineur" },
+    { "name": "semi_square", "name_fr": "semi-carré", "angle": 45, "default_orb": 2, "nature": "mineur tendu" },
+    { "name": "sesquiquadrate", "name_fr": "sesqui-carré", "angle": 135, "default_orb": 2, "nature": "mineur tendu" },
+    { "name": "quincunx", "name_fr": "quinconce", "angle": 150, "default_orb": 3, "nature": "mineur inconfortable" },
+    { "name": "quintile", "name_fr": "quintile", "angle": 72, "default_orb": 2, "nature": "mineur créatif" }
+  ],
+  "notes": "L'orbe peut être pondéré selon les planètes impliquées (ex. Soleil/Lune tolèrent un orbe plus large). Prévoir ce raffinement en V2. L'app doit calculer si l'aspect est 'applying' (approche, orbe qui se réduit) ou 'separating' (s'éloigne)."
+}

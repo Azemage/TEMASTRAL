@@ -1,0 +1,27 @@
+{
+  "house_systems": [
+    { "code": "placidus", "name_fr": "Placidus", "default": true, "notes": "Le plus répandu en astrologie occidentale moderne, division temporelle" },
+    { "code": "whole_sign", "name_fr": "Signes intégraux", "default": false, "notes": "Système hellénistique, chaque maison = un signe entier" },
+    { "code": "koch", "name_fr": "Koch", "default": false, "notes": "Variante de division temporelle, populaire en Europe germanique" },
+    { "code": "equal", "name_fr": "Maisons égales", "default": false, "notes": "Chaque maison = 30° à partir de l'Ascendant" },
+    { "code": "regiomontanus", "name_fr": "Regiomontanus", "default": false, "notes": "Utilisé en astrologie traditionnelle/horaire" }
+  ],
+  "zodiac_types": [
+    { "code": "tropical", "name_fr": "Tropical", "default": true, "notes": "Standard en astrologie occidentale" },
+    { "code": "sidereal", "name_fr": "Sidéral", "default": false, "notes": "Standard en astrologie védique/jyotish" }
+  ],
+  "rulership_systems": [
+    { "code": "traditional", "name_fr": "Traditionnel" },
+    { "code": "modern", "name_fr": "Moderne" },
+    { "code": "both", "name_fr": "Les deux affichés en parallèle", "recommended": true }
+  ],
+  "planets_included_by_default": [
+    "Sun", "Moon", "Mercury", "Venus", "Mars", "Jupiter", "Saturn", "Uranus", "Neptune", "Pluto"
+  ],
+  "optional_points": [
+    { "code": "north_node", "name_fr": "Nœud Nord" },
+    { "code": "south_node", "name_fr": "Nœud Sud" },
+    { "code": "chiron", "name_fr": "Chiron" },
+    { "code": "lilith_mean", "name_fr": "Lilith (Lune Noire moyenne)" }
+  ]
+}

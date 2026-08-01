@@ -1,0 +1,16 @@
+{
+  "description": "Dignités essentielles des planètes classiques : domicile, exaltation, exil (détriment), chute",
+  "dignities": [
+    { "planet": "Sun", "domicile": ["Leo"], "exaltation": "Aries", "detriment": ["Aquarius"], "fall": "Libra" },
+    { "planet": "Moon", "domicile": ["Cancer"], "exaltation": "Taurus", "detriment": ["Capricorn"], "fall": "Scorpio" },
+    { "planet": "Mercury", "domicile": ["Gemini", "Virgo"], "exaltation": "Virgo", "detriment": ["Sagittarius", "Pisces"], "fall": "Pisces" },
+    { "planet": "Venus", "domicile": ["Taurus", "Libra"], "exaltation": "Pisces", "detriment": ["Scorpio", "Aries"], "fall": "Virgo" },
+    { "planet": "Mars", "domicile": ["Aries", "Scorpio"], "exaltation": "Capricorn", "detriment": ["Libra", "Taurus"], "fall": "Cancer" },
+    { "planet": "Jupiter", "domicile": ["Sagittarius", "Pisces"], "exaltation": "Cancer", "detriment": ["Gemini", "Virgo"], "fall": "Capricorn" },
+    { "planet": "Saturn", "domicile": ["Capricorn", "Aquarius"], "exaltation": "Libra", "detriment": ["Cancer", "Leo"], "fall": "Aries" },
+    { "planet": "Uranus", "domicile": ["Aquarius"], "exaltation": "Scorpio", "detriment": ["Leo"], "fall": "Taurus" },
+    { "planet": "Neptune", "domicile": ["Pisces"], "exaltation": "Leo", "detriment": ["Virgo"], "fall": "Aquarius" },
+    { "planet": "Pluto", "domicile": ["Scorpio"], "exaltation": "Aries", "detriment": ["Taurus"], "fall": "Libra" }
+  ],
+  "notes": "Les exaltations d'Uranus, Neptune et Pluton varient selon les auteurs (non fixées par la tradition ancienne) — à signaler comme optionnel/indicatif dans l'app."
+}

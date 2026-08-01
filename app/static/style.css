@@ -1,0 +1,235 @@
+:root {
+  --bg: #0f1220;
+  --card-bg: #1a1e33;
+  --text: #e8e8f0;
+  --muted: #9a9cbd;
+  --accent: #b28dff;
+  --accent-2: #6ee7d9;
+  --border: #2c2f4a;
+  --danger: #ff8080;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: "Segoe UI", system-ui, sans-serif;
+  background: radial-gradient(circle at top, #1a1e33 0%, #0f1220 60%);
+  color: var(--text);
+  line-height: 1.5;
+}
+
+.app-header {
+  text-align: center;
+  padding: 2rem 1rem 1rem;
+}
+
+.app-header h1 {
+  margin: 0;
+  font-size: 2rem;
+  background: linear-gradient(90deg, var(--accent), var(--accent-2));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.app-header p {
+  color: var(--muted);
+  margin: 0.25rem 0 0;
+}
+
+main {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.card {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.5rem;
+}
+
+.card h2 {
+  margin-top: 0;
+}
+
+.hidden { display: none !important; }
+
+.form-row {
+  margin-bottom: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.form-row.triple {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 1rem;
+}
+
+label {
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+.checkbox-label {
+  flex-direction: row;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--text);
+}
+
+input, select, button {
+  font-family: inherit;
+  font-size: 1rem;
+}
+
+input[type="text"], input[type="date"], input[type="time"], input[type="number"], select {
+  background: #12152a;
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 8px;
+  padding: 0.55rem 0.7rem;
+}
+
+.search-row {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.search-row input { flex: 1; }
+
+.city-results {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.city-result-item {
+  cursor: pointer;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #12152a;
+}
+
+.city-result-item:hover { border-color: var(--accent); }
+
+details { margin-bottom: 1rem; }
+details summary { cursor: pointer; color: var(--accent-2); margin-bottom: 0.75rem; }
+
+button {
+  background: linear-gradient(90deg, var(--accent), var(--accent-2));
+  color: #10121f;
+  font-weight: 600;
+  border: none;
+  border-radius: 8px;
+  padding: 0.65rem 1.2rem;
+  cursor: pointer;
+}
+
+button:disabled { opacity: 0.6; cursor: wait; }
+
+.error {
+  color: var(--danger);
+  min-height: 1.2rem;
+}
+
+.tabs {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 0.75rem;
+}
+
+.tab-btn {
+  background: transparent;
+  color: var(--muted);
+  font-weight: 500;
+  border: 1px solid var(--border);
+}
+
+.tab-btn.active {
+  background: var(--accent);
+  color: #10121f;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 1rem;
+}
+
+th, td {
+  text-align: left;
+  padding: 0.5rem 0.6rem;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.92rem;
+}
+
+th { color: var(--accent-2); }
+
+.retro { color: var(--danger); font-weight: 600; }
+
+.balance-bar-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.balance-bar-label { width: 90px; color: var(--muted); }
+
+.balance-bar-track {
+  flex: 1;
+  background: #12152a;
+  border-radius: 6px;
+  overflow: hidden;
+  height: 14px;
+}
+
+.balance-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), var(--accent-2));
+}
+
+.focus-checkboxes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  color: var(--text);
+}
+
+.focus-checkboxes label {
+  flex-direction: row;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.reading-output {
+  margin-top: 1rem;
+  white-space: normal;
+}
+
+.reading-output h2, .reading-output h3 {
+  color: var(--accent-2);
+}
+
+.reading-output p { margin: 0.6rem 0; }
+
+footer {
+  text-align: center;
+  color: var(--muted);
+  font-size: 0.85rem;
+  padding: 2rem 1rem;
+}

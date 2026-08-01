@@ -1,0 +1,122 @@
+{
+  "description": "Bibliothèque des lots (parts arabes/hermétiques). Toutes les formules suivent le principe : position = ASC + point B - point A (jour), inversé la nuit (ASC + A - B), sauf exceptions notées.",
+  "calculation_rule": "Un thème est 'de jour' si le Soleil est au-dessus de l'horizon (entre l'Ascendant et le Descendant, dans les maisons 7 à 12). Sinon il est 'de nuit'.",
+  "lots": [
+    {
+      "name": "Lot de Fortune",
+      "name_en": "Part of Fortune",
+      "category": "fondamental",
+      "day_formula": "ASC + Moon - Sun",
+      "night_formula": "ASC + Sun - Moon",
+      "signification": "corps, vitalité, bien-être matériel, chance"
+    },
+    {
+      "name": "Lot d'Esprit",
+      "name_en": "Part of Spirit",
+      "category": "fondamental",
+      "day_formula": "ASC + Sun - Moon",
+      "night_formula": "ASC + Moon - Sun",
+      "signification": "esprit, volonté, action, carrière"
+    },
+    {
+      "name": "Lot d'Amour",
+      "name_en": "Part of Love/Eros",
+      "category": "amour",
+      "day_formula": "ASC + Venus - Lot_Esprit",
+      "night_formula": "ASC + Lot_Esprit - Venus",
+      "signification": "désir, attirance, amour romantique"
+    },
+    {
+      "name": "Lot de Mariage",
+      "name_en": "Part of Marriage",
+      "category": "amour",
+      "day_formula": "ASC + Descendant - Venus",
+      "night_formula": "ASC + Venus - Descendant",
+      "signification": "union, engagement conjugal",
+      "notes": "Formule variable selon les auteurs (versions homme/femme dans la tradition ancienne, non retenues ici pour neutralité)"
+    },
+    {
+      "name": "Lot d'Argent (Richesse)",
+      "name_en": "Part of Wealth",
+      "category": "argent",
+      "day_formula": "ASC + Lot_Fortune - Jupiter",
+      "night_formula": "ASC + Jupiter - Lot_Fortune",
+      "signification": "abondance matérielle, ressources"
+    },
+    {
+      "name": "Lot du Commerce/Affaires",
+      "name_en": "Part of Commerce",
+      "category": "argent",
+      "day_formula": "ASC + Mercury - Lot_Fortune",
+      "night_formula": "ASC + Lot_Fortune - Mercury",
+      "signification": "revenus liés au travail, transactions"
+    },
+    {
+      "name": "Lot des Enfants",
+      "name_en": "Part of Children",
+      "category": "famille",
+      "day_formula": "ASC + Jupiter - Saturn",
+      "night_formula": "ASC + Saturn - Jupiter",
+      "signification": "fécondité, relation aux enfants",
+      "notes": "Plusieurs variantes existent selon les sources antiques"
+    },
+    {
+      "name": "Lot du Père",
+      "name_en": "Part of the Father",
+      "category": "famille",
+      "day_formula": "ASC + Saturn - Sun",
+      "night_formula": "ASC + Sun - Saturn",
+      "signification": "relation au père, autorité"
+    },
+    {
+      "name": "Lot de la Mère",
+      "name_en": "Part of the Mother",
+      "category": "famille",
+      "day_formula": "ASC + Moon - Venus",
+      "night_formula": "ASC + Venus - Moon",
+      "signification": "relation à la mère, nourricier"
+    },
+    {
+      "name": "Lot de Carrière",
+      "name_en": "Part of Career/Praxis",
+      "category": "carriere",
+      "day_formula": "ASC + MC - Saturn",
+      "night_formula": "ASC + Saturn - MC",
+      "signification": "réussite professionnelle, vocation"
+    },
+    {
+      "name": "Lot de Maladie",
+      "name_en": "Part of Sickness",
+      "category": "sante",
+      "day_formula": "ASC + Mars - Saturn",
+      "night_formula": "ASC + Saturn - Mars",
+      "signification": "vulnérabilités de santé"
+    },
+    {
+      "name": "Lot de la Mort",
+      "name_en": "Part of Death",
+      "category": "sensible",
+      "day_formula": "ASC + 8th_house_cusp - Moon",
+      "night_formula": "ASC + Moon - 8th_house_cusp",
+      "signification": "transformations profondes, fins de cycle",
+      "notes": "À manier avec prudence dans l'interprétation ; reformuler en 'transformation/renaissance' pour un public non-initié"
+    },
+    {
+      "name": "Lot des Voyages",
+      "name_en": "Part of Travel",
+      "category": "expansion",
+      "day_formula": "ASC + 9th_house_cusp - Moon",
+      "night_formula": "ASC + Moon - 9th_house_cusp",
+      "signification": "déplacements, expansion géographique et philosophique"
+    },
+    {
+      "name": "Lot des Amis",
+      "name_en": "Part of Friends",
+      "category": "social",
+      "day_formula": "ASC + 11th_house_cusp - Sun",
+      "night_formula": "ASC + Sun - 11th_house_cusp",
+      "signification": "relations amicales, réseau social"
+    }
+  ],
+  "extensibility_note": "Structure conçue pour ajouter facilement de nouveaux lots : chaque entrée est indépendante (name, day_formula, night_formula, category, signification). Les formules référencent soit des planètes, soit d'autres lots déjà calculés (ex. Lot d'Amour dépend du Lot d'Esprit), soit des cuspides de maison — le moteur doit donc calculer les lots fondamentaux (Fortune, Esprit) en premier."
+}

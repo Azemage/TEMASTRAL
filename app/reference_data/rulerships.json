@@ -1,0 +1,18 @@
+{
+  "description": "Maîtrises planétaires (dispositeurs) par signe, systèmes traditionnel et moderne",
+  "rulerships": [
+    { "sign": "Aries", "sign_fr": "Bélier", "traditional_ruler": "Mars", "modern_ruler": "Mars" },
+    { "sign": "Taurus", "sign_fr": "Taureau", "traditional_ruler": "Venus", "modern_ruler": "Venus" },
+    { "sign": "Gemini", "sign_fr": "Gémeaux", "traditional_ruler": "Mercury", "modern_ruler": "Mercury" },
+    { "sign": "Cancer", "sign_fr": "Cancer", "traditional_ruler": "Moon", "modern_ruler": "Moon" },
+    { "sign": "Leo", "sign_fr": "Lion", "traditional_ruler": "Sun", "modern_ruler": "Sun" },
+    { "sign": "Virgo", "sign_fr": "Vierge", "traditional_ruler": "Mercury", "modern_ruler": "Mercury" },
+    { "sign": "Libra", "sign_fr": "Balance", "traditional_ruler": "Venus", "modern_ruler": "Venus" },
+    { "sign": "Scorpio", "sign_fr": "Scorpion", "traditional_ruler": "Mars", "modern_ruler": "Pluto" },
+    { "sign": "Sagittarius", "sign_fr": "Sagittaire", "traditional_ruler": "Jupiter", "modern_ruler": "Jupiter" },
+    { "sign": "Capricorn", "sign_fr": "Capricorne", "traditional_ruler": "Saturn", "modern_ruler": "Saturn" },
+    { "sign": "Aquarius", "sign_fr": "Verseau", "traditional_ruler": "Saturn", "modern_ruler": "Uranus" },
+    { "sign": "Pisces", "sign_fr": "Poissons", "traditional_ruler": "Jupiter", "modern_ruler": "Neptune" }
+  ],
+  "notes": "Pour Scorpion, Verseau et Poissons, deux systèmes coexistent. L'application doit permettre à l'utilisateur de choisir 'traditional', 'modern', ou d'afficher les deux en parallèle (recommandé pour une lecture riche)."
+}
