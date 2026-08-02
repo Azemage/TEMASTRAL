@@ -281,6 +281,31 @@ th { color: var(--accent-2); }
   font-size: 0.85rem;
 }
 
+.trait-tag-dominant {
+  background: rgba(178, 141, 255, 0.32);
+  border-color: var(--accent-2);
+  font-weight: 600;
+}
+
+.traits-detail {
+  margin: 0.5rem 0 1rem;
+  font-size: 0.88rem;
+}
+
+.traits-detail summary {
+  cursor: pointer;
+  color: var(--muted);
+}
+
+.traits-detail ul {
+  margin: 0.5rem 0;
+  padding-left: 1.2rem;
+}
+
+.traits-detail li {
+  margin-bottom: 0.3rem;
+}
+
 .chains-detail {
   margin-bottom: 1rem;
 }

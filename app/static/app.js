@@ -194,10 +194,50 @@ document.getElementById("birth-form").addEventListener("submit", async (e) => {
   }
 });
 
+const TRAIT_ORIGIN_LABELS_FR = {
+  ascendant: "Ascendant", sun: "Soleil", moon: "Lune", mercury: "Mercure", venus: "Vénus", mars: "Mars",
+  jupiter: "Jupiter", saturn: "Saturne", dominant_element: "Élément dominant", dominant_modality: "Modalité dominante",
+};
+
+const ELEMENT_LABELS_FR = { fire: "🔥 Feu", earth: "🌍 Terre", air: "💨 Air", water: "💧 Eau" };
+const MODALITY_LABELS_FR = { cardinal: "Cardinal", fixed: "Fixe", mutable: "Mutable" };
+
 function renderTraitTags(characterTraits) {
   if (!characterTraits || !characterTraits.keywords || characterTraits.keywords.length === 0) return "";
-  const tags = characterTraits.keywords.map((trait) => `<span class="trait-tag">${trait}</span>`).join("");
-  return `<div class="trait-tags">${tags}</div>`;
+  const dominant = new Set(characterTraits.dominant_traits || []);
+  const tags = characterTraits.keywords
+    .map((trait) => `<span class="trait-tag${dominant.has(trait) ? " trait-tag-dominant" : ""}">${trait}</span>`)
+    .join("");
+
+  const sourceRows = (characterTraits.sources || [])
+    .map((s) => {
+      const originLabel = TRAIT_ORIGIN_LABELS_FR[s.origin] || s.origin;
+      const isSignBased = !s.origin.startsWith("dominant_");
+      const labelText = s.origin === "dominant_element" ? ELEMENT_LABELS_FR[s.label] || s.label
+        : s.origin === "dominant_modality" ? MODALITY_LABELS_FR[s.label] || s.label
+        : signLabel(s.label);
+      const heading = isSignBased ? `${originLabel} en ${labelText}` : `${originLabel} : ${labelText}`;
+      const houseInfo = s.house ? ` (maison ${s.house}${s.house_context ? " — " + s.house_context : ""})` : "";
+      return `<li><strong>${heading}</strong>${houseInfo} : ${s.traits.join(", ")}</li>`;
+    })
+    .join("");
+
+  const generational = (characterTraits.generational_placements || [])
+    .map((p) => `<li><strong>${planetLabel(p.planet)}</strong> en ${signLabel(p.sign)}, maison ${p.house} : ${p.note}</li>`)
+    .join("");
+
+  return `
+    <div class="trait-tags">${tags}</div>
+    <details class="traits-detail">
+      <summary>Détail par planète</summary>
+      <ul>${sourceRows}</ul>
+      ${
+        generational
+          ? `<p class="reading-section-intro">Planètes générationnelles (le signe est partagé par toute une tranche d'âge — c'est ici la maison occupée qui individualise) :</p><ul>${generational}</ul>`
+          : ""
+      }
+    </details>
+  `;
 }
 
 // ---------------------------------------------------------------------

@@ -148,14 +148,26 @@ class DispositorsAnalysis(BaseModel):
 
 
 class CharacterTraitSource(BaseModel):
-    origin: str  # "sun" | "moon" | "ascendant" | "dominant_element" | "dominant_modality"
+    origin: str  # "sun"|"moon"|"ascendant"|"mercury"|"venus"|"mars"|"jupiter"|"saturn"|"dominant_element"|"dominant_modality"
     label: str
+    house: int | None
+    house_context: str | None
     traits: list[str]
+
+
+class GenerationalPlacement(BaseModel):
+    planet: str  # "Uranus" | "Neptune" | "Pluto"
+    sign: str
+    sign_fr: str
+    house: int
+    note: str
 
 
 class CharacterTraits(BaseModel):
     keywords: list[str]
+    dominant_traits: list[str] = Field(default_factory=list)
     sources: list[CharacterTraitSource]
+    generational_placements: list[GenerationalPlacement] = Field(default_factory=list)
 
 
 class LotAspectToNatal(BaseModel):

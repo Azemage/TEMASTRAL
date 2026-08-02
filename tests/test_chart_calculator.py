@@ -69,6 +69,11 @@ def test_character_traits_derived_from_sun_moon_ascendant():
     chart = calculate_natal_chart(**BIRTH_KWARGS)
     traits = chart["character_traits"]
     assert len(traits["keywords"]) > 0
-    assert len(traits["sources"]) == 5
+    assert len(traits["sources"]) == 10
     origins = {s["origin"] for s in traits["sources"]}
-    assert origins == {"sun", "moon", "ascendant", "dominant_element", "dominant_modality"}
+    assert origins == {
+        "sun", "moon", "ascendant", "mercury", "venus", "mars", "jupiter", "saturn",
+        "dominant_element", "dominant_modality",
+    }
+    assert len(traits["generational_placements"]) == 3
+    assert {p["planet"] for p in traits["generational_placements"]} == {"Uranus", "Neptune", "Pluto"}

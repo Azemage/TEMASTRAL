@@ -17,7 +17,12 @@ Implémenté :
   aspects majeurs et mineurs avec orbes configurables, applicatif/séparatif, balance éléments/modalités)
 - Dispositeurs : maîtres traditionnel et moderne, chaînes de dispositeurs, réceptions mutuelles,
   détection de convergence (planète "clé de voûte" du thème)
-- Traits de caractère (résumé rapide déterministe : Soleil/Lune/Ascendant/dominantes)
+- Traits de caractère (résumé rapide déterministe, combinant planète+signe+maison) : tags de
+  personnalité pour les 6 planètes personnelles (Soleil/Lune/Ascendant/Mercure/Vénus/Mars) et
+  les 2 planètes sociales (Jupiter/Saturne), contextualisés par leur maison ; les tags qui
+  reviennent depuis plusieurs sources sont signalés comme traits dominants ; Uranus/Neptune/
+  Pluton (générationnelles) sont affichées à part, car leur signe seul n'individualise pas —
+  seule leur maison le fait
 - Roue astrale SVG interactive (info-bulles, plein écran, aspects colorés par type)
 - Lots (parts arabes) : bibliothèque complète (14 lots), formules jour/nuit, aspects natals
 - Maisons dérivées : mapping complet pour les 12 maisons de référence possibles

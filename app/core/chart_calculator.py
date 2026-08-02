@@ -131,8 +131,7 @@ def calculate_natal_chart(
     dispositors_modern = compute_dispositors(planet_signs, "modern")
 
     character_traits = compute_character_traits(
-        sun_sign=planet_signs["Sun"],
-        moon_sign=planet_signs["Moon"],
+        planets=planets,
         ascendant_sign=angles["ascendant"]["sign"],
         elements_balance=elements_balance,
         modality_balance=modality_balance,
