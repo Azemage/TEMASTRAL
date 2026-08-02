@@ -1,0 +1,170 @@
+{
+  "description": "Base de données planète-en-signe (10 planètes x 12 signes = 120 combinaisons). S'appuie sur les significations consensuelles de l'astrologie occidentale moderne (tradition psychologique post-Rudhyar/Hand/Arroyo). Chaque entrée = mots-clés (tags) + une synthèse courte. Les planètes personnelles (Soleil à Mars) montrent COMMENT la fonction s'exprime au quotidien ; les planètes sociales (Jupiter, Saturne) montrent le rapport aux valeurs/structures ; les planètes générationnelles (Uranus, Neptune, Pluton) s'appliquent à une tranche d'âge entière et sont donc moins individualisantes — à pondérer différemment dans une fiche (voir note en fin de fichier).",
+
+  "Sun": {
+    "function": "Identité centrale, volonté consciente, vitalité",
+    "Aries": { "keywords": ["fonceur", "impulsif", "indépendant", "compétitif", "direct", "impatient"], "synthesis": "Affirmation de soi immédiate, besoin d'initier et de gagner." },
+    "Taurus": { "keywords": ["possessif", "stable", "sensuel", "têtu", "patient", "matérialiste"], "synthesis": "Construction de l'identité par la stabilité et le concret." },
+    "Gemini": { "keywords": ["bavard", "curieux", "sociable", "dispersé", "vif", "adaptable"], "synthesis": "Identité mouvante, nourrie par l'échange et la diversité." },
+    "Cancer": { "keywords": ["protecteur", "sensible", "nostalgique", "attaché", "maternant", "susceptible"], "synthesis": "Identité liée à la sécurité affective et aux racines." },
+    "Leo": { "keywords": ["charismatique", "fier", "généreux", "dramatique", "confiant", "avide de reconnaissance"], "synthesis": "Identité affirmée par le rayonnement et la créativité personnelle." },
+    "Virgo": { "keywords": ["perfectionniste", "analytique", "serviable", "méticuleux", "critique", "anxieux"], "synthesis": "Identité construite par l'utilité et la maîtrise du détail." },
+    "Libra": { "keywords": ["diplomate", "charmeur", "indécis", "sociable", "esthète", "conciliant"], "synthesis": "Identité qui se définit en miroir de l'autre, quête d'équilibre." },
+    "Scorpio": { "keywords": ["intense", "secret", "magnétique", "possessif", "déterminé", "méfiant"], "synthesis": "Identité forgée par la profondeur, le contrôle et la transformation." },
+    "Sagittarius": { "keywords": ["optimiste", "aventurier", "franc", "philosophe", "expansif", "impatient"], "synthesis": "Identité en quête de sens, de liberté et d'horizons larges." },
+    "Capricorn": { "keywords": ["ambitieux", "discipliné", "réservé", "responsable", "prudent", "austère"], "synthesis": "Identité construite par l'effort, la structure et la durée." },
+    "Aquarius": { "keywords": ["original", "indépendant", "détaché", "idéaliste", "rebelle", "excentrique"], "synthesis": "Identité définie par la différenciation et l'appartenance à une cause." },
+    "Pisces": { "keywords": ["rêveur", "empathique", "impressionnable", "évasif", "compatissant", "confus"], "synthesis": "Identité fluide, poreuse, en quête de fusion ou de transcendance." }
+  },
+
+  "Moon": {
+    "function": "Besoins émotionnels, mémoire, réactions instinctives",
+    "Aries": { "keywords": ["hyperactif", "impatient", "réactif", "autonome affectivement", "spontané", "vite énervé"], "synthesis": "Réagit à chaud, a besoin d'autonomie pour se sentir en sécurité." },
+    "Taurus": { "keywords": ["possessif", "casanier", "gourmand", "loyal", "têtu", "besoin de routine"], "synthesis": "Sécurité par la stabilité matérielle et sensorielle." },
+    "Gemini": { "keywords": ["bavard", "nerveux", "curieux", "changeant", "sociable", "besoin de stimulation"], "synthesis": "Apaise ses émotions en les verbalisant et en variant les stimuli." },
+    "Cancer": { "keywords": ["hypersensible", "protecteur", "nostalgique", "fusionnel", "rancunier", "attaché au foyer"], "synthesis": "Grande porosité émotionnelle, besoin vital d'appartenance." },
+    "Leo": { "keywords": ["démonstratif", "généreux affectivement", "fier", "besoin d'attention", "chaleureux", "orgueilleux"], "synthesis": "Sécurité par la reconnaissance et l'expression affective visible." },
+    "Virgo": { "keywords": ["inquiet", "besoin de contrôle", "serviable", "pudique émotionnellement", "critique envers soi", "ordonné"], "synthesis": "Gère ses émotions par l'analyse et l'ordre plutôt que l'expression directe." },
+    "Libra": { "keywords": ["besoin d'harmonie", "conciliant", "indécis émotionnellement", "sociable", "évite les conflits", "romantique"], "synthesis": "Sécurité par l'équilibre relationnel, évite la discorde." },
+    "Scorpio": { "keywords": ["intense émotionnellement", "possessif", "secret", "méfiant", "passionné", "rancunier"], "synthesis": "Vit les émotions en profondeur, méfiance avant confiance totale." },
+    "Sagittarius": { "keywords": ["besoin de liberté affective", "optimiste", "peu démonstratif", "franc", "évasif", "enthousiaste"], "synthesis": "Sécurité par la liberté de mouvement, fuit l'enfermement affectif." },
+    "Capricorn": { "keywords": ["réservé émotionnellement", "besoin de contrôle", "pudique", "fiable", "distant en apparence", "sérieux"], "synthesis": "Contient ses émotions, cherche la sécurité par la maîtrise de soi." },
+    "Aquarius": { "keywords": ["détaché", "besoin d'indépendance", "original", "peu démonstratif", "amical plus qu'intime", "imprévisible"], "synthesis": "Vit l'émotion avec distance, préfère la fraternité à la fusion." },
+    "Pisces": { "keywords": ["hypersensible", "poreux", "compatissant", "besoin d'évasion", "influençable", "rêveur"], "synthesis": "Absorbe les émotions ambiantes, besoin d'espace imaginaire ou spirituel." }
+  },
+
+  "Mercury": {
+    "function": "Pensée, communication, apprentissage",
+    "Aries": { "keywords": ["direct", "impatient à l'oral", "vif", "franc", "coupe la parole"], "synthesis": "Pensée rapide, parle avant de peser." },
+    "Taurus": { "keywords": ["lent à s'exprimer", "concret", "têtu dans ses idées", "posé", "peu bavard"], "synthesis": "Réflexion lente mais ancrée, difficile à faire changer d'avis." },
+    "Gemini": { "keywords": ["très bavard", "curieux", "vif d'esprit", "dispersé", "sociable"], "synthesis": "Pensée associative rapide, besoin de variété d'informations." },
+    "Cancer": { "keywords": ["mémoriel", "intuitif", "sensible aux mots", "indirect", "subjectif"], "synthesis": "Pense et communique à travers le filtre émotionnel." },
+    "Leo": { "keywords": ["expressif", "sûr de lui à l'oral", "théâtral", "convaincant", "aime avoir raison"], "synthesis": "Communication assurée, parfois centrée sur soi." },
+    "Virgo": { "keywords": ["précis", "analytique", "critique", "méticuleux", "un peu pédant"], "synthesis": "Pensée rigoureuse, souci du détail exact." },
+    "Libra": { "keywords": ["diplomate", "mesuré", "indécis", "sociable", "évite les confrontations verbales"], "synthesis": "Cherche le consensus, pèse le pour et le contre." },
+    "Scorpio": { "keywords": ["stratégique", "peu bavard mais incisif", "secret", "perspicace", "sarcastique"], "synthesis": "Pensée pénétrante, garde ses cartes en main." },
+    "Sagittarius": { "keywords": ["direct", "bavard", "franc jusqu'à la maladresse", "philosophe", "généralise vite"], "synthesis": "Vision large, tendance à sauter aux conclusions." },
+    "Capricorn": { "keywords": ["sobre", "structuré", "prudent dans ses propos", "sérieux", "peu bavard"], "synthesis": "Pensée organisée, parle avec mesure et utilité." },
+    "Aquarius": { "keywords": ["original dans ses idées", "détaché", "provocateur intellectuellement", "peu conventionnel", "distant"], "synthesis": "Pensée non linéaire, aime bousculer les évidences." },
+    "Pisces": { "keywords": ["imagé", "flou", "intuitif", "distrait", "poétique"], "synthesis": "Pensée associative et symbolique, moins logique que ressentie." }
+  },
+
+  "Venus": {
+    "function": "Amour, valeurs, esthétique, plaisir",
+    "Aries": { "keywords": ["passionné", "impatient en amour", "conquérant", "direct", "vite lassé"], "synthesis": "Aime par la conquête, s'ennuie vite dans la routine." },
+    "Taurus": { "keywords": ["possessif", "fidèle", "sensuel", "gourmand", "attaché au confort"], "synthesis": "Amour stable et sensoriel, valorise la durée." },
+    "Gemini": { "keywords": ["léger", "curieux en amour", "bavard avec ses proches", "volage potentiel", "joueur"], "synthesis": "Séduit par les mots, besoin de stimulation intellectuelle en couple." },
+    "Cancer": { "keywords": ["fusionnel", "protecteur", "nostalgique", "attaché", "possessif affectivement"], "synthesis": "Aime en nourrissant et protégeant, forte mémoire affective." },
+    "Leo": { "keywords": ["généreux", "démonstratif", "possessif", "théâtral en amour", "besoin d'admiration"], "synthesis": "Amour flamboyant, besoin d'être admiré par le partenaire." },
+    "Virgo": { "keywords": ["pudique", "attentionné", "critique", "discret", "dévoué"], "synthesis": "Exprime l'amour par les actes de service plus que les mots." },
+    "Libra": { "keywords": ["romantique", "conciliant", "sociable", "indécis en amour", "esthète"], "synthesis": "Cherche l'harmonie et l'équilibre parfait à deux." },
+    "Scorpio": { "keywords": ["intense", "possessif", "fusionnel", "jaloux", "loyal à l'extrême"], "synthesis": "Amour total ou rien, exige une confiance absolue." },
+    "Sagittarius": { "keywords": ["besoin de liberté", "joyeux", "peu possessif", "aventurier", "franc"], "synthesis": "Aime dans l'espace et l'aventure partagée, craint l'enfermement." },
+    "Capricorn": { "keywords": ["réservé mais engagé", "fidèle", "pudique", "sérieux en amour", "peu démonstratif"], "synthesis": "Amour construit dans la durée, peu d'effusions superflues." },
+    "Aquarius": { "keywords": ["amical", "indépendant", "original", "peu conventionnel", "détaché"], "synthesis": "Aime en gardant son indépendance, relation basée sur l'amitié." },
+    "Pisces": { "keywords": ["idéaliste", "dévoué", "fusionnel", "sacrificiel", "romantique"], "synthesis": "Amour idéalisé, tendance à l'oubli de soi pour l'autre." }
+  },
+
+  "Mars": {
+    "function": "Action, désir, affirmation, gestion du conflit",
+    "Aries": { "keywords": ["hyperactif", "impulsif", "compétitif", "direct", "vite en colère"], "synthesis": "Agit dans l'instant, énergie de conquête immédiate." },
+    "Taurus": { "keywords": ["obstiné", "lent à démarrer", "endurant", "possessif", "difficile à faire changer d'avis"], "synthesis": "Force tranquille, avance lentement mais ne lâche rien." },
+    "Gemini": { "keywords": ["nerveux", "dispersé", "bavard sous tension", "vif", "agité"], "synthesis": "Énergie mentale, dépense son désir en mouvement et en mots." },
+    "Cancer": { "keywords": ["défensif", "indirect", "susceptible", "protecteur", "boude plutôt qu'affronte"], "synthesis": "Défend par la protection plutôt que l'attaque frontale." },
+    "Leo": { "keywords": ["fonceur", "fier", "confiant", "théâtral en conflit", "orgueilleux"], "synthesis": "Agit avec panache, difficile à faire reculer par fierté." },
+    "Virgo": { "keywords": ["méticuleux", "efficace", "critique", "perfectionniste dans l'action", "un peu anxieux"], "synthesis": "Canalise son énergie dans le détail et l'efficacité." },
+    "Libra": { "keywords": ["évite les conflits directs", "diplomate", "indécis dans l'action", "sociable", "hésitant"], "synthesis": "Préfère négocier que confronter, peut manquer d'initiative." },
+    "Scorpio": { "keywords": ["intense", "stratège", "rancunier", "déterminé", "secret dans ses intentions"], "synthesis": "Agit avec une détermination profonde, souvent en coulisses." },
+    "Sagittarius": { "keywords": ["impulsif", "aventurier", "franc", "impatient", "sans filtre"], "synthesis": "Fonce vers l'horizon, peu de patience pour les détails." },
+    "Capricorn": { "keywords": ["patient", "discipliné", "ambitieux", "prudent", "calculateur"], "synthesis": "Action méthodique orientée vers un objectif à long terme." },
+    "Aquarius": { "keywords": ["rebelle", "original dans l'action", "détaché", "imprévisible", "indépendant"], "synthesis": "Agit hors des sentiers battus, résiste à l'autorité imposée." },
+    "Pisces": { "keywords": ["hésitant", "évasif", "intuitif dans l'action", "peu confrontant", "influençable"], "synthesis": "Action fluctuante, guidée par l'intuition plus que la stratégie." }
+  },
+
+  "Jupiter": {
+    "function": "Expansion, valeurs, croyances, optimisme, sens de la chance",
+    "Aries": { "keywords": ["entreprenant", "confiant", "impatient de grandir", "optimiste", "prend des risques"], "synthesis": "Croît par l'action directe et la prise d'initiative." },
+    "Taurus": { "keywords": ["matérialiste", "généreux", "attaché au confort", "prudent avec l'argent malgré tout", "sensuel"], "synthesis": "Prospérité recherchée par l'accumulation stable et durable." },
+    "Gemini": { "keywords": ["curieux", "bavard", "éclectique", "sait un peu de tout", "sociable"], "synthesis": "Expansion par le savoir varié et le réseau relationnel." },
+    "Cancer": { "keywords": ["généreux affectivement", "protecteur", "attaché à la famille", "nostalgique", "hospitalier"], "synthesis": "Croissance liée à la sécurité familiale et à la générosité nourricière." },
+    "Leo": { "keywords": ["magnanime", "confiant", "généreux", "théâtral", "optimiste"], "synthesis": "Expansion par la créativité et le rayonnement personnel." },
+    "Virgo": { "keywords": ["perfectionniste", "modeste malgré ses compétences", "serviable", "analytique", "pragmatique"], "synthesis": "Croissance par l'amélioration continue et le sens du service." },
+    "Libra": { "keywords": ["diplomate", "sociable", "juste", "esthète", "recherche l'équilibre"], "synthesis": "Expansion par les relations harmonieuses et la coopération." },
+    "Scorpio": { "keywords": ["intense", "passionné", "stratège", "profond", "tout ou rien"], "synthesis": "Croissance par la transformation et la maîtrise des situations complexes." },
+    "Sagittarius": { "keywords": ["optimiste", "philosophe", "aventurier", "généreux", "expansif"], "synthesis": "Expression la plus naturelle de Jupiter : foi, sens et grands horizons." },
+    "Capricorn": { "keywords": ["ambitieux", "prudent", "discipliné", "pragmatique", "réussite méritée"], "synthesis": "Croissance lente mais solide, par le travail et la structure." },
+    "Aquarius": { "keywords": ["idéaliste", "humaniste", "original", "tourné vers le collectif", "visionnaire"], "synthesis": "Expansion par les idéaux collectifs et l'innovation sociale." },
+    "Pisces": { "keywords": ["compatissant", "spirituel", "généreux", "rêveur", "peu réaliste parfois"], "synthesis": "Croissance par la foi, la compassion et l'ouverture spirituelle." }
+  },
+
+  "Saturn": {
+    "function": "Structure, discipline, limites, maturité, peurs",
+    "Aries": { "keywords": ["frustré dans l'action", "doit apprendre la patience", "discipliné à force", "prudent malgré l'impulsivité"], "synthesis": "Apprend à canaliser l'impulsivité par la discipline." },
+    "Taurus": { "keywords": ["prudent avec l'argent", "besoin de sécurité matérielle", "obstiné", "patient", "conservateur"], "synthesis": "Structure sa vie autour de la sécurité et de la stabilité durable." },
+    "Gemini": { "keywords": ["sérieux intellectuellement", "peut douter de son intelligence", "structuré dans la pensée", "réservé à l'oral"], "synthesis": "Maturité par la rigueur de pensée, parfois inhibition dans la communication." },
+    "Cancer": { "keywords": ["pudique émotionnellement", "sens du devoir familial", "besoin de sécurité affective", "réservé"], "synthesis": "Rapport à la famille marqué par la responsabilité, parfois la retenue." },
+    "Leo": { "keywords": ["doute de sa légitimité à briller", "discipliné dans la créativité", "réservé malgré le besoin de reconnaissance", "travailleur"], "synthesis": "Construit sa confiance en soi par l'effort plutôt que le naturel." },
+    "Virgo": { "keywords": ["perfectionniste", "rigoureux", "exigeant envers soi", "méticuleux", "anxieux du détail"], "synthesis": "Discipline naturelle poussée jusqu'à l'auto-exigence." },
+    "Libra": { "keywords": ["sérieux dans les engagements", "prudent en amour", "diplomate structuré", "sens de la justice"], "synthesis": "Structure les relations avec sérieux, parfois froideur apparente." },
+    "Scorpio": { "keywords": ["maîtrise de soi", "méfiant", "endurant", "stratège", "discret sur ses failles"], "synthesis": "Contrôle rigoureux de ses émotions profondes et de son pouvoir." },
+    "Sagittarius": { "keywords": ["sérieux dans ses convictions", "besoin de structurer ses croyances", "prudent malgré l'envie d'aventure", "responsable"], "synthesis": "Cherche un sens solide et éprouvé plutôt qu'une foi naïve." },
+    "Capricorn": { "keywords": ["discipliné", "ambitieux", "responsable", "austère", "réussite par l'effort"], "synthesis": "Expression la plus naturelle de Saturne : maturité, structure, endurance." },
+    "Aquarius": { "keywords": ["structuré dans ses idéaux", "détaché", "responsable envers le collectif", "original mais rigoureux"], "synthesis": "Discipline mise au service d'une cause ou d'un idéal collectif." },
+    "Pisces": { "keywords": ["besoin de structurer son imaginaire", "anxieux sans cadre", "discret", "responsable envers les plus faibles"], "synthesis": "Cherche à donner une forme concrète à l'intuition et à la compassion." }
+  },
+
+  "Uranus": {
+    "function": "Rupture, innovation, individuation, imprévu (planète générationnelle)",
+    "Aries": { "keywords": ["révolutionnaire", "impatient de changer les choses", "rebelle", "pionnier"], "synthesis": "Générationnel : élan de rupture rapide et d'affirmation individuelle." },
+    "Taurus": { "keywords": ["remet en question les structures matérielles", "besoin de sécurité malgré l'imprévu", "obstiné dans le changement"], "synthesis": "Générationnel : tension entre besoin de stabilité et bouleversements économiques/matériels." },
+    "Gemini": { "keywords": ["esprit vif et innovant", "communication en rupture", "curieux des nouvelles idées"], "synthesis": "Générationnel : bouleversement dans les modes de communication et de pensée." },
+    "Cancer": { "keywords": ["remet en question la famille traditionnelle", "besoin d'indépendance affective", "attaché mais rebelle"], "synthesis": "Générationnel : redéfinition des structures familiales et du foyer." },
+    "Leo": { "keywords": ["créativité originale", "besoin de se distinguer", "fier et indépendant"], "synthesis": "Générationnel : quête d'expression individuelle hors des codes établis." },
+    "Virgo": { "keywords": ["innovation méthodique", "remise en question du travail traditionnel", "perfectionniste et rebelle"], "synthesis": "Générationnel : transformation des méthodes de travail et de santé." },
+    "Libra": { "keywords": ["redéfinit les relations", "besoin d'indépendance dans le couple", "diplomate mais rebelle"], "synthesis": "Générationnel : évolution des modèles relationnels et du couple." },
+    "Scorpio": { "keywords": ["transformation radicale", "intense et imprévisible", "rupture profonde"], "synthesis": "Générationnel : bouleversements profonds liés au pouvoir et à la transformation collective." },
+    "Sagittarius": { "keywords": ["quête de sens non conventionnelle", "philosophe rebelle", "besoin de liberté idéologique"], "synthesis": "Générationnel : remise en question des croyances et systèmes établis." },
+    "Capricorn": { "keywords": ["remise en question de l'autorité", "structure rebelle", "ambitieux mais non conventionnel"], "synthesis": "Générationnel : transformation des institutions et structures de pouvoir." },
+    "Aquarius": { "keywords": ["original", "humaniste", "visionnaire", "indépendant"], "synthesis": "Expression la plus naturelle d'Uranus : innovation, individuation, esprit collectif progressiste." },
+    "Pisces": { "keywords": ["spiritualité en rupture", "intuition collective", "rêveur visionnaire"], "synthesis": "Générationnel : bouleversement des repères spirituels et de l'imaginaire collectif." }
+  },
+
+  "Neptune": {
+    "function": "Idéalisation, spiritualité, illusion, dissolution des limites (planète générationnelle)",
+    "Aries": { "keywords": ["idéalisme combatif", "quête spirituelle impatiente", "héros/martyr"], "synthesis": "Générationnel : idéaux portés avec fougue, parfois de façon illusoire." },
+    "Taurus": { "keywords": ["idéalisation du confort", "sensualité rêveuse", "attachement à des valeurs stables mais floues"], "synthesis": "Générationnel : tension entre matérialisme et quête de sens." },
+    "Gemini": { "keywords": ["pensée diffuse", "communication idéalisée", "curiosité mystique"], "synthesis": "Générationnel : brouillage entre information et désinformation, quête de sens dans le savoir." },
+    "Cancer": { "keywords": ["idéalisation de la famille", "hypersensibilité collective", "nostalgie diffuse"], "synthesis": "Générationnel : image idéalisée ou mythifiée du foyer et des racines." },
+    "Leo": { "keywords": ["créativité inspirée", "besoin d'idéaliser la reconnaissance", "théâtral et rêveur"], "synthesis": "Générationnel : quête d'un idéal héroïque ou artistique collectif." },
+    "Virgo": { "keywords": ["quête de perfection insaisissable", "service désintéressé", "anxiété diffuse"], "synthesis": "Générationnel : idéalisation du travail bien fait, parfois jusqu'à l'épuisement." },
+    "Libra": { "keywords": ["idéalisation de l'amour", "quête d'harmonie parfaite", "risque de désillusion en couple"], "synthesis": "Générationnel : amour romantique idéalisé, souvent confronté à la réalité." },
+    "Scorpio": { "keywords": ["intensité mystique", "fascination pour le caché", "transformation par la dissolution"], "synthesis": "Générationnel : quête spirituelle intense liée au pouvoir et à la mort symbolique." },
+    "Sagittarius": { "keywords": ["foi idéalisée", "quête spirituelle expansive", "risque de dogmatisme flou"], "synthesis": "Générationnel : quête de sens à grande échelle, parfois utopique." },
+    "Capricorn": { "keywords": ["dissolution des structures établies", "idéalisme pragmatique", "désillusion envers l'autorité"], "synthesis": "Générationnel : remise en question ou érosion des institutions traditionnelles." },
+    "Aquarius": { "keywords": ["idéal collectif", "utopie humaniste", "vision floue mais inspirante"], "synthesis": "Générationnel : grands idéaux collectifs et utopies sociales." },
+    "Pisces": { "keywords": ["intuitif", "compatissant", "fusionnel", "rêveur", "spirituel"], "synthesis": "Expression la plus naturelle de Neptune : porosité, compassion, transcendance." }
+  },
+
+  "Pluto": {
+    "function": "Transformation profonde, pouvoir, régénération, ombre (planète générationnelle)",
+    "Aries": { "keywords": ["puissance d'action", "transformation par la lutte", "détermination brute"], "synthesis": "Générationnel : rapport au pouvoir marqué par l'affirmation et le conflit." },
+    "Taurus": { "keywords": ["transformation des valeurs matérielles", "obstination profonde", "rapport puissant à la possession"], "synthesis": "Générationnel : bouleversement des systèmes économiques et de la notion de valeur." },
+    "Gemini": { "keywords": ["transformation par l'information", "pensée pénétrante", "rapport puissant au langage"], "synthesis": "Générationnel : mutation profonde des modes de communication et de savoir." },
+    "Cancer": { "keywords": ["transformation des structures familiales", "attachement intense aux racines", "mémoire collective puissante"], "synthesis": "Générationnel : bouleversement profond de la notion de foyer et d'appartenance." },
+    "Leo": { "keywords": ["pouvoir créatif intense", "besoin profond de reconnaissance", "transformation par l'expression de soi"], "synthesis": "Générationnel : rapport intense au pouvoir individuel et à l'expression du moi." },
+    "Virgo": { "keywords": ["transformation par le travail", "exigence extrême", "rapport puissant au contrôle du détail"], "synthesis": "Générationnel : mutation profonde des systèmes de travail et de santé." },
+    "Libra": { "keywords": ["transformation des rapports de pouvoir dans le couple", "intensité relationnelle", "quête de justice profonde"], "synthesis": "Générationnel : redéfinition intense des rapports de pouvoir entre partenaires." },
+    "Scorpio": { "keywords": ["intensité maximale", "pouvoir", "régénération", "contrôle"], "synthesis": "Expression la plus naturelle de Pluton : transformation radicale et rapport direct au pouvoir." },
+    "Sagittarius": { "keywords": ["transformation des croyances", "quête de vérité radicale", "pouvoir idéologique"], "synthesis": "Générationnel : bouleversement profond des systèmes de croyance collectifs." },
+    "Capricorn": { "keywords": ["transformation des institutions", "pouvoir structurel", "endurance extrême"], "synthesis": "Générationnel : mutation profonde des structures de pouvoir établies (souvent citée pour les crises institutionnelles majeures)." },
+    "Aquarius": { "keywords": ["transformation collective", "pouvoir technologique/social", "rupture radicale avec le passé"], "synthesis": "Générationnel : bouleversement profond des structures sociales et technologiques." },
+    "Pisces": { "keywords": ["transformation spirituelle", "dissolution du pouvoir individuel", "intensité mystique"], "synthesis": "Générationnel : mutation profonde des repères spirituels et collectifs." }
+  },
+
+  "usage_notes": [
+    "Les planètes personnelles (Sun à Mars) sont hautement individualisantes : à utiliser en priorité pour une fiche de personnalité.",
+    "Jupiter et Saturne sont sociales : partagées par des groupes de ~1-2 ans, restent pertinentes individuellement car elles touchent les valeurs et la structure personnelle.",
+    "Uranus, Neptune, Pluton sont générationnelles (partagées par des millions de personnes nées la même période, ~7 à 20 ans selon la planète). Leur signe seul NE CARACTÉRISE PAS l'individu — c'est leur MAISON et leurs ASPECTS qui individualisent leur expression. À signaler clairement dans l'app pour ne pas surinterpréter le signe générationnel comme un trait personnel.",
+    "Toutes les synthèses ci-dessus sont rédigées à partir des significations consensuelles de l'astrologie occidentale moderne ; il ne s'agit pas d'une vérité scientifique mais d'un système interprétatif standardisé, à présenter comme tel dans l'app."
+  ]
+}

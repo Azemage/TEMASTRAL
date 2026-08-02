@@ -498,6 +498,7 @@ function renderChart(chart) {
   renderLotsDataPanel(data);
   renderDerivedHousesDataPanel(data);
   timingLoadedForChartId = null; // nouveau thème : re-fetcher le timing au prochain accès
+  zrLoadedForChartId = null; // nouveau thème : re-fetcher les phases au prochain accès
 }
 
 function renderPlanetsTab(data) {
@@ -869,6 +870,81 @@ async function loadTimingDataPanel(date) {
 }
 
 // ---------------------------------------------------------------------
+// Libération zodiacale (phases L1/L2) — affichée dans "Lecture interprétée > Lots"
+// ---------------------------------------------------------------------
+let zrLoadedForChartId = null;
+
+function renderZrPeriodCard(period, title) {
+  if (!period) return `<p>${title} : aucune période disponible.</p>`;
+  const badges = `
+    ${period.is_peak_period ? '<span class="zr-badge zr-badge-peak">Période de pointe</span>' : ""}
+    ${period.is_loosing_of_the_bond ? '<span class="zr-badge zr-badge-loosing">Déliement du lien</span>' : ""}
+  `;
+  return `
+    <div class="zr-phase-card">
+      <h4>${title} : ${signLabel(period.sign)} ${badges}</h4>
+      <p>Du ${period.start_date} au ${period.end_date} (${period.duration_years} an${period.duration_years > 1 ? "s" : ""}) —
+      maître : ${planetLabel(period.ruling_planet)}</p>
+    </div>`;
+}
+
+function renderZrLotSection(label, lotResult) {
+  const l2Rows = lotResult.current_l1_l2_periods
+    .map((p) => {
+      const badges = `${p.is_peak_period ? '<span class="zr-badge zr-badge-peak">Pointe</span>' : ""}${p.is_loosing_of_the_bond ? '<span class="zr-badge zr-badge-loosing">Déliement</span>' : ""}`;
+      const isCurrent = lotResult.current_l2 && p.start_date === lotResult.current_l2.start_date && p.sign === lotResult.current_l2.sign;
+      return `<tr class="${isCurrent ? "zr-current-row" : ""}"><td>${signLabel(p.sign)}</td><td>${p.start_date} → ${p.end_date}</td><td>${badges || "—"}</td></tr>`;
+    })
+    .join("");
+
+  return `
+    <h4>Lot ${label} (${signLabel(lotResult.lot_sign)})</h4>
+    ${renderZrPeriodCard(lotResult.current_l1, "Phase L1 en cours")}
+    ${renderZrPeriodCard(lotResult.current_l2, "Sous-phase L2 en cours")}
+    <details>
+      <summary>Détail des sous-phases L2 de la phase L1 en cours (${lotResult.current_l1_l2_periods.length})</summary>
+      <table>
+        <thead><tr><th>Signe</th><th>Période</th><th></th></tr></thead>
+        <tbody>${l2Rows}</tbody>
+      </table>
+    </details>
+  `;
+}
+
+function renderZrDataPanel(zr) {
+  document.getElementById("zr-data-panel").innerHTML = `
+    <div class="form-row timing-controls">
+      <label for="zr-date">Date</label>
+      <input type="date" id="zr-date" value="${zr.as_of_date}" />
+      <button type="button" id="zr-refresh-btn">Recalculer</button>
+    </div>
+    ${zr.edge_case_same_sign_applied ? '<p class="error">Lot de Fortune et Lot d\'Esprit dans le même signe : le calcul du Lot d\'Esprit a été décalé d\'un signe, selon la convention documentée.</p>' : ""}
+    ${renderZrLotSection("de Fortune", zr.fortune)}
+    ${renderZrLotSection("d'Esprit", zr.spirit)}
+  `;
+
+  document.getElementById("zr-refresh-btn").addEventListener("click", () => {
+    loadZrDataPanel(document.getElementById("zr-date").value);
+  });
+}
+
+async function loadZrDataPanel(date) {
+  if (!currentChart) return;
+  const container = document.getElementById("zr-data-panel");
+  container.innerHTML = "<p>Calcul en cours (phases et sous-phases)...</p>";
+  try {
+    const dateParam = date ? `?date=${date}` : "";
+    const res = await fetch(`/api/charts/${currentChart.id}/zodiacal-releasing${dateParam}`);
+    if (!res.ok) throw new Error(`Erreur ${res.status}`);
+    const zr = await res.json();
+    renderZrDataPanel(zr);
+    zrLoadedForChartId = currentChart.id;
+  } catch (err) {
+    container.innerHTML = `<p class="error">Impossible de charger les phases : ${err.message}</p>`;
+  }
+}
+
+// ---------------------------------------------------------------------
 // Onglets (section "Thème natal")
 // ---------------------------------------------------------------------
 document.querySelectorAll(".tab-btn").forEach((btn) => {
@@ -892,6 +968,9 @@ document.querySelectorAll(".reading-tab-btn").forEach((btn) => {
 
     if (btn.dataset.readingTab === "timing" && currentChart && timingLoadedForChartId !== currentChart.id) {
       loadTimingDataPanel();
+    }
+    if (btn.dataset.readingTab === "lots" && currentChart && zrLoadedForChartId !== currentChart.id) {
+      loadZrDataPanel();
     }
   });
 });
@@ -1014,6 +1093,17 @@ document.getElementById("generate-lots-reading-btn").addEventListener("click", (
     outputId: "lots-reading-output",
     defaultLabel: "Générer la lecture des lots",
     requestBody: { reading_type: "lots" },
+  });
+});
+
+document.getElementById("generate-zr-reading-btn").addEventListener("click", () => {
+  const dateInput = document.getElementById("zr-date");
+  generateSpecializedReading({
+    btnId: "generate-zr-reading-btn",
+    errorId: "zr-reading-error",
+    outputId: "zr-reading-output",
+    defaultLabel: "Générer la lecture des phases",
+    requestBody: { reading_type: "zodiacal_releasing", as_of_date: dateInput ? dateInput.value : undefined },
   });
 });
 

@@ -21,6 +21,7 @@ from app import models, schemas
 from app.config import get_settings
 from app.core.reference_data import houses_meanings, rulerships
 from app.services import timing_service
+from app.services.zodiacal_releasing_service import compute_zodiacal_releasing_for_chart
 
 BASIC_READING_TYPES = {"global", "love", "career", "family"}
 
@@ -39,6 +40,7 @@ READING_TYPE_MAX_TOKENS = {
     "lots": 2500,
     "derived_houses": 2000,
     "timing": 3000,
+    "zodiacal_releasing": 3000,
 }
 
 _SPECIALIZED_PROMPT_BLOCKS = {
@@ -73,6 +75,27 @@ la lecture ainsi : d'abord le thème de l'année (profection), puis la tendance 
 marquantes en citant leurs fenêtres de dates (pas seulement le jour du pic). Ne fais JAMAIS \
 de prédiction fermée ('il vous arrivera X') : formule toujours en dynamique ou thème \
 disponible ('cette période favorise...', 'une tension pourrait émerger autour de...').""",
+    "zodiacal_releasing": """Cette lecture porte spécifiquement sur la RÉPARTITION ZODIACALE \
+(Zodiacal Releasing), une technique de timing hellénistique (Vettius Valens) qui découpe la \
+vie en grandes périodes ('périodes L1') elles-mêmes subdivisées en sous-périodes ('périodes \
+L2'), à partir du Lot de Fortune (déroulement de la vie matérielle, du corps, des \
+circonstances extérieures) et du Lot d'Esprit (déroulement de la vie active, des choix, de \
+la carrière, de l'accomplissement). Tu reçois dans `fortune` et `spirit` la période L1 \
+actuelle de chaque lot (`current_l1`), la subdivision complète en périodes L2 de cette \
+période L1 (`current_l1_l2_periods`) et la sous-période L2 actuelle (`current_l2`), chacune \
+avec son signe, ses dates de début/fin, sa durée, et deux indicateurs : `is_peak_period` \
+(période 'de pointe', angulaire par rapport au signe parent — un sommet d'activité ou \
+d'enjeu dans le domaine du lot) et `is_loosing_of_the_bond` ('déliement du lien' — un \
+changement de trajectoire marqué, souvent vécu comme une rupture ou un tournant net). \
+Structure la lecture en deux temps : d'abord la période Fortune actuelle (contexte matériel \
+et circonstanciel de la période, en t'appuyant sur le signe et sa maison naturelle), puis la \
+période Esprit actuelle (dynamique d'action et d'orientation de vie). Pour chaque lot, \
+mentionne la sous-période L2 en cours et ce qu'elle nuance ou précise par rapport à la \
+période L1 générale. Si `is_peak_period` ou `is_loosing_of_the_bond` est vrai pour une \
+période en cours, signale-le explicitement comme un moment charnière à ne pas manquer. \
+Donne toujours les fenêtres de dates (début/fin) pour situer temporellement chaque période \
+évoquée. Ne fais jamais de prédiction fermée : parle de dynamiques, de thèmes dominants et \
+de tonalité de la période, jamais d'événements certains.""",
 }
 
 
@@ -184,6 +207,22 @@ def _build_user_payload(chart: models.NatalChart, request: schemas.ReadingReques
         payload["profection"] = timing["profection"]
         payload["current_transits"] = {"date": timing["date"].isoformat(), "aspects": timing["aspects"]}
         payload["upcoming_events"] = forecast["events"]
+    elif request.reading_type == "zodiacal_releasing":
+        zr = compute_zodiacal_releasing_for_chart(chart, request.as_of_date)
+        payload["identity"] = _identity_context(chart_data)
+        payload["as_of_date"] = zr["as_of_date"]
+        payload["fortune"] = {
+            "lot_sign": zr["fortune"]["lot_sign"],
+            "current_l1": zr["fortune"]["current_l1"],
+            "current_l1_l2_periods": zr["fortune"]["current_l1_l2_periods"],
+            "current_l2": zr["fortune"]["current_l2"],
+        }
+        payload["spirit"] = {
+            "lot_sign": zr["spirit"]["lot_sign"],
+            "current_l1": zr["spirit"]["current_l1"],
+            "current_l1_l2_periods": zr["spirit"]["current_l1_l2_periods"],
+            "current_l2": zr["spirit"]["current_l2"],
+        }
 
     return payload
 

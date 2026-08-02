@@ -1,0 +1,152 @@
+{
+  "description": "Traits de caractère déductibles pour une fiche d'identité personnelle. Architecture en deux couches combinables : (1) trait de base = planète dans un signe, (2) modulateur = maison occupée (indique la SPHÈRE DE VIE où ce trait s'exprime le plus). Combinaison : 'trait de base' + 'contextualisé par' le modulateur de maison.",
+
+  "combination_rule": "Pour une fiche d'identité, prioriser dans cet ordre : Soleil (identité centrale), Ascendant (persona/façade), Lune (nature émotionnelle), puis Mercure/Vénus/Mars (nuances). Chaque planète clé donne : trait_de_base (signe) + sphere_expression (maison). Exemple : Soleil en Taureau en Maison 10 => 'identité stable, sensuelle et tenace' (base) + 'qui s'exprime principalement à travers la carrière et la réputation publique' (maison).",
+
+  "planets_in_signs": {
+
+    "Sun": {
+      "role_in_identity": "Identité centrale, volonté, ce que la personne cherche à devenir et à exprimer consciemment",
+      "traits": {
+        "Aries": "Identité affirmée, pionnière, spontanée ; besoin d'action directe et d'indépendance",
+        "Taurus": "Identité stable, sensuelle, tenace ; besoin de sécurité concrète et de constance",
+        "Gemini": "Identité curieuse, communicative, adaptable ; besoin de variété et d'échange intellectuel",
+        "Cancer": "Identité sensible, protectrice, attachée aux racines ; besoin de sécurité affective",
+        "Leo": "Identité rayonnante, créative, fière ; besoin de reconnaissance et d'expression personnelle",
+        "Virgo": "Identité méthodique, perfectionniste, serviable ; besoin d'utilité et de précision",
+        "Libra": "Identité relationnelle, diplomate, esthète ; besoin d'harmonie et d'équilibre",
+        "Scorpio": "Identité intense, résiliente, transformatrice ; besoin de profondeur et de contrôle",
+        "Sagittarius": "Identité optimiste, exploratrice, philosophe ; besoin de liberté et de sens",
+        "Capricorn": "Identité ambitieuse, disciplinée, responsable ; besoin de structure et de réussite durable",
+        "Aquarius": "Identité indépendante, originale, humaniste ; besoin de liberté et d'appartenance à un idéal collectif",
+        "Pisces": "Identité intuitive, empathique, rêveuse ; besoin de fusion et de transcendance"
+      }
+    },
+
+    "Moon": {
+      "role_in_identity": "Nature émotionnelle, besoins affectifs profonds, réactions instinctives",
+      "traits": {
+        "Aries": "Réactions émotionnelles vives et directes, besoin d'autonomie affective",
+        "Taurus": "Besoin de stabilité et de confort émotionnel, attachement fort aux habitudes",
+        "Gemini": "Émotivité mentalisée, besoin de parler et de comprendre ses ressentis",
+        "Cancer": "Grande sensibilité, besoin fort de sécurité familiale et d'appartenance",
+        "Leo": "Besoin d'être vu et valorisé affectivement, générosité émotionnelle",
+        "Virgo": "Émotions canalisées par l'analyse, besoin d'ordre pour se sentir en sécurité",
+        "Libra": "Besoin d'harmonie relationnelle, sensibilité au conflit",
+        "Scorpio": "Émotions intenses et profondes, besoin de confiance totale pour s'ouvrir",
+        "Sagittarius": "Besoin de liberté émotionnelle, optimisme instinctif",
+        "Capricorn": "Retenue émotionnelle, besoin de maîtrise et de solidité",
+        "Aquarius": "Détachement apparent, besoin d'indépendance affective et d'originalité",
+        "Pisces": "Grande porosité émotionnelle, besoin de compassion et d'évasion"
+      }
+    },
+
+    "Ascendant": {
+      "role_in_identity": "Persona, première impression donnée, manière d'aborder le monde",
+      "traits": {
+        "Aries": "Approche directe et énergique, première impression dynamique et franche",
+        "Taurus": "Approche posée et rassurante, première impression de calme et de solidité",
+        "Gemini": "Approche vive et curieuse, première impression alerte et communicative",
+        "Cancer": "Approche protectrice et douce, première impression accueillante mais réservée",
+        "Leo": "Approche assurée et chaleureuse, première impression charismatique",
+        "Virgo": "Approche discrète et précise, première impression sérieuse et appliquée",
+        "Libra": "Approche charmante et diplomate, première impression agréable et sociable",
+        "Scorpio": "Approche magnétique et réservée, première impression intense",
+        "Sagittarius": "Approche enthousiaste et franche, première impression optimiste",
+        "Capricorn": "Approche réservée et sérieuse, première impression de maturité",
+        "Aquarius": "Approche singulière et détachée, première impression originale",
+        "Pisces": "Approche douce et impressionnable, première impression rêveuse"
+      }
+    },
+
+    "Mercury": {
+      "role_in_identity": "Style de pensée et de communication",
+      "traits": {
+        "Aries": "Pensée rapide et directe, communication franche, parfois impatiente",
+        "Taurus": "Pensée lente et concrète, communication posée et pragmatique",
+        "Gemini": "Pensée vive et polyvalente, communication fluide et curieuse",
+        "Cancer": "Pensée intuitive et mémorielle, communication empreinte d'émotion",
+        "Leo": "Pensée affirmée et créative, communication expressive et théâtrale",
+        "Virgo": "Pensée analytique et précise, communication rigoureuse",
+        "Libra": "Pensée pondérée et diplomate, communication mesurée",
+        "Scorpio": "Pensée pénétrante et stratégique, communication à double niveau",
+        "Sagittarius": "Pensée large et philosophique, communication directe et enthousiaste",
+        "Capricorn": "Pensée structurée et prudente, communication sobre et efficace",
+        "Aquarius": "Pensée originale et détachée, communication non conventionnelle",
+        "Pisces": "Pensée associative et imagée, communication poétique ou floue"
+      }
+    },
+
+    "Venus": {
+      "role_in_identity": "Manière d'aimer, valeurs esthétiques et relationnelles",
+      "traits": {
+        "Aries": "Amour spontané et passionné, attirance pour la conquête",
+        "Taurus": "Amour fidèle et sensuel, besoin de stabilité affective et matérielle",
+        "Gemini": "Amour léger et curieux, besoin de stimulation intellectuelle",
+        "Cancer": "Amour protecteur et nourricier, besoin de fusion affective",
+        "Leo": "Amour généreux et théâtral, besoin d'être admiré",
+        "Virgo": "Amour pudique et attentionné, expression par les gestes concrets",
+        "Libra": "Amour harmonieux et romantique, besoin d'équilibre à deux",
+        "Scorpio": "Amour intense et exclusif, besoin de fusion profonde",
+        "Sagittarius": "Amour libre et joyeux, besoin d'espace et d'aventure partagée",
+        "Capricorn": "Amour engagé et sérieux, expression discrète mais durable",
+        "Aquarius": "Amour amical et indépendant, besoin de liberté dans la relation",
+        "Pisces": "Amour idéalisé et dévoué, tendance à l'auto-sacrifice affectif"
+      }
+    },
+
+    "Mars": {
+      "role_in_identity": "Manière d'agir, de désirer, de s'affirmer et de gérer les conflits",
+      "traits": {
+        "Aries": "Action impulsive et directe, affirmation de soi immédiate",
+        "Taurus": "Action lente mais déterminée, endurance et obstination",
+        "Gemini": "Action dispersée et mentale, énergie qui s'exprime en paroles",
+        "Cancer": "Action indirecte, défense par la protection plutôt que l'attaque frontale",
+        "Leo": "Action confiante et théâtrale, affirmation par le rayonnement",
+        "Virgo": "Action méthodique et efficace, énergie mise au service du détail",
+        "Libra": "Action mesurée, difficulté à s'affirmer en conflit direct",
+        "Scorpio": "Action intense et stratégique, grande capacité de ténacité",
+        "Sagittarius": "Action spontanée et aventureuse, énergie tournée vers l'exploration",
+        "Capricorn": "Action disciplinée et patiente, ambition de long terme",
+        "Aquarius": "Action originale, parfois rebelle, énergie tournée vers le collectif",
+        "Pisces": "Action fluctuante et intuitive, énergie qui s'exprime de façon indirecte ou créative"
+      }
+    }
+  },
+
+  "house_expression_modifiers": {
+    "description": "Indique la sphère de vie où un trait de caractère (planète+signe) se manifeste le plus concrètement. À combiner avec planets_in_signs pour contextualiser le trait.",
+    "modifiers": {
+      "1": "s'exprime dans l'image de soi et la manière de se présenter aux autres",
+      "2": "s'exprime dans le rapport à l'argent, aux possessions et à la valeur personnelle",
+      "3": "s'exprime dans la communication quotidienne et les relations proches (fratrie, entourage immédiat)",
+      "4": "s'exprime dans la vie familiale et le besoin de racines",
+      "5": "s'exprime dans la créativité, les amours et le rapport aux enfants",
+      "6": "s'exprime dans le travail quotidien, les habitudes et le rapport au corps/à la santé",
+      "7": "s'exprime dans les relations engagées et les partenariats",
+      "8": "s'exprime dans l'intimité profonde et le rapport aux transformations/crises",
+      "9": "s'exprime dans la quête de sens, les études et l'ouverture à l'étranger",
+      "10": "s'exprime principalement à travers la carrière et la réputation publique",
+      "11": "s'exprime dans les amitiés, les projets collectifs et les idéaux",
+      "12": "s'exprime de façon discrète ou inconsciente, souvent dans la sphère spirituelle ou intérieure"
+    }
+  },
+
+  "identity_sheet_output_example": {
+    "note": "Structure recommandée pour la fiche générée par l'app, à partir de la combinaison planète+signe+maison",
+    "example": {
+      "person": "Exemple",
+      "core_identity": {
+        "planet": "Sun",
+        "sign": "Taurus",
+        "house": 10,
+        "base_trait": "Identité stable, sensuelle et tenace ; besoin de sécurité concrète et de constance",
+        "expression_context": "s'exprime principalement à travers la carrière et la réputation publique",
+        "synthesized_line": "Une identité stable et tenace, qui se construit et se prouve avant tout à travers la réussite professionnelle et la reconnaissance publique."
+      }
+    },
+    "generation_note": "Le 'synthesized_line' ci-dessus est un exemple de fusion trait+contexte rédigée manuellement pour illustrer le résultat attendu. Dans l'app, cette fusion doit être confiée au LLM (voir section 5 du cahier des charges) à partir des deux champs bruts (base_trait + expression_context), plutôt que d'être pré-écrite pour chaque combinaison — ce qui permettrait de coder 6 planètes x 12 signes x 12 maisons = 864 fusions figées, generees a la volee par le modele a partir des donnees structurees."
+  },
+
+  "extensibility_note": "Pour enrichir la fiche d'identité, on peut ajouter d'autres points (Nœud Nord = direction de croissance, Chiron = blessure/don particulier, Lilith = zone d'ombre/instinct refoulé) en suivant la même structure clé-valeur par signe."
+}

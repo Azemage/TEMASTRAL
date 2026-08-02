@@ -131,6 +131,26 @@ def test_timing_forecast_endpoint_returns_events(client):
     assert body["events"] == sorted(body["events"], key=lambda e: e["peak_date"])
 
 
+def test_zodiacal_releasing_endpoint_returns_current_phases(client):
+    create_res = client.post("/api/charts", json=VALID_CHART_PAYLOAD)
+    chart_id = create_res.json()["id"]
+
+    res = client.get(f"/api/charts/{chart_id}/zodiacal-releasing", params={"date": "2026-08-02"})
+    assert res.status_code == 200
+    body = res.json()
+    assert body["as_of_date"] == "2026-08-02"
+    for lot in ("fortune", "spirit"):
+        assert body[lot]["current_l1"] is not None
+        assert body[lot]["current_l2"] is not None
+        assert body[lot]["current_l1"]["start_date"] <= "2026-08-02" < body[lot]["current_l1"]["end_date"]
+        assert len(body[lot]["current_l1_l2_periods"]) > 0
+
+
+def test_zodiacal_releasing_endpoint_404_for_unknown_chart(client):
+    res = client.get("/api/charts/does-not-exist/zodiacal-releasing")
+    assert res.status_code == 404
+
+
 def _settings_without_key():
     from app.config import Settings
 

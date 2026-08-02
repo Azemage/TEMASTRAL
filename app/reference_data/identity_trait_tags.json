@@ -1,0 +1,118 @@
+{
+  "description": "Traits de caractère sous forme de tags courts (adjectifs/mots-clés), pensés pour un affichage type badges/étiquettes sur une fiche d'identité — complémentaire à identity_traits.json qui donne les phrases complètes. Chaque planète contribue des tags à un 'nuage de traits' global de la personne.",
+
+  "usage_note": "Pour une fiche complète, fusionner les tags des planètes personnelles (Soleil, Lune, Ascendant, Mercure, Vénus, Mars) de la personne. Dédupliquer si plusieurs planètes donnent le même tag (renforce sa pertinence — à signaler comme 'trait dominant').",
+
+  "tags_by_planet_sign": {
+
+    "Sun": {
+      "Aries": ["fonceur", "impulsif", "indépendant", "compétitif", "direct", "impatient"],
+      "Taurus": ["possessif", "stable", "sensuel", "têtu", "patient", "matérialiste"],
+      "Gemini": ["bavard", "curieux", "sociable", "dispersé", "vif", "adaptable"],
+      "Cancer": ["protecteur", "sensible", "nostalgique", "attaché", "maternant", "susceptible"],
+      "Leo": ["charismatique", "fier", "généreux", "dramatique", "confiant", "avide de reconnaissance"],
+      "Virgo": ["perfectionniste", "analytique", "serviable", "méticuleux", "critique", "anxieux"],
+      "Libra": ["diplomate", "charmeur", "indécis", "sociable", "esthète", "conciliant"],
+      "Scorpio": ["intense", "secret", "magnétique", "possessif", "déterminé", "méfiant"],
+      "Sagittarius": ["optimiste", "aventurier", "franc", "philosophe", "expansif", "impatient"],
+      "Capricorn": ["ambitieux", "discipliné", "réservé", "responsable", "prudent", "austère"],
+      "Aquarius": ["original", "indépendant", "détaché", "idéaliste", "rebelle", "excentrique"],
+      "Pisces": ["rêveur", "empathique", "impressionnable", "évasif", "compatissant", "confus"]
+    },
+
+    "Moon": {
+      "Aries": ["hyperactif", "impatient", "réactif", "autonome affectivement", "spontané", "vite énervé"],
+      "Taurus": ["possessif", "casanier", "gourmand", "loyal", "têtu", "besoin de routine"],
+      "Gemini": ["bavard", "nerveux", "curieux", "changeant", "sociable", "besoin de stimulation"],
+      "Cancer": ["hypersensible", "protecteur", "nostalgique", "fusionnel", "rancunier", "attaché au foyer"],
+      "Leo": ["démonstratif", "généreux affectivement", "fier", "besoin d'attention", "chaleureux", "orgueilleux"],
+      "Virgo": ["inquiet", "besoin de contrôle", "serviable", "pudique émotionnellement", "critique envers soi", "ordonné"],
+      "Libra": ["besoin d'harmonie", "conciliant", "indécis émotionnellement", "sociable", "évite les conflits", "romantique"],
+      "Scorpio": ["intense émotionnellement", "possessif", "secret", "méfiant", "passionné", "rancunier"],
+      "Sagittarius": ["besoin de liberté affective", "optimiste", "peu démonstratif", "franc", "évasif", "enthousiaste"],
+      "Capricorn": ["réservé émotionnellement", "besoin de contrôle", "pudique", "fiable", "distant en apparence", "sérieux"],
+      "Aquarius": ["détaché", "besoin d'indépendance", "original", "peu démonstratif", "amical plus qu'intime", "imprévisible"],
+      "Pisces": ["hypersensible", "poreux", "compatissant", "besoin d'évasion", "influençable", "rêveur"]
+    },
+
+    "Ascendant": {
+      "Aries": ["dynamique", "direct", "impatient", "spontané", "compétitif"],
+      "Taurus": ["posé", "rassurant", "têtu", "sensuel", "lent"],
+      "Gemini": ["vif", "bavard", "curieux", "nerveux", "sociable"],
+      "Cancer": ["accueillant", "réservé au premier abord", "protecteur", "sensible", "prudent"],
+      "Leo": ["charismatique", "assuré", "chaleureux", "théâtral", "fier"],
+      "Virgo": ["discret", "sérieux", "méticuleux", "réservé", "observateur"],
+      "Libra": ["charmant", "sociable", "élégant", "diplomate", "indécis"],
+      "Scorpio": ["magnétique", "intense", "réservé", "intimidant", "mystérieux"],
+      "Sagittarius": ["enthousiaste", "franc", "expansif", "optimiste", "sans-gêne"],
+      "Capricorn": ["sérieux", "réservé", "mature en apparence", "prudent", "distant"],
+      "Aquarius": ["original", "détaché", "atypique", "indépendant", "surprenant"],
+      "Pisces": ["doux", "flou", "rêveur", "impressionnable", "insaisissable"]
+    },
+
+    "Mercury": {
+      "Aries": ["direct", "impatient à l'oral", "vif", "franc", "coupe la parole"],
+      "Taurus": ["lent à s'exprimer", "concret", "têtu dans ses idées", "posé", "peu bavard"],
+      "Gemini": ["très bavard", "curieux", "vif d'esprit", "dispersé", "sociable"],
+      "Cancer": ["mémoriel", "intuitif", "sensible aux mots", "indirect", "subjectif"],
+      "Leo": ["expressif", "sûr de lui à l'oral", "théâtral", "convaincant", "aime avoir raison"],
+      "Virgo": ["précis", "analytique", "critique", "méticuleux", "un peu pédant"],
+      "Libra": ["diplomate", "mesuré", "indécis", "sociable", "évite les confrontations verbales"],
+      "Scorpio": ["stratégique", "peu bavard mais incisif", "secret", "perspicace", "sarcastique"],
+      "Sagittarius": ["direct", "bavard", "franc jusqu'à la maladresse", "philosophe", "généralise vite"],
+      "Capricorn": ["sobre", "structuré", "prudent dans ses propos", "sérieux", "peu bavard"],
+      "Aquarius": ["original dans ses idées", "détaché", "provocateur intellectuellement", "peu conventionnel", "distant"],
+      "Pisces": ["imagé", "flou", "intuitif", "distrait", "poétique"]
+    },
+
+    "Venus": {
+      "Aries": ["passionné", "impatient en amour", "conquérant", "direct", "vite lassé"],
+      "Taurus": ["possessif", "fidèle", "sensuel", "gourmand", "attaché au confort"],
+      "Gemini": ["léger", "curieux en amour", "bavard avec ses proches", "volage potentiel", "joueur"],
+      "Cancer": ["fusionnel", "protecteur", "nostalgique", "attaché", "possessif affectivement"],
+      "Leo": ["généreux", "démonstratif", "possessif", "théâtral en amour", "besoin d'admiration"],
+      "Virgo": ["pudique", "attentionné", "critique", "discret", "dévoué"],
+      "Libra": ["romantique", "conciliant", "sociable", "indécis en amour", "esthète"],
+      "Scorpio": ["intense", "possessif", "fusionnel", "jaloux", "loyal à l'extrême"],
+      "Sagittarius": ["besoin de liberté", "joyeux", "peu possessif", "aventurier", "franc"],
+      "Capricorn": ["réservé mais engagé", "fidèle", "pudique", "sérieux en amour", "peu démonstratif"],
+      "Aquarius": ["amical", "indépendant", "original", "peu conventionnel", "détaché"],
+      "Pisces": ["idéaliste", "dévoué", "fusionnel", "sacrificiel", "romantique"]
+    },
+
+    "Mars": {
+      "Aries": ["hyperactif", "impulsif", "compétitif", "direct", "vite en colère"],
+      "Taurus": ["obstiné", "lent à démarrer", "endurant", "possessif", "difficile à faire changer d'avis"],
+      "Gemini": ["nerveux", "dispersé", "bavard sous tension", "vif", "agité"],
+      "Cancer": ["défensif", "indirect", "susceptible", "protecteur", "boude plutôt qu'affronte"],
+      "Leo": ["fonceur", "fier", "confiant", "théâtral en conflit", "orgueilleux"],
+      "Virgo": ["méticuleux", "efficace", "critique", "perfectionniste dans l'action", "un peu anxieux"],
+      "Libra": ["évite les conflits directs", "diplomate", "indécis dans l'action", "sociable", "hésitant"],
+      "Scorpio": ["intense", "stratège", "rancunier", "déterminé", "secret dans ses intentions"],
+      "Sagittarius": ["impulsif", "aventurier", "franc", "impatient", "sans filtre"],
+      "Capricorn": ["patient", "discipliné", "ambitieux", "prudent", "calculateur"],
+      "Aquarius": ["rebelle", "original dans l'action", "détaché", "imprévisible", "indépendant"],
+      "Pisces": ["hésitant", "évasif", "intuitif dans l'action", "peu confrontant", "influençable"]
+    }
+  },
+
+  "house_context_tags": {
+    "description": "Tags additionnels indiquant la sphère de vie dominante, à combiner avec les tags planétaires (ex. planète en Maison 10 -> ajouter le tag de contexte pour préciser 'où' ce trait domine)",
+    "tags": {
+      "1": "centré sur l'image de soi",
+      "2": "centré sur l'argent/la sécurité matérielle",
+      "3": "centré sur la communication proche",
+      "4": "centré sur la famille/le foyer",
+      "5": "centré sur la créativité/l'amour/les enfants",
+      "6": "centré sur le travail/la santé/le quotidien",
+      "7": "centré sur les partenariats",
+      "8": "centré sur l'intimité/la transformation",
+      "9": "centré sur le sens/les études/les voyages",
+      "10": "centré sur la carrière/l'image publique",
+      "11": "centré sur les amitiés/les projets collectifs",
+      "12": "centré sur l'intériorité/le spirituel"
+    }
+  },
+
+  "app_logic_note": "Pour générer la fiche : 1) récupérer les tags de chaque planète personnelle selon son signe, 2) agréger tous les tags dans une seule liste, 3) compter les occurrences pour repérer les tags qui reviennent plusieurs fois (= traits dominants à mettre en avant en premier), 4) le LLM peut ensuite sélectionner et pondérer les tags les plus pertinents pour rédiger un résumé de personnalité cohérent, plutôt que de simplement les lister bruts."
+}

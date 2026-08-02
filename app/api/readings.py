@@ -2,9 +2,8 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app import models, schemas
-from app.api.deps import get_session
+from app.api.deps import get_owned_chart, get_session
 from app.database import get_db
-from app.services import chart_service
 from app.services.interpretation_service import generate_reading
 
 router = APIRouter(prefix="/api/charts/{chart_id}/readings", tags=["readings"])
@@ -17,12 +16,7 @@ async def create_reading(
     db: Session = Depends(get_db),
     session: models.AnonymousSession = Depends(get_session),
 ):
-    try:
-        chart = chart_service.get_chart(db, session, chart_id)
-    except chart_service.ChartAccessError as exc:
-        raise HTTPException(status_code=403, detail=str(exc)) from exc
-    if chart is None:
-        raise HTTPException(status_code=404, detail="Thème introuvable.")
+    chart = get_owned_chart(chart_id, db, session)
 
     try:
         result = await generate_reading(chart, payload)
@@ -50,10 +44,5 @@ def list_readings(
     db: Session = Depends(get_db),
     session: models.AnonymousSession = Depends(get_session),
 ):
-    try:
-        chart = chart_service.get_chart(db, session, chart_id)
-    except chart_service.ChartAccessError as exc:
-        raise HTTPException(status_code=403, detail=str(exc)) from exc
-    if chart is None:
-        raise HTTPException(status_code=404, detail="Thème introuvable.")
+    chart = get_owned_chart(chart_id, db, session)
     return chart.readings

@@ -78,15 +78,28 @@ def test_timing_reading_payload_includes_profection_transits_and_forecast():
     assert isinstance(payload["upcoming_events"], list)
 
 
+def test_zodiacal_releasing_reading_payload_includes_fortune_and_spirit_phases():
+    chart = _make_chart()
+    request = schemas.ReadingRequest(reading_type="zodiacal_releasing", as_of_date=date(2026, 8, 2))
+    payload = interpretation_service._build_user_payload(chart, request)
+
+    assert payload["as_of_date"] == "2026-08-02"
+    for lot in ("fortune", "spirit"):
+        assert payload[lot]["current_l1"] is not None
+        assert payload[lot]["current_l2"] is not None
+        assert len(payload[lot]["current_l1_l2_periods"]) > 0
+
+
 def test_specialized_system_prompts_are_distinct_per_reading_type():
     prompts = {
         rtype: interpretation_service._build_system_prompt(schemas.ReadingRequest(reading_type=rtype))
-        for rtype in ["global", "lots", "derived_houses", "timing"]
+        for rtype in ["global", "lots", "derived_houses", "timing", "zodiacal_releasing"]
     }
-    assert len(set(prompts.values())) == 4  # les 4 prompts doivent différer
+    assert len(set(prompts.values())) == 5  # les 5 prompts doivent différer
     assert "LOTS" in prompts["lots"]
     assert "MAISONS DÉRIVÉES" in prompts["derived_houses"]
     assert "TIMING" in prompts["timing"]
+    assert "RÉPARTITION ZODIACALE" in prompts["zodiacal_releasing"]
 
 
 def test_basic_reading_types_include_focus_zone_section():

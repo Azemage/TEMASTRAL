@@ -1,0 +1,159 @@
+{
+  "description": "Base de données planète-en-maison (10 planètes x 12 maisons = 120 combinaisons). Indique DANS QUELLE SPHÈRE DE VIE la fonction de chaque planète se concentre et s'exprime le plus activement. S'appuie sur les significations consensuelles de l'astrologie occidentale moderne. À combiner avec planets_in_signs_full.json (qui donne le COMMENT) pour une lecture complète : signe = style d'expression, maison = domaine de vie concerné.",
+
+  "Sun": {
+    "1": "Identité très visible, forte présence personnelle, besoin de s'affirmer dans l'image de soi",
+    "2": "Identité liée à la sécurité matérielle et à la valeur personnelle, besoin de bâtir des ressources propres",
+    "3": "Identité exprimée par la communication, l'apprentissage, les échanges proches",
+    "4": "Identité enracinée dans la famille et le foyer, besoin de sécurité intérieure",
+    "5": "Identité affirmée par la créativité, l'expression de soi, la romance, souvent besoin d'être remarqué",
+    "6": "Identité construite par le travail quotidien, le service et le sens du devoir",
+    "7": "Identité qui se définit à travers les partenariats et le regard de l'autre",
+    "8": "Identité forgée par les crises, les transformations et les enjeux profonds/partagés",
+    "9": "Identité en quête de sens, d'expansion, souvent tournée vers l'étranger ou les études supérieures",
+    "10": "Identité fortement liée à la carrière, au statut social et à la réputation publique",
+    "11": "Identité qui se réalise à travers les groupes, les amitiés et les projets collectifs",
+    "12": "Identité discrète ou en retrait, souvent tournée vers l'intériorité, le spirituel ou l'inconscient"
+  },
+
+  "Moon": {
+    "1": "Grande sensibilité visible, réactions émotionnelles immédiates, humeur qui influence l'image de soi",
+    "2": "Sécurité émotionnelle très liée à la stabilité matérielle et aux possessions",
+    "3": "Émotivité exprimée par la parole, besoin affectif dans les échanges proches et la fratrie",
+    "4": "Très fort attachement au foyer et à la famille, besoin de racines pour se sentir en sécurité",
+    "5": "Émotions exprimées par la créativité, l'amour et le jeu, besoin affectif envers les enfants",
+    "6": "Bien-être émotionnel lié aux routines et à l'environnement de travail quotidien",
+    "7": "Besoins affectifs projetés sur le/la partenaire, forte dépendance émotionnelle au lien",
+    "8": "Vie émotionnelle intense, tournée vers l'intimité profonde et les transformations",
+    "9": "Besoin émotionnel de sens et d'exploration, quête affective à travers les croyances ou les voyages",
+    "10": "Sécurité émotionnelle liée à la reconnaissance sociale et à la réussite publique",
+    "11": "Besoin affectif satisfait par l'appartenance à un groupe ou une communauté",
+    "12": "Vie émotionnelle intériorisée, parfois inconsciente, sensible à l'environnement invisible"
+  },
+
+  "Mercury": {
+    "1": "Communication très présente dans l'image de soi, pensée vive qui définit la personnalité",
+    "2": "Pensée orientée vers les questions matérielles et la valeur des choses",
+    "3": "Expression la plus naturelle de Mercure : communication, apprentissage et échanges quotidiens intenses",
+    "4": "Communication centrée sur la famille, pensée influencée par l'environnement domestique",
+    "5": "Communication créative et ludique, pensée tournée vers l'expression personnelle",
+    "6": "Pensée analytique appliquée au travail et à l'organisation quotidienne",
+    "7": "Communication essentielle dans les partenariats, besoin de dialoguer avec l'autre",
+    "8": "Pensée qui creuse les sujets tabous ou complexes, communication sur des enjeux profonds",
+    "9": "Pensée tournée vers la philosophie, l'enseignement supérieur, les cultures étrangères",
+    "10": "Communication mise au service de la carrière et de la réputation professionnelle",
+    "11": "Pensée orientée vers les idées collectives, communication au sein de groupes/réseaux",
+    "12": "Pensée intuitive ou floue, communication parfois indirecte ou intériorisée"
+  },
+
+  "Venus": {
+    "1": "Charme et sens esthétique très visibles dans l'apparence et la personnalité",
+    "2": "Amour des plaisirs matériels, sens de la valeur souvent lié à l'esthétique et au confort",
+    "3": "Charme exprimé dans la communication, relations proches harmonieuses",
+    "4": "Amour du foyer, ambiance familiale recherchée harmonieuse et esthétique",
+    "5": "Expression la plus naturelle de Vénus : romance, plaisir, créativité, séduction",
+    "6": "Recherche d'harmonie dans le travail quotidien, soin apporté aux relations professionnelles",
+    "7": "Amour et vie de couple au centre des préoccupations, grande importance donnée au partenariat",
+    "8": "Amour intense et transformateur, attirance pour l'intimité profonde",
+    "9": "Amour de la découverte, attirance pour les cultures étrangères et les grands horizons",
+    "10": "Charme mis au service de la réussite professionnelle et de l'image publique",
+    "11": "Relations amicales harmonieuses, sens social développé, popularité",
+    "12": "Amour idéalisé ou secret, tendance à l'amour sacrificiel ou platonique"
+  },
+
+  "Mars": {
+    "1": "Énergie et affirmation de soi très visibles, tempérament combatif dans l'apparence",
+    "2": "Énergie mise au service de l'acquisition de ressources, détermination financière",
+    "3": "Énergie mentale vive, tendance à débattre ou à s'affirmer dans la communication",
+    "4": "Tensions ou dynamisme au sein du foyer familial, besoin d'agir pour protéger ses racines",
+    "5": "Énergie tournée vers la créativité, la passion amoureuse et l'affirmation ludique",
+    "6": "Grande capacité de travail, énergie appliquée aux tâches quotidiennes",
+    "7": "Affirmation de soi qui se joue dans les partenariats, possibles tensions ou dynamisme en couple",
+    "8": "Énergie intense tournée vers la transformation, le contrôle, les enjeux partagés",
+    "9": "Énergie mise au service de l'exploration, des convictions et de l'expansion",
+    "10": "Ambition marquée, énergie tournée vers la réussite professionnelle et la reconnaissance",
+    "11": "Énergie mobilisée pour les causes collectives, dynamisme au sein des groupes",
+    "12": "Énergie intériorisée ou refoulée, tendance à agir en coulisses ou de façon inconsciente"
+  },
+
+  "Jupiter": {
+    "1": "Confiance en soi naturelle, personnalité expansive et optimiste",
+    "2": "Sens de l'abondance matérielle, facilité à générer ou attirer des ressources",
+    "3": "Esprit ouvert, facilité d'apprentissage et de communication, réseau relationnel large",
+    "4": "Foyer généreux et accueillant, sentiment d'abondance familiale",
+    "5": "Créativité généreuse, chance en amour et dans l'expression personnelle",
+    "6": "Approche généreuse et optimiste du travail quotidien, bonne capacité d'adaptation",
+    "7": "Chance et croissance à travers les partenariats, associés ou conjoint bénéfiques",
+    "8": "Facilité dans la gestion des ressources partagées, transformation vécue comme une opportunité",
+    "9": "Expression la plus naturelle de Jupiter : soif de sens, de voyages, d'études supérieures",
+    "10": "Réussite sociale et professionnelle facilitée, bonne réputation",
+    "11": "Réseau social large et bénéfique, chance à travers les groupes et projets collectifs",
+    "12": "Générosité discrète, foi ou spiritualité développée en privé"
+  },
+
+  "Saturn": {
+    "1": "Personnalité réservée, sérieuse, construction de soi par l'effort et parfois un manque de confiance initial",
+    "2": "Rapport prudent voire anxieux à l'argent, sécurité matérielle construite lentement",
+    "3": "Communication réfléchie, apprentissage exigeant, relations avec la fratrie parfois marquées par la distance",
+    "4": "Foyer structuré ou rigide, sens du devoir familial important, parfois climat familial sévère",
+    "5": "Difficulté à se permettre légèreté et créativité spontanée, sérieux dans les histoires amoureuses",
+    "6": "Grande discipline dans le travail, rigueur parfois excessive envers soi-même",
+    "7": "Engagement pris au sérieux, partenariats construits avec prudence et sur la durée",
+    "8": "Rapport prudent aux ressources partagées et à l'intimité, peurs profondes liées au contrôle/à la perte",
+    "9": "Vision structurée et prudente du sens et des croyances, méfiance envers les excès d'optimisme",
+    "10": "Expression la plus naturelle de Saturne : carrière construite avec discipline, ambition sur le long terme",
+    "11": "Amitiés peu nombreuses mais durables, engagement sérieux envers les causes collectives",
+    "12": "Peurs intériorisées, besoin de structurer sa vie intérieure ou spirituelle"
+  },
+
+  "Uranus": {
+    "1": "Personnalité originale, imprévisible, besoin marqué de se différencier",
+    "2": "Rapport instable ou non conventionnel à l'argent et aux ressources",
+    "3": "Pensée innovante, communication parfois abrupte ou avant-gardiste",
+    "4": "Foyer atypique ou changements fréquents de domicile, besoin d'indépendance familiale",
+    "5": "Créativité originale, amours imprévisibles ou non conventionnelles",
+    "6": "Routines de travail changeantes, approche non conventionnelle de la santé",
+    "7": "Partenariats non conventionnels, besoin d'indépendance au sein du couple",
+    "8": "Transformations soudaines, rapport atypique à l'intimité et aux ressources partagées",
+    "9": "Croyances non conventionnelles, quête de sens à travers la rupture avec la tradition",
+    "10": "Carrière atypique ou évolutive par ruptures, image publique originale",
+    "11": "Expression la plus naturelle d'Uranus : réseau social large, engagement pour des causes progressistes",
+    "12": "Intuitions soudaines, vie intérieure marquée par des prises de conscience brutales"
+  },
+
+  "Neptune": {
+    "1": "Personnalité insaisissable, sensible aux ambiances, image de soi floue ou idéalisée",
+    "2": "Rapport flou ou idéalisé à l'argent, risque de confusion financière",
+    "3": "Communication poétique ou floue, intuition forte dans les échanges quotidiens",
+    "4": "Foyer idéalisé ou marqué par le flou (secrets familiaux, atmosphère diffuse)",
+    "5": "Créativité inspirée, amours idéalisées voire illusoires",
+    "6": "Travail marqué par le sens du service ou le sacrifice, santé sensible aux facteurs psychosomatiques",
+    "7": "Partenariats idéalisés, risque de désillusion ou de fusion excessive avec l'autre",
+    "8": "Intimité vécue de façon mystique ou trouble, rapport flou aux ressources partagées",
+    "9": "Quête spirituelle profonde, croyances parfois utopiques",
+    "10": "Image publique idéalisée ou floue, carrière pouvant toucher à l'art, au soin ou au spirituel",
+    "11": "Idéaux collectifs forts, amitiés parfois marquées par l'illusion ou le sacrifice",
+    "12": "Expression la plus naturelle de Neptune : grande porosité spirituelle, vie intérieure riche et intuitive"
+  },
+
+  "Pluto": {
+    "1": "Présence magnétique et intense, personnalité marquée par des transformations profondes de l'identité",
+    "2": "Rapport intense au pouvoir et à la sécurité matérielle, possible obsession de contrôle",
+    "3": "Pensée pénétrante, communication qui peut être perçue comme intense ou manipulatrice",
+    "4": "Transformations profondes liées à la famille, possibles secrets ou enjeux de pouvoir domestiques",
+    "5": "Créativité intense, amours passionnées et transformatrices",
+    "6": "Rapport intense au travail, capacité de transformation par la rigueur quotidienne",
+    "7": "Partenariats intenses et transformateurs, possibles enjeux de pouvoir dans le couple",
+    "8": "Expression la plus naturelle de Pluton : transformation profonde, gestion du pouvoir et des ressources partagées",
+    "9": "Convictions profondes et intenses, quête de vérité radicale",
+    "10": "Carrière marquée par le pouvoir, la transformation ou des enjeux publics intenses",
+    "11": "Engagement intense dans les causes collectives, pouvoir exercé à travers les réseaux",
+    "12": "Transformation intérieure profonde, souvent liée à l'inconscient ou à des enjeux cachés"
+  },
+
+  "usage_notes": [
+    "La maison indique OÙ l'énergie planétaire se concentre ; le signe (voir planets_in_signs_full.json) indique COMMENT elle s'exprime. Les deux se combinent pour une lecture complète.",
+    "Si une maison est vide (aucune planète), elle reste significative via son maître (voir rulerships.json) et sa cuspide — ne pas la considérer comme 'sans signification'.",
+    "Ces significations sont fondées sur le système de maisons Placidus/tropical standard ; les principes restent globalement valables pour d'autres systèmes de maisons, mais les degrés de cuspide diffèrent (voir config_reference.json)."
+  ]
+}

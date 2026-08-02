@@ -47,6 +47,26 @@ def lot_timing_rules() -> dict:
     return _load("lot_timing_rules.json")
 
 
+def zodiacal_releasing_algorithm() -> dict:
+    return _load("zodiacal_releasing_algorithm.json")
+
+
+def identity_trait_tags() -> dict:
+    return _load("identity_trait_tags.json")
+
+
+def identity_traits() -> dict:
+    return _load("identity_traits.json")
+
+
+def planets_in_signs_full() -> dict:
+    return _load("planets_in_signs_full.json")
+
+
+def planets_in_houses_full() -> dict:
+    return _load("planets_in_houses_full.json")
+
+
 @lru_cache
 def ruler_map(system: str) -> dict[str, str]:
     """sign -> planet name, pour system in {'traditional', 'modern'}."""

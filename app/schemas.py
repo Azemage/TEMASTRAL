@@ -267,6 +267,34 @@ class TransitForecastResponse(BaseModel):
     events: list[UpcomingTransitEvent]
 
 
+class ZodiacalReleasingPeriod(BaseModel):
+    level: int
+    sign: str
+    sign_fr: str
+    start_date: date_type
+    end_date: date_type
+    duration_years: float
+    parent_sign: str | None
+    is_peak_period: bool
+    is_loosing_of_the_bond: bool
+    ruling_planet: str
+
+
+class ZodiacalReleasingLotResult(BaseModel):
+    lot_sign: str
+    l1_periods: list[ZodiacalReleasingPeriod]
+    current_l1: ZodiacalReleasingPeriod | None
+    current_l1_l2_periods: list[ZodiacalReleasingPeriod]
+    current_l2: ZodiacalReleasingPeriod | None
+
+
+class ZodiacalReleasingResponse(BaseModel):
+    as_of_date: date_type
+    edge_case_same_sign_applied: bool
+    fortune: ZodiacalReleasingLotResult
+    spirit: ZodiacalReleasingLotResult
+
+
 class NatalChartResponse(BaseModel):
     id: str
     subject_name: str | None
@@ -293,7 +321,7 @@ class NatalChartResponse(BaseModel):
 # Interprétation LLM (cf. cahier des charges, section 4.7)
 # ---------------------------------------------------------------------------
 class ReadingRequest(BaseModel):
-    reading_type: str = "global"  # 'global' | 'love' | 'career' | 'family' | 'lots' | 'derived_houses' | 'timing'
+    reading_type: str = "global"  # 'global' | 'love' | 'career' | 'family' | 'lots' | 'derived_houses' | 'timing' | 'zodiacal_releasing'
     focus_areas: list[str] = Field(default_factory=lambda: ["general"])
     level: str = "débutant"
     tone: str = "accessible et bienveillant"
