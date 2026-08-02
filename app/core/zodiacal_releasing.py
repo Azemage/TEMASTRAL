@@ -168,30 +168,43 @@ def _compute_for_lot(
     }
 
 
+FORTUNE_LOT_NAME = "Lot de Fortune"
+SPIRIT_LOT_NAME = "Lot d'Esprit"
+
+
 def compute_zodiacal_releasing(
-    fortune_sign: str,
-    spirit_sign: str,
+    lot_signs: dict[str, str],
     birth_date: date_type,
     ruler_map: dict[str, str],
     as_of_date: date_type | None = None,
     lookahead_years: float = 5,
 ) -> dict:
-    """Calcule la Libération Zodiacale depuis le Lot de Fortune ET le Lot d'Esprit en
-    parallèle (recommandation du document source : ils éclairent des domaines différents).
+    """Calcule la Libération Zodiacale pour un ensemble quelconque de lots (chacun démarre
+    sa propre séquence de phases depuis son signe natal). Le document source ne définit
+    formellement la technique que pour le Lot de Fortune et le Lot d'Esprit (piliers
+    hellénistiques classiques, corps/vie matérielle vs esprit/action) ; son extension aux
+    autres lots ici est une généralisation du même algorithme, à lire comme exploratoire
+    pour ces lots-là.
     """
     as_of_date = as_of_date or date_type.today()
 
-    effective_spirit_sign = spirit_sign
+    effective_signs = dict(lot_signs)
     edge_case_applied = False
-    if spirit_sign == fortune_sign:
+    if (
+        FORTUNE_LOT_NAME in lot_signs
+        and SPIRIT_LOT_NAME in lot_signs
+        and lot_signs[FORTUNE_LOT_NAME] == lot_signs[SPIRIT_LOT_NAME]
+    ):
         # Cas particulier documenté : Fortune et Esprit dans le même signe -> décaler
         # Esprit d'un signe avant de démarrer le calcul.
-        effective_spirit_sign = _next_sign(spirit_sign)
+        effective_signs[SPIRIT_LOT_NAME] = _next_sign(lot_signs[SPIRIT_LOT_NAME])
         edge_case_applied = True
 
     return {
         "as_of_date": as_of_date.isoformat(),
         "edge_case_same_sign_applied": edge_case_applied,
-        "fortune": _compute_for_lot(fortune_sign, birth_date, as_of_date, lookahead_years, ruler_map),
-        "spirit": _compute_for_lot(effective_spirit_sign, birth_date, as_of_date, lookahead_years, ruler_map),
+        "lots": {
+            name: _compute_for_lot(sign, birth_date, as_of_date, lookahead_years, ruler_map)
+            for name, sign in effective_signs.items()
+        },
     }

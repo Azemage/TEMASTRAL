@@ -20,6 +20,7 @@ from anthropic import AsyncAnthropic
 from app import models, schemas
 from app.config import get_settings
 from app.core.reference_data import houses_meanings, rulerships
+from app.core.zodiacal_releasing import FORTUNE_LOT_NAME, SPIRIT_LOT_NAME
 from app.services import timing_service
 from app.services.zodiacal_releasing_service import compute_zodiacal_releasing_for_chart
 
@@ -40,8 +41,18 @@ READING_TYPE_MAX_TOKENS = {
     "lots": 2500,
     "derived_houses": 2000,
     "timing": 3000,
-    "zodiacal_releasing": 3000,
 }
+
+
+def _zodiacal_releasing_max_tokens(request: schemas.ReadingRequest) -> int:
+    """Plus de lots sélectionnés ou mode prévisionnel (frise sur 10 ans) => lecture plus
+    longue, donc plus de budget de tokens que les autres lectures spécialisées à un seul
+    sujet."""
+    n_lots = len(request.zr_selected_lots) or 2
+    tokens = 2500 + 500 * n_lots
+    if request.zr_mode == "predictive":
+        tokens += 1000
+    return min(tokens, 7000)
 
 _SPECIALIZED_PROMPT_BLOCKS = {
     "lots": """Cette lecture porte spécifiquement sur les LOTS (parts arabes/hermétiques), une \
@@ -75,28 +86,77 @@ la lecture ainsi : d'abord le thème de l'année (profection), puis la tendance 
 marquantes en citant leurs fenêtres de dates (pas seulement le jour du pic). Ne fais JAMAIS \
 de prédiction fermée ('il vous arrivera X') : formule toujours en dynamique ou thème \
 disponible ('cette période favorise...', 'une tension pourrait émerger autour de...').""",
-    "zodiacal_releasing": """Cette lecture porte spécifiquement sur la RÉPARTITION ZODIACALE \
-(Zodiacal Releasing), une technique de timing hellénistique (Vettius Valens) qui découpe la \
-vie en grandes périodes ('périodes L1') elles-mêmes subdivisées en sous-périodes ('périodes \
-L2'), à partir du Lot de Fortune (déroulement de la vie matérielle, du corps, des \
-circonstances extérieures) et du Lot d'Esprit (déroulement de la vie active, des choix, de \
-la carrière, de l'accomplissement). Tu reçois dans `fortune` et `spirit` la période L1 \
-actuelle de chaque lot (`current_l1`), la subdivision complète en périodes L2 de cette \
-période L1 (`current_l1_l2_periods`) et la sous-période L2 actuelle (`current_l2`), chacune \
-avec son signe, ses dates de début/fin, sa durée, et deux indicateurs : `is_peak_period` \
-(période 'de pointe', angulaire par rapport au signe parent — un sommet d'activité ou \
-d'enjeu dans le domaine du lot) et `is_loosing_of_the_bond` ('déliement du lien' — un \
-changement de trajectoire marqué, souvent vécu comme une rupture ou un tournant net). \
-Structure la lecture en deux temps : d'abord la période Fortune actuelle (contexte matériel \
-et circonstanciel de la période, en t'appuyant sur le signe et sa maison naturelle), puis la \
-période Esprit actuelle (dynamique d'action et d'orientation de vie). Pour chaque lot, \
-mentionne la sous-période L2 en cours et ce qu'elle nuance ou précise par rapport à la \
-période L1 générale. Si `is_peak_period` ou `is_loosing_of_the_bond` est vrai pour une \
-période en cours, signale-le explicitement comme un moment charnière à ne pas manquer. \
-Donne toujours les fenêtres de dates (début/fin) pour situer temporellement chaque période \
-évoquée. Ne fais jamais de prédiction fermée : parle de dynamiques, de thèmes dominants et \
-de tonalité de la période, jamais d'événements certains.""",
 }
+
+
+def _zodiacal_releasing_prompt_block(request: schemas.ReadingRequest) -> str:
+    selected = request.zr_selected_lots or [FORTUNE_LOT_NAME, SPIRIT_LOT_NAME]
+
+    intro = """Cette lecture porte spécifiquement sur la RÉPARTITION ZODIACALE (Zodiacal \
+Releasing), une technique de timing hellénistique (Vettius Valens) qui découpe la vie en \
+grandes périodes ('périodes L1') elles-mêmes subdivisées en sous-périodes ('périodes L2'). \
+Elle est formellement définie pour le Lot de Fortune (déroulement de la vie matérielle, du \
+corps, des circonstances extérieures) et le Lot d'Esprit (déroulement de la vie active, des \
+choix, de l'accomplissement) ; son application ici aux autres lots applique le même \
+algorithme à un domaine de vie plus spécifique (amour, carrière, famille...) — présente \
+alors cette extension comme exploratoire, pas comme une règle classique établie, sans pour \
+autant t'excuser ou hésiter à l'utiliser."""
+
+    lots_list = "\n".join(f"- {name}" for name in selected)
+    scope = f"""Tu reçois dans `lots` un dictionnaire {{nom du lot : données de phase}} pour \
+le ou les lots suivants, sélectionnés par l'utilisateur :
+{lots_list}
+Chaque entrée précise aussi `signification`, un rappel en une phrase de ce que ce lot \
+représente : appuie-toi dessus pour ancrer la lecture dans le bon domaine de vie."""
+
+    if len(selected) == 1:
+        depth = """Un seul lot est sélectionné : consacre-lui une lecture approfondie, sans \
+te presser — une plongée détaillée sur ce domaine de vie précis, pas un survol."""
+    else:
+        depth = """Plusieurs lots sont sélectionnés : traite d'abord chacun individuellement \
+(brièvement), PUIS ajoute une section de LECTURE CROISÉE qui relie leurs phases entre elles \
+— par exemple des périodes de pointe ou des déliements du lien qui se chevauchent dans le \
+temps (convergence de plusieurs domaines de vie sur la même période), ou au contraire un lot \
+en phase calme pendant qu'un autre traverse un tournant. Cette mise en résonance entre lots \
+est la vraie valeur ajoutée d'une sélection multiple : ne la saute pas."""
+
+    if request.zr_mode == "predictive":
+        mode_block = """MODE : PRÉVISIONNEL (environ 10 ans). Pour chaque lot, tu reçois \
+dans `l1_periods` la liste chronologique des périodes L1 sur l'horizon demandé, ainsi que \
+`current_l1` pour situer la période en cours dans cette liste. Construis une frise \
+chronologique en langage naturel des grandes périodes à venir sur la décennie, en citant \
+leurs fenêtres de dates (`start_date`/`end_date`) et leur signe. Mets en avant les \
+transitions marquantes : changement de période L1 (bascule de thème de vie dans ce domaine), \
+périodes `is_peak_period` (sommets d'activité/d'enjeu) et `is_loosing_of_the_bond` (tournants \
+nets, changements de trajectoire). Ne donne jamais une date comme une prédiction fermée \
+d'événement précis : parle de fenêtres propices à tel type de dynamique, jamais d'un \
+événement certain qui \"arrivera\"."""
+    else:
+        mode_block = """MODE : ACTUEL. Pour chaque lot, tu reçois `current_l1` (la période en \
+cours, plusieurs années), `current_l1_l2_periods` (sa subdivision complète en sous-périodes \
+L2 de quelques mois chacune) et `current_l2` (la sous-période en cours). Explique d'abord le \
+climat général de la période L1 en cours, puis précise ce que la sous-période L2 actuelle \
+vient nuancer ou affiner par rapport à ce climat général."""
+
+    badges = """Deux indicateurs accompagnent chaque période : `is_peak_period` (période 'de \
+pointe', angulaire par rapport au signe parent — un sommet d'activité ou d'enjeu dans le \
+domaine du lot) et `is_loosing_of_the_bond` ('déliement du lien' — un changement de \
+trajectoire marqué, souvent vécu comme une rupture ou un tournant net). Si l'un des deux est \
+vrai pour une période évoquée, signale-le explicitement comme un moment charnière."""
+
+    return f"""{intro}
+
+{scope}
+
+{depth}
+
+{mode_block}
+
+{badges}
+
+Donne toujours les fenêtres de dates (début/fin) pour situer temporellement chaque période \
+évoquée. Ne fais jamais de prédiction fermée : parle de dynamiques, de thèmes dominants et de \
+tonalité de la période, jamais d'événements certains."""
 
 
 def _basic_chart_data(chart_data: dict) -> dict:
@@ -155,7 +215,11 @@ ZONES À COUVRIR DANS CETTE LECTURE :
 
 Termine toujours par un court paragraphe de synthèse bienveillant et encourageant."""
 
-    specialized_block = _SPECIALIZED_PROMPT_BLOCKS[request.reading_type]
+    specialized_block = (
+        _zodiacal_releasing_prompt_block(request)
+        if request.reading_type == "zodiacal_releasing"
+        else _SPECIALIZED_PROMPT_BLOCKS[request.reading_type]
+    )
     return f"""{base}
 
 {specialized_block}
@@ -208,21 +272,30 @@ def _build_user_payload(chart: models.NatalChart, request: schemas.ReadingReques
         payload["current_transits"] = {"date": timing["date"].isoformat(), "aspects": timing["aspects"]}
         payload["upcoming_events"] = forecast["events"]
     elif request.reading_type == "zodiacal_releasing":
-        zr = compute_zodiacal_releasing_for_chart(chart, request.as_of_date)
+        selected_lots = request.zr_selected_lots or [FORTUNE_LOT_NAME, SPIRIT_LOT_NAME]
+        lookahead_years = 10 if request.zr_mode == "predictive" else 5
+        zr = compute_zodiacal_releasing_for_chart(chart, request.as_of_date, lookahead_years)
+        chart_lots_by_name = {lot["name"]: lot for lot in chart_data["lots"]}
+
         payload["identity"] = _identity_context(chart_data)
         payload["as_of_date"] = zr["as_of_date"]
-        payload["fortune"] = {
-            "lot_sign": zr["fortune"]["lot_sign"],
-            "current_l1": zr["fortune"]["current_l1"],
-            "current_l1_l2_periods": zr["fortune"]["current_l1_l2_periods"],
-            "current_l2": zr["fortune"]["current_l2"],
-        }
-        payload["spirit"] = {
-            "lot_sign": zr["spirit"]["lot_sign"],
-            "current_l1": zr["spirit"]["current_l1"],
-            "current_l1_l2_periods": zr["spirit"]["current_l1_l2_periods"],
-            "current_l2": zr["spirit"]["current_l2"],
-        }
+        payload["mode"] = request.zr_mode
+        payload["lots"] = {}
+        for lot_name in selected_lots:
+            lot_result = zr["lots"].get(lot_name)
+            if lot_result is None:
+                continue
+            entry = {
+                "lot_sign": lot_result["lot_sign"],
+                "signification": chart_lots_by_name.get(lot_name, {}).get("signification"),
+                "current_l1": lot_result["current_l1"],
+            }
+            if request.zr_mode == "predictive":
+                entry["l1_periods"] = lot_result["l1_periods"]
+            else:
+                entry["current_l1_l2_periods"] = lot_result["current_l1_l2_periods"]
+                entry["current_l2"] = lot_result["current_l2"]
+            payload["lots"][lot_name] = entry
 
     return payload
 
@@ -238,7 +311,10 @@ async def generate_reading(chart: models.NatalChart, request: schemas.ReadingReq
     client = AsyncAnthropic(api_key=settings.anthropic_api_key)
     system_prompt = _build_system_prompt(request)
     payload = _build_user_payload(chart, request)
-    max_tokens = READING_TYPE_MAX_TOKENS.get(request.reading_type, 2000)
+    if request.reading_type == "zodiacal_releasing":
+        max_tokens = _zodiacal_releasing_max_tokens(request)
+    else:
+        max_tokens = READING_TYPE_MAX_TOKENS.get(request.reading_type, 2000)
 
     response = await client.messages.create(
         model=settings.anthropic_model,

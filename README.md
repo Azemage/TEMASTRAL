@@ -29,9 +29,13 @@ Implémenté :
 - Timing : transits actuels (planètes lentes) + prévision des transits majeurs à venir sur
   12 mois (détection des pics d'orbe, gère les boucles rétrogrades) + profection annuelle
 - Libération zodiacale (Zodiacal Releasing) : phases L1 (plusieurs années) et sous-phases L2
-  (mois) à partir du Lot de Fortune et du Lot d'Esprit, avec détection des périodes de pointe
-  et des "déliements du lien" (changements de trajectoire marqués) — technique hellénistique
-  (Vettius Valens), calcul sans dérive sur des dizaines d'années
+  (mois), calculées pour les 14 lots (formellement définie pour le Lot de Fortune et le Lot
+  d'Esprit ; extension exploratoire du même algorithme aux 12 autres lots), avec détection des
+  périodes de pointe et des "déliements du lien" (changements de trajectoire marqués) —
+  technique hellénistique (Vettius Valens), calcul sans dérive sur des dizaines d'années. La
+  lecture dédiée permet de cocher un ou plusieurs lots (lecture approfondie sur un seul lot,
+  ou lecture croisée si plusieurs sont sélectionnés) et de choisir entre une vue de la période
+  actuelle ou une vue prévisionnelle sur les ~10 prochaines années
 - Lecture interprétée par l'API Anthropic avec **prompt dédié par catégorie** : lecture
   générale (thème de base uniquement — planètes/maisons/aspects/dispositeurs, sans les lots
   ni les maisons dérivées), et quatre lectures spécialisées (Lots, Maisons dérivées, Timing,
@@ -108,7 +112,7 @@ Principe directeur repris du cahier des charges : tout ce qui est dans `app/core
 | GET | `/api/charts/{id}/readings` | Liste les lectures déjà générées pour un thème |
 | GET | `/api/charts/{id}/timing?date=YYYY-MM-DD` | Transits actuels (planètes lentes) + profection annuelle, calculés à la demande (non persisté) |
 | GET | `/api/charts/{id}/timing/forecast?date=...&months=12` | Transits majeurs à venir sur la période (pics d'orbe, fenêtres actives) |
-| GET | `/api/charts/{id}/zodiacal-releasing?date=YYYY-MM-DD` | Phases L1/sous-phases L2 en cours (Fortune et Esprit), calculées à la demande (non persisté) |
+| GET | `/api/charts/{id}/zodiacal-releasing?date=YYYY-MM-DD&lookahead_years=5` | Phases L1/sous-phases L2 en cours pour les 14 lots, calculées à la demande (non persisté) |
 | GET | `/api/reference/config` | Options de configuration (systèmes de maisons, dispositeurs, points optionnels) |
 | GET | `/api/reference/timezones` | Liste des ~490 fuseaux horaires IANA canoniques |
 | GET | `/api/geocode?query=...` | Recherche ville -> latitude/longitude/fuseau horaire |

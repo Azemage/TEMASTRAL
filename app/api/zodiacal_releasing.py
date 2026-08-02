@@ -15,8 +15,9 @@ router = APIRouter(prefix="/api/charts/{chart_id}/zodiacal-releasing", tags=["zo
 def get_zodiacal_releasing(
     chart_id: str,
     date: date_type | None = Query(None, description="Date pour laquelle situer la phase actuelle (défaut : aujourd'hui)"),
+    lookahead_years: float = Query(5, ge=1, le=15, description="Horizon (en années) de la liste des périodes L1 renvoyées"),
     db: Session = Depends(get_db),
     session: models.AnonymousSession = Depends(get_session),
 ):
     chart = get_owned_chart(chart_id, db, session)
-    return compute_zodiacal_releasing_for_chart(chart, date)
+    return compute_zodiacal_releasing_for_chart(chart, date, lookahead_years)

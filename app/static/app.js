@@ -928,7 +928,9 @@ function renderZrPeriodCard(period, title) {
     </div>`;
 }
 
-function renderZrLotSection(label, lotResult) {
+const ZR_DEFAULT_SELECTED_LOTS = new Set(["Lot de Fortune", "Lot d'Esprit"]);
+
+function renderZrLotCard(lotName, lotResult, checked) {
   const l2Rows = lotResult.current_l1_l2_periods
     .map((p) => {
       const badges = `${p.is_peak_period ? '<span class="zr-badge zr-badge-peak">Pointe</span>' : ""}${p.is_loosing_of_the_bond ? '<span class="zr-badge zr-badge-loosing">Déliement</span>' : ""}`;
@@ -938,29 +940,48 @@ function renderZrLotSection(label, lotResult) {
     .join("");
 
   return `
-    <h4>Lot ${label} (${signLabel(lotResult.lot_sign)})</h4>
-    ${renderZrPeriodCard(lotResult.current_l1, "Phase L1 en cours")}
-    ${renderZrPeriodCard(lotResult.current_l2, "Sous-phase L2 en cours")}
-    <details>
-      <summary>Détail des sous-phases L2 de la phase L1 en cours (${lotResult.current_l1_l2_periods.length})</summary>
-      <table>
-        <thead><tr><th>Signe</th><th>Période</th><th></th></tr></thead>
-        <tbody>${l2Rows}</tbody>
-      </table>
-    </details>
-  `;
+    <div class="zr-lot-card">
+      <div class="zr-lot-header">
+        <label class="zr-lot-checkbox-label">
+          <input type="checkbox" class="zr-lot-checkbox" value="${lotName}" ${checked ? "checked" : ""} />
+          <strong>${lotName}</strong>
+        </label>
+        <span class="zr-lot-current-sign">${signLabel(lotResult.lot_sign)}</span>
+      </div>
+      <details ${checked ? "open" : ""}>
+        <summary>Voir les phases</summary>
+        ${renderZrPeriodCard(lotResult.current_l1, "Phase L1 en cours")}
+        ${renderZrPeriodCard(lotResult.current_l2, "Sous-phase L2 en cours")}
+        <details>
+          <summary>Détail des sous-phases L2 de la phase L1 en cours (${lotResult.current_l1_l2_periods.length})</summary>
+          <table>
+            <thead><tr><th>Signe</th><th>Période</th><th></th></tr></thead>
+            <tbody>${l2Rows}</tbody>
+          </table>
+        </details>
+      </details>
+    </div>`;
 }
 
-function renderZrDataPanel(zr) {
-  document.getElementById("zr-data-panel").innerHTML = `
+function renderZrDataPanel(zr, previouslyChecked) {
+  const container = document.getElementById("zr-data-panel");
+  // Conserve la sélection de lots de l'utilisateur si elle recalcule juste la date, plutôt
+  // que de revenir systématiquement à Fortune + Esprit.
+  const selectedLots = previouslyChecked && previouslyChecked.size > 0 ? previouslyChecked : ZR_DEFAULT_SELECTED_LOTS;
+
+  const lotCards = Object.entries(zr.lots)
+    .map(([lotName, lotResult]) => renderZrLotCard(lotName, lotResult, selectedLots.has(lotName)))
+    .join("");
+
+  container.innerHTML = `
     <div class="form-row timing-controls">
       <label for="zr-date">Date</label>
       <input type="date" id="zr-date" value="${zr.as_of_date}" />
       <button type="button" id="zr-refresh-btn">Recalculer</button>
     </div>
     ${zr.edge_case_same_sign_applied ? '<p class="error">Lot de Fortune et Lot d\'Esprit dans le même signe : le calcul du Lot d\'Esprit a été décalé d\'un signe, selon la convention documentée.</p>' : ""}
-    ${renderZrLotSection("de Fortune", zr.fortune)}
-    ${renderZrLotSection("d'Esprit", zr.spirit)}
+    <p class="reading-section-intro">Cochez un ou plusieurs lots ci-dessous pour la lecture (par défaut : Fortune + Esprit). Un seul lot coché donne une lecture approfondie ; plusieurs lots ajoutent une lecture croisée entre eux.</p>
+    ${lotCards}
   `;
 
   document.getElementById("zr-refresh-btn").addEventListener("click", () => {
@@ -971,13 +992,16 @@ function renderZrDataPanel(zr) {
 async function loadZrDataPanel(date) {
   if (!currentChart) return;
   const container = document.getElementById("zr-data-panel");
+  const previouslyChecked = new Set(
+    Array.from(container.querySelectorAll(".zr-lot-checkbox:checked")).map((el) => el.value)
+  );
   container.innerHTML = "<p>Calcul en cours (phases et sous-phases)...</p>";
   try {
     const dateParam = date ? `?date=${date}` : "";
     const res = await fetch(`/api/charts/${currentChart.id}/zodiacal-releasing${dateParam}`);
     if (!res.ok) throw new Error(`Erreur ${res.status}`);
     const zr = await res.json();
-    renderZrDataPanel(zr);
+    renderZrDataPanel(zr, previouslyChecked);
     zrLoadedForChartId = currentChart.id;
   } catch (err) {
     container.innerHTML = `<p class="error">Impossible de charger les phases : ${err.message}</p>`;
@@ -1136,14 +1160,35 @@ document.getElementById("generate-lots-reading-btn").addEventListener("click", (
   });
 });
 
+let selectedZrMode = "current";
+document.querySelectorAll(".zr-mode-btn").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll(".zr-mode-btn").forEach((b) => b.classList.remove("active"));
+    btn.classList.add("active");
+    selectedZrMode = btn.dataset.zrMode;
+  });
+});
+
 document.getElementById("generate-zr-reading-btn").addEventListener("click", () => {
+  const errorEl = document.getElementById("zr-reading-error");
+  const selectedLots = Array.from(document.querySelectorAll(".zr-lot-checkbox:checked")).map((el) => el.value);
+  if (selectedLots.length === 0) {
+    errorEl.textContent = "Cochez au moins un lot pour générer une lecture.";
+    return;
+  }
+  errorEl.textContent = "";
   const dateInput = document.getElementById("zr-date");
   generateSpecializedReading({
     btnId: "generate-zr-reading-btn",
     errorId: "zr-reading-error",
     outputId: "zr-reading-output",
     defaultLabel: "Générer la lecture des phases",
-    requestBody: { reading_type: "zodiacal_releasing", as_of_date: dateInput ? dateInput.value : undefined },
+    requestBody: {
+      reading_type: "zodiacal_releasing",
+      as_of_date: dateInput ? dateInput.value : undefined,
+      zr_selected_lots: selectedLots,
+      zr_mode: selectedZrMode,
+    },
   });
 });
 

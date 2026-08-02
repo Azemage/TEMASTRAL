@@ -303,8 +303,7 @@ class ZodiacalReleasingLotResult(BaseModel):
 class ZodiacalReleasingResponse(BaseModel):
     as_of_date: date_type
     edge_case_same_sign_applied: bool
-    fortune: ZodiacalReleasingLotResult
-    spirit: ZodiacalReleasingLotResult
+    lots: dict[str, ZodiacalReleasingLotResult]
 
 
 class NatalChartResponse(BaseModel):
@@ -339,7 +338,9 @@ class ReadingRequest(BaseModel):
     tone: str = "accessible et bienveillant"
     language: str = "fr"
     reference_house: int | None = Field(default=None, ge=1, le=12)  # utilisé par 'derived_houses'
-    as_of_date: date_type | None = None  # utilisé par 'timing'
+    as_of_date: date_type | None = None  # utilisé par 'timing' et 'zodiacal_releasing'
+    zr_selected_lots: list[str] = Field(default_factory=list)  # utilisé par 'zodiacal_releasing' ; vide = Fortune + Esprit
+    zr_mode: str = "current"  # 'current' | 'predictive' (10 ans) ; utilisé par 'zodiacal_releasing'
 
 
 class ReadingResponse(BaseModel):

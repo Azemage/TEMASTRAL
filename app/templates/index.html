@@ -160,10 +160,16 @@
         <h3>Phases de vie (Libération zodiacale)</h3>
         <p class="reading-section-intro">
           Technique de timing hellénistique distincte des lots ci-dessus : elle découpe la vie
-          en grandes périodes (L1) et sous-périodes (L2) à partir du Lot de Fortune et du Lot
-          d'Esprit.
+          en grandes périodes (L1) et sous-périodes (L2), calculées ici pour chacun des 14 lots.
+          Formellement définie pour le Lot de Fortune et le Lot d'Esprit ; son application aux
+          autres lots est une extension exploratoire du même algorithme à un domaine de vie plus
+          précis.
         </p>
         <div id="zr-data-panel"></div>
+        <div class="tabs zr-mode-tabs">
+          <button type="button" class="zr-mode-btn active" data-zr-mode="current">Vue actuelle</button>
+          <button type="button" class="zr-mode-btn" data-zr-mode="predictive">Prévisionnelle (10 ans)</button>
+        </div>
         <button id="generate-zr-reading-btn">Générer la lecture des phases</button>
         <p id="zr-reading-error" class="error"></p>
         <div id="zr-reading-output" class="reading-output"></div>

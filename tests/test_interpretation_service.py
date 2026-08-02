@@ -78,16 +78,64 @@ def test_timing_reading_payload_includes_profection_transits_and_forecast():
     assert isinstance(payload["upcoming_events"], list)
 
 
-def test_zodiacal_releasing_reading_payload_includes_fortune_and_spirit_phases():
+def test_zodiacal_releasing_reading_payload_defaults_to_fortune_and_spirit():
     chart = _make_chart()
     request = schemas.ReadingRequest(reading_type="zodiacal_releasing", as_of_date=date(2026, 8, 2))
     payload = interpretation_service._build_user_payload(chart, request)
 
     assert payload["as_of_date"] == "2026-08-02"
-    for lot in ("fortune", "spirit"):
-        assert payload[lot]["current_l1"] is not None
-        assert payload[lot]["current_l2"] is not None
-        assert len(payload[lot]["current_l1_l2_periods"]) > 0
+    assert set(payload["lots"].keys()) == {"Lot de Fortune", "Lot d'Esprit"}
+    for lot_entry in payload["lots"].values():
+        assert lot_entry["current_l1"] is not None
+        assert lot_entry["current_l2"] is not None
+        assert len(lot_entry["current_l1_l2_periods"]) > 0
+        assert lot_entry["signification"]
+
+
+def test_zodiacal_releasing_reading_payload_honors_selected_lots():
+    chart = _make_chart()
+    request = schemas.ReadingRequest(
+        reading_type="zodiacal_releasing", zr_selected_lots=["Lot d'Amour", "Lot de Mariage", "Lot des Enfants"]
+    )
+    payload = interpretation_service._build_user_payload(chart, request)
+    assert set(payload["lots"].keys()) == {"Lot d'Amour", "Lot de Mariage", "Lot des Enfants"}
+
+
+def test_zodiacal_releasing_predictive_mode_returns_l1_periods_instead_of_l2_detail():
+    chart = _make_chart()
+    request = schemas.ReadingRequest(reading_type="zodiacal_releasing", zr_mode="predictive")
+    payload = interpretation_service._build_user_payload(chart, request)
+    for lot_entry in payload["lots"].values():
+        assert "l1_periods" in lot_entry
+        assert len(lot_entry["l1_periods"]) > 0
+        assert "current_l1_l2_periods" not in lot_entry
+
+
+def test_zodiacal_releasing_prompt_mentions_cross_reading_for_multiple_lots():
+    request = schemas.ReadingRequest(
+        reading_type="zodiacal_releasing", zr_selected_lots=["Lot d'Amour", "Lot de Mariage"]
+    )
+    prompt = interpretation_service._build_system_prompt(request)
+    assert "LECTURE CROISÉE" in prompt
+
+
+def test_zodiacal_releasing_prompt_goes_deep_for_a_single_lot():
+    request = schemas.ReadingRequest(reading_type="zodiacal_releasing", zr_selected_lots=["Lot de Carrière"])
+    prompt = interpretation_service._build_system_prompt(request)
+    assert "lecture approfondie" in prompt
+    assert "LECTURE CROISÉE" not in prompt
+
+
+def test_zodiacal_releasing_max_tokens_scale_with_lots_and_mode():
+    few_current = schemas.ReadingRequest(reading_type="zodiacal_releasing")
+    many_predictive = schemas.ReadingRequest(
+        reading_type="zodiacal_releasing",
+        zr_selected_lots=["Lot d'Amour", "Lot de Mariage", "Lot des Enfants", "Lot de Carrière"],
+        zr_mode="predictive",
+    )
+    assert interpretation_service._zodiacal_releasing_max_tokens(
+        many_predictive
+    ) > interpretation_service._zodiacal_releasing_max_tokens(few_current)
 
 
 def test_specialized_system_prompts_are_distinct_per_reading_type():
