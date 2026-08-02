@@ -34,14 +34,19 @@ FOCUS_AREA_GUIDANCE = {
 }
 
 READING_TYPE_MAX_TOKENS = {
-    "global": 3500,
-    "love": 1800,
-    "career": 1800,
-    "family": 1800,
-    "lots": 2500,
-    "derived_houses": 2000,
-    "timing": 3000,
+    "global": 4000,
+    "love": 2200,
+    "career": 2200,
+    "family": 2200,
+    "lots": 3000,
+    "derived_houses": 2400,
+    "timing": 3500,
 }
+
+# Nombre d'appels de relance autorisés quand une réponse s'arrête faute de budget de tokens
+# (stop_reason == "max_tokens"), pour ne jamais renvoyer une lecture coupée en plein milieu
+# d'une phrase à l'utilisateur.
+MAX_CONTINUATION_ROUNDS = 2
 
 
 def _zodiacal_releasing_max_tokens(request: schemas.ReadingRequest) -> int:
@@ -335,15 +340,32 @@ async def generate_reading(chart: models.NatalChart, request: schemas.ReadingReq
     else:
         max_tokens = READING_TYPE_MAX_TOKENS.get(request.reading_type, 2000)
 
-    response = await client.messages.create(
-        model=settings.anthropic_model,
-        max_tokens=max_tokens,
-        system=system_prompt,
-        messages=[{"role": "user", "content": json.dumps(payload, ensure_ascii=False, default=str)}],
-    )
+    messages: list[dict] = [{"role": "user", "content": json.dumps(payload, ensure_ascii=False, default=str)}]
+    reading_text = ""
+    tokens_used = 0
 
-    reading_text = "".join(block.text for block in response.content if block.type == "text")
-    tokens_used = response.usage.input_tokens + response.usage.output_tokens
+    for _ in range(MAX_CONTINUATION_ROUNDS + 1):
+        response = await client.messages.create(
+            model=settings.anthropic_model,
+            max_tokens=max_tokens,
+            system=system_prompt,
+            messages=messages,
+        )
+        chunk = "".join(block.text for block in response.content if block.type == "text")
+        reading_text += chunk
+        tokens_used += response.usage.input_tokens + response.usage.output_tokens
+
+        if response.stop_reason != "max_tokens":
+            break
+
+        # La réponse s'est arrêtée faute de budget, en plein milieu d'une phrase : on repasse
+        # le texte déjà généré comme tour "assistant" (technique de préremplissage) pour que
+        # l'appel suivant reprenne exactement où le modèle s'est arrêté, sans le renvoyer à
+        # l'utilisateur coupé en plein mot.
+        if messages[-1]["role"] == "assistant":
+            messages[-1] = {"role": "assistant", "content": messages[-1]["content"] + chunk}
+        else:
+            messages.append({"role": "assistant", "content": chunk})
 
     return {
         "reading_text": reading_text,

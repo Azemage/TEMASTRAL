@@ -1,6 +1,8 @@
+import asyncio
 from datetime import date
 
 from app import schemas
+from app.config import Settings
 from app.core.chart_calculator import calculate_natal_chart
 from app.services import interpretation_service
 
@@ -165,6 +167,102 @@ def test_specialized_system_prompts_are_distinct_per_reading_type():
     assert "MAISONS DÉRIVÉES" in prompts["derived_houses"]
     assert "DOUZE PROCHAINS MOIS" in prompts["timing"]
     assert "RÉPARTITION ZODIACALE" in prompts["zodiacal_releasing"]
+
+
+# ---------------------------------------------------------------------------
+# generate_reading : ne jamais renvoyer une lecture coupée en plein milieu d'une phrase.
+# ---------------------------------------------------------------------------
+class _FakeUsage:
+    def __init__(self, input_tokens: int, output_tokens: int):
+        self.input_tokens = input_tokens
+        self.output_tokens = output_tokens
+
+
+class _FakeTextBlock:
+    type = "text"
+
+    def __init__(self, text: str):
+        self.text = text
+
+
+class _FakeResponse:
+    def __init__(self, text: str, stop_reason: str):
+        self.content = [_FakeTextBlock(text)]
+        self.stop_reason = stop_reason
+        self.usage = _FakeUsage(input_tokens=100, output_tokens=50)
+
+
+class _FakeMessages:
+    def __init__(self, responses: list[_FakeResponse]):
+        self._responses = list(responses)
+        self.calls: list[dict] = []
+
+    async def create(self, **kwargs):
+        self.calls.append(kwargs)
+        return self._responses.pop(0)
+
+
+class _FakeAnthropicClient:
+    def __init__(self, responses: list[_FakeResponse]):
+        self.messages = _FakeMessages(responses)
+
+
+def _settings_with_key() -> Settings:
+    return Settings(anthropic_api_key="fake-key-for-tests")
+
+
+def test_generate_reading_continues_when_cut_off_by_max_tokens(monkeypatch):
+    chart = _make_chart()
+    request = schemas.ReadingRequest(reading_type="global", focus_areas=["general"])
+
+    fake_client = _FakeAnthropicClient(
+        [
+            _FakeResponse("Première partie de la lecture, coupée en pl", stop_reason="max_tokens"),
+            _FakeResponse("eine phrase mais qui se termine correctement.", stop_reason="end_turn"),
+        ]
+    )
+    monkeypatch.setattr(interpretation_service, "get_settings", _settings_with_key)
+    monkeypatch.setattr(interpretation_service, "AsyncAnthropic", lambda api_key: fake_client)
+
+    result = asyncio.run(interpretation_service.generate_reading(chart, request))
+
+    assert result["reading_text"] == "Première partie de la lecture, coupée en pleine phrase mais qui se termine correctement."
+    assert len(fake_client.messages.calls) == 2
+    # Le texte partiel doit être repassé en tour "assistant" (préremplissage), sans nouveau
+    # message "user" demandant de continuer.
+    second_call_messages = fake_client.messages.calls[1]["messages"]
+    assert second_call_messages[-1] == {"role": "assistant", "content": "Première partie de la lecture, coupée en pl"}
+    assert result["tokens_used"] == 300  # (100+50) x 2 appels
+
+
+def test_generate_reading_does_not_continue_when_response_completes_normally(monkeypatch):
+    chart = _make_chart()
+    request = schemas.ReadingRequest(reading_type="global", focus_areas=["general"])
+
+    fake_client = _FakeAnthropicClient([_FakeResponse("Lecture complète en un seul appel.", stop_reason="end_turn")])
+    monkeypatch.setattr(interpretation_service, "get_settings", _settings_with_key)
+    monkeypatch.setattr(interpretation_service, "AsyncAnthropic", lambda api_key: fake_client)
+
+    result = asyncio.run(interpretation_service.generate_reading(chart, request))
+
+    assert result["reading_text"] == "Lecture complète en un seul appel."
+    assert len(fake_client.messages.calls) == 1
+
+
+def test_generate_reading_stops_after_max_continuation_rounds(monkeypatch):
+    chart = _make_chart()
+    request = schemas.ReadingRequest(reading_type="global", focus_areas=["general"])
+
+    # Toujours tronqué : vérifie qu'on ne boucle pas indéfiniment.
+    responses = [_FakeResponse(f"partie {i} ", stop_reason="max_tokens") for i in range(10)]
+    fake_client = _FakeAnthropicClient(responses)
+    monkeypatch.setattr(interpretation_service, "get_settings", _settings_with_key)
+    monkeypatch.setattr(interpretation_service, "AsyncAnthropic", lambda api_key: fake_client)
+
+    result = asyncio.run(interpretation_service.generate_reading(chart, request))
+
+    assert len(fake_client.messages.calls) == interpretation_service.MAX_CONTINUATION_ROUNDS + 1
+    assert result["reading_text"] == "".join(f"partie {i} " for i in range(interpretation_service.MAX_CONTINUATION_ROUNDS + 1))
 
 
 def test_basic_reading_types_include_focus_zone_section():
