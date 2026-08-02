@@ -240,6 +240,7 @@ class TransitAspect(BaseModel):
     applying: bool
     favorability: str
     favorability_description: str
+    intensity: int  # 1 à 4 flammes
 
 
 class ProfectionResult(BaseModel):
@@ -271,6 +272,7 @@ class UpcomingTransitEvent(BaseModel):
     window_end: date_type
     favorability: str
     favorability_description: str
+    intensity: int  # 1 à 4 flammes
 
 
 class TransitForecastResponse(BaseModel):

@@ -26,8 +26,14 @@ Implémenté :
 - Roue astrale SVG interactive (info-bulles, plein écran, aspects colorés par type)
 - Lots (parts arabes) : bibliothèque complète (14 lots), formules jour/nuit, aspects natals
 - Maisons dérivées : mapping complet pour les 12 maisons de référence possibles
-- Timing : transits actuels (planètes lentes) + prévision des transits majeurs à venir sur
-  12 mois (détection des pics d'orbe, gère les boucles rétrogrades) + profection annuelle
+- Les 12 prochains mois : transits actuels de toutes les planètes (Lune, Mercure, Vénus,
+  Soleil, Mars compris, pas seulement les lentes) + prévision des transits à venir sur 12 mois
+  (détection des pics d'orbe, échantillonnage adapté à la vitesse de chaque planète pour ne
+  manquer aucun passage rapide, gère les boucles rétrogrades) + profection annuelle. Chaque
+  aspect/transit porte une note d'intensité (1 à 4 🔥) combinant poids de la planète, dureté de
+  l'aspect et précision de l'orbe ; un filtre d'intensité minimale (3+ flammes par défaut)
+  garde la liste — potentiellement des centaines d'événements une fois la Lune incluse —
+  lisible sans perdre l'accès aux transits mineurs
 - Libération zodiacale (Zodiacal Releasing) : phases L1 (plusieurs années) et sous-phases L2
   (mois), calculées pour les 14 lots (formellement définie pour le Lot de Fortune et le Lot
   d'Esprit ; extension exploratoire du même algorithme aux 12 autres lots), avec détection des
@@ -110,8 +116,8 @@ Principe directeur repris du cahier des charges : tout ce qui est dans `app/core
 | GET | `/api/charts/{id}` | Récupère un thème calculé |
 | POST | `/api/charts/{id}/readings` | Génère une lecture interprétée (LLM). `reading_type` = `global`\|`love`\|`career`\|`family`\|`lots`\|`derived_houses`\|`timing`\|`zodiacal_releasing` ; `reference_house` (1-12) pour `derived_houses`, `as_of_date` pour `timing`/`zodiacal_releasing` |
 | GET | `/api/charts/{id}/readings` | Liste les lectures déjà générées pour un thème |
-| GET | `/api/charts/{id}/timing?date=YYYY-MM-DD` | Transits actuels (planètes lentes) + profection annuelle, calculés à la demande (non persisté) |
-| GET | `/api/charts/{id}/timing/forecast?date=...&months=12` | Transits majeurs à venir sur la période (pics d'orbe, fenêtres actives) |
+| GET | `/api/charts/{id}/timing?date=YYYY-MM-DD` | Transits actuels de toutes les planètes + profection annuelle, calculés à la demande (non persisté) |
+| GET | `/api/charts/{id}/timing/forecast?date=...&months=12` | Transits à venir sur la période, toutes planètes (pics d'orbe, fenêtres actives, intensité 1-4) |
 | GET | `/api/charts/{id}/zodiacal-releasing?date=YYYY-MM-DD&lookahead_years=5` | Phases L1/sous-phases L2 en cours pour les 14 lots, calculées à la demande (non persisté) |
 | GET | `/api/reference/config` | Options de configuration (systèmes de maisons, dispositeurs, points optionnels) |
 | GET | `/api/reference/timezones` | Liste des ~490 fuseaux horaires IANA canoniques |

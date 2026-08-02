@@ -791,23 +791,30 @@ function renderDerivedHousesDataPanel(data) {
 }
 
 // ---------------------------------------------------------------------
-// Timing (transits actuels + prévisions + profection)
+// Les 12 prochains mois (transits actuels + prévisions + profection)
 // ---------------------------------------------------------------------
 let timingLoadedForChartId = null;
+let currentForecastEvents = [];
 
 const FAVORABILITY_LABELS_FR = {
   favorable: "Favorable", a_nuancer: "À nuancer", exigeant: "Exigeant",
   instable: "Instable", intense: "Intense", neutre: "Neutre",
 };
 
-function renderUpcomingEventsTable(events) {
-  if (events.length === 0) {
-    return "<p>Aucun transit majeur détecté sur les 12 prochains mois.</p>";
+function flameBadge(intensity) {
+  return `<span class="intensity-flames" title="Intensité ${intensity}/4">${"🔥".repeat(intensity)}</span>`;
+}
+
+function renderUpcomingEventsTable(events, minIntensity) {
+  const filtered = events.filter((e) => e.intensity >= minIntensity);
+  if (filtered.length === 0) {
+    return "<p>Aucun transit à ce niveau d'intensité sur les 12 prochains mois.</p>";
   }
-  const rows = events
+  const rows = filtered
     .map(
       (e) => `
       <tr>
+        <td>${flameBadge(e.intensity)}</td>
         <td>${planetLabel(e.transiting_planet)}</td>
         <td>${e.type_fr}</td>
         <td>${planetLabel(e.natal_point)}</td>
@@ -817,8 +824,9 @@ function renderUpcomingEventsTable(events) {
     )
     .join("");
   return `
+    <p class="reading-section-intro">${filtered.length} transit${filtered.length > 1 ? "s" : ""} affiché${filtered.length > 1 ? "s" : ""} sur ${events.length} au total.</p>
     <table>
-      <thead><tr><th>Transit</th><th>Aspect</th><th>Point natal</th><th>Fenêtre active</th><th>Tendance</th></tr></thead>
+      <thead><tr><th>Intensité</th><th>Transit</th><th>Aspect</th><th>Point natal</th><th>Fenêtre active</th><th>Tendance</th></tr></thead>
       <tbody>${rows}</tbody>
     </table>
   `;
@@ -841,6 +849,7 @@ function renderTimingDataPanel(timing, forecast) {
         .map(
           (a) => `
       <tr>
+        <td>${flameBadge(a.intensity)}</td>
         <td>${planetLabel(a.transiting_planet)}</td>
         <td>${a.type_fr}</td>
         <td>${planetLabel(a.natal_point)}</td>
@@ -849,9 +858,10 @@ function renderTimingDataPanel(timing, forecast) {
       </tr>`
         )
         .join("")
-    : `<tr><td colspan="5">Aucun aspect actif avec l'orbe utilisé (3°).</td></tr>`;
+    : `<tr><td colspan="6">Aucun aspect actif avec l'orbe utilisé (3°).</td></tr>`;
 
   const prof = timing.profection;
+  currentForecastEvents = forecast.events;
 
   document.getElementById("timing-data-panel").innerHTML = `
     <div class="form-row timing-controls">
@@ -875,13 +885,29 @@ function renderTimingDataPanel(timing, forecast) {
 
     <h3>Aspects actifs vers le thème natal</h3>
     <table>
-      <thead><tr><th>Transit</th><th>Aspect</th><th>Point natal</th><th>Détail</th><th>Tendance</th></tr></thead>
+      <thead><tr><th>Intensité</th><th>Transit</th><th>Aspect</th><th>Point natal</th><th>Détail</th><th>Tendance</th></tr></thead>
       <tbody>${aspectRows}</tbody>
     </table>
 
-    <h3>Transits majeurs à venir (12 prochains mois)</h3>
-    ${renderUpcomingEventsTable(forecast.events)}
+    <h3>Transits à venir (12 prochains mois)</h3>
+    <div class="form-row timing-controls">
+      <label for="timing-intensity-filter">Intensité minimale</label>
+      <select id="timing-intensity-filter">
+        <option value="4">🔥🔥🔥🔥 uniquement</option>
+        <option value="3" selected>🔥🔥🔥 et plus (recommandé)</option>
+        <option value="2">🔥🔥 et plus</option>
+        <option value="1">Tous, y compris les transits mineurs</option>
+      </select>
+    </div>
+    <div id="timing-upcoming-events-container">${renderUpcomingEventsTable(forecast.events, 3)}</div>
   `;
+
+  document.getElementById("timing-intensity-filter").addEventListener("change", (event) => {
+    document.getElementById("timing-upcoming-events-container").innerHTML = renderUpcomingEventsTable(
+      currentForecastEvents,
+      parseInt(event.target.value, 10)
+    );
+  });
 
   document.getElementById("timing-refresh-btn").addEventListener("click", () => {
     loadTimingDataPanel(document.getElementById("timing-date").value);
@@ -1208,7 +1234,7 @@ document.getElementById("generate-timing-reading-btn").addEventListener("click",
     btnId: "generate-timing-reading-btn",
     errorId: "timing-reading-error",
     outputId: "timing-reading-output",
-    defaultLabel: "Générer la lecture du timing",
+    defaultLabel: "Générer la lecture des 12 prochains mois",
     requestBody: { reading_type: "timing", as_of_date: dateInput ? dateInput.value : undefined },
   });
 });

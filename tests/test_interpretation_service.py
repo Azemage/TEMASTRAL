@@ -76,6 +76,23 @@ def test_timing_reading_payload_includes_profection_transits_and_forecast():
     assert payload["profection"]["as_of_date"] == "2026-08-02"
     assert "aspects" in payload["current_transits"]
     assert isinstance(payload["upcoming_events"], list)
+    # Filtré aux événements significatifs, pas les centaines d'événements bruts (Lune incluse).
+    assert 0 < len(payload["upcoming_events"]) <= 20
+    assert all("intensity" in e for e in payload["upcoming_events"])
+
+
+def test_select_significant_events_prefers_high_intensity_and_falls_back_when_scarce():
+    events = [{"intensity": i, "peak_orb": 0.1, "peak_date": f"2026-01-{i:02d}"} for i in (1, 1, 1, 2, 4)]
+    selected = interpretation_service._select_significant_events(events, min_count=3, max_count=10)
+    # Seuil 4 -> 1 seul événement (< min_count), on redescend jusqu'à un seuil qui en donne >= 3.
+    assert len(selected) >= 3
+    assert selected == sorted(selected, key=lambda e: e["peak_date"])
+
+
+def test_select_significant_events_caps_at_max_count():
+    events = [{"intensity": 4, "peak_orb": i * 0.01, "peak_date": f"2026-01-{(i % 28) + 1:02d}"} for i in range(50)]
+    selected = interpretation_service._select_significant_events(events, min_count=5, max_count=10)
+    assert len(selected) == 10
 
 
 def test_zodiacal_releasing_reading_payload_defaults_to_fortune_and_spirit():
@@ -146,7 +163,7 @@ def test_specialized_system_prompts_are_distinct_per_reading_type():
     assert len(set(prompts.values())) == 5  # les 5 prompts doivent différer
     assert "LOTS" in prompts["lots"]
     assert "MAISONS DÉRIVÉES" in prompts["derived_houses"]
-    assert "TIMING" in prompts["timing"]
+    assert "DOUZE PROCHAINS MOIS" in prompts["timing"]
     assert "RÉPARTITION ZODIACALE" in prompts["zodiacal_releasing"]
 
 

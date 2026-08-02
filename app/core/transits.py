@@ -1,8 +1,11 @@
-"""Transits actuels : positions des planètes lentes à une date donnée, comparées au thème natal.
+"""Transits sur les douze prochains mois : positions planétaires à une date donnée et
+transits à venir, comparés au thème natal.
 
-Seules les planètes lentes (Jupiter à Pluton) sont considérées : leurs transits durent
-plusieurs jours à plusieurs mois, contrairement aux luminaires/planètes rapides dont la
-position change en quelques heures et qui n'apportent pas de lecture 'de fond' utile ici.
+Toutes les planètes classiques sont incluses (Soleil à Pluton) : l'horizon est borné à un an,
+donc même les planètes rapides (Lune, Mercure, Vénus, Mars) restent pertinentes sans faire
+exploser la portée du calcul. Leur vitesse angulaire impose en revanche un échantillonnage
+plus fin que pour les planètes lentes (voir `SAMPLE_STEP_DAYS`), sans quoi un passage exact
+pourrait être 'sauté' entre deux échantillons trop espacés.
 """
 
 from __future__ import annotations
@@ -16,9 +19,66 @@ from app.core.aspects import BodyForAspect, angular_separation, compute_cross_as
 from app.core.reference_data import aspects_reference, lot_timing_rules
 from app.core.zodiac import SIGNS_FR, sign_and_degree
 
-TRANSIT_PLANETS = ["Jupiter", "Saturn", "Uranus", "Neptune", "Pluto"]
+TRANSIT_PLANETS = ["Moon", "Mercury", "Venus", "Sun", "Mars", "Jupiter", "Saturn", "Uranus", "Neptune", "Pluto"]
 DEFAULT_TRANSIT_ORB = 3.0
 _MAJOR_ASPECT_NAMES = ["conjunction", "opposition", "square", "trine", "sextile"]
+
+# Pas d'échantillonnage (en jours) par planète pour le balayage de l'année, calé sur sa
+# vitesse angulaire maximale de sorte qu'un passage exact ne puisse jamais être manqué entre
+# deux échantillons consécutifs.
+SAMPLE_STEP_DAYS: dict[str, float] = {
+    "Moon": 1 / 24,  # jusqu'à ~13°/j
+    "Mercury": 0.25,
+    "Venus": 0.25,
+    "Sun": 0.25,
+    "Mars": 0.25,
+    "Jupiter": 1.0,
+    "Saturn": 1.0,
+    "Uranus": 1.0,
+    "Neptune": 1.0,
+    "Pluto": 1.0,
+}
+
+# Poids utilisés pour la note d'intensité (1 à 4 flammes) : une planète lente/lourde ou un
+# aspect dur pèsent plus qu'un passage rapide ou une harmonie douce. Reflète la différence
+# entre un transit de fond (Saturne, Pluton...) et un frôlement quotidien (Lune notamment).
+PLANET_INTENSITY_WEIGHT: dict[str, float] = {
+    "Moon": 1.0,
+    "Mercury": 1.5,
+    "Venus": 1.5,
+    "Sun": 2.0,
+    "Mars": 2.5,
+    "Jupiter": 3.0,
+    "Neptune": 3.5,
+    "Uranus": 3.5,
+    "Saturn": 4.0,
+    "Pluto": 4.0,
+}
+
+ASPECT_INTENSITY_WEIGHT: dict[str, float] = {
+    "conjunction": 4.0,
+    "opposition": 4.0,
+    "square": 3.0,
+    "trine": 2.0,
+    "sextile": 1.0,
+}
+
+
+def _intensity_flames(planet_name: str, aspect_name: str, orb: float, orb_reference: float) -> int:
+    """Note d'intensité de 1 à 4 flammes, combinant poids de la planète, poids de l'aspect et
+    précision de l'orbe (plus l'aspect est exact par rapport à `orb_reference`, l'orbe maximal
+    considéré dans ce contexte, plus il pèse)."""
+    planet_weight = PLANET_INTENSITY_WEIGHT.get(planet_name, 2.0)
+    aspect_weight = ASPECT_INTENSITY_WEIGHT.get(aspect_name, 1.0)
+    orb_factor = max(0.0, 1 - orb / orb_reference) if orb_reference > 0 else 1.0
+    score = planet_weight * aspect_weight * (0.6 + 0.4 * orb_factor)
+    if score >= 10:
+        return 4
+    if score >= 6:
+        return 3
+    if score >= 3:
+        return 2
+    return 1
 
 
 @lru_cache
@@ -41,8 +101,9 @@ def compute_current_transits(
     as_of_date: date_type,
     orb: float = DEFAULT_TRANSIT_ORB,
 ) -> dict:
-    # Midi UTC pour la date choisie : l'orbite de ces planètes est trop lente pour que
-    # l'heure exacte du jour ait un impact significatif sur le résultat.
+    # Midi UTC pour la date choisie : suffisant pour situer les planètes lentes, et pour les
+    # rapides (Lune incluse) l'écart avec l'heure exacte de naissance/consultation reste
+    # inférieur à l'orbe utilisée ici.
     jd_ut = ephemeris.local_datetime_to_jd_ut(as_of_date.isoformat(), "12:00:00", "UTC")
 
     transiting_bodies: list[BodyForAspect] = []
@@ -81,6 +142,7 @@ def compute_current_transits(
                 "applying": a["applying"],
                 "favorability": info["label"],
                 "favorability_description": info["description"],
+                "intensity": _intensity_flames(a["body_a"], a["type"], a["orb"], orb),
             }
         )
 
@@ -94,30 +156,30 @@ def compute_upcoming_transits(
     peak_orb_threshold: float = 1.0,
     window_orb_threshold: float = 2.0,
 ) -> list[dict]:
-    """Balaie la période jour par jour pour détecter les moments où un transit de planète
-    lente est au plus près de l'exactitude (minimum local de l'orbe) avec un point natal.
+    """Balaie la période pour détecter les moments où un transit est au plus près de
+    l'exactitude (minimum local de l'orbe) avec un point natal, planète par planète, chacune
+    à son propre pas d'échantillonnage (`SAMPLE_STEP_DAYS`).
 
     Le passage par un minimum local (plutôt qu'un simple seuil d'orbe) gère naturellement
-    les boucles rétrogrades : une même planète peut ainsi 'toucher' le même aspect à trois
+    les boucles rétrogrades : une même planète peut ainsi 'toucher' le même aspect à plusieurs
     reprises dans l'année (direct, rétrograde, direct), et chaque passage est détecté
     séparément. Une 'fenêtre active' (orbe <= window_orb_threshold) encadre chaque pic pour
     donner une période plutôt qu'une seule date.
     """
     definitions = _major_aspect_definitions()
     total_days = (end_date - start_date).days
-    sample_dates = [start_date + timedelta(days=i) for i in range(total_days + 1)]
-
-    positions_by_planet: dict[str, list[float]] = {name: [] for name in TRANSIT_PLANETS}
-    for d in sample_dates:
-        jd_ut = ephemeris.local_datetime_to_jd_ut(d.isoformat(), "12:00:00", "UTC")
-        for name in TRANSIT_PLANETS:
-            raw = ephemeris.calc_planet(jd_ut, ephemeris.PLANET_IDS[name])
-            positions_by_planet[name].append(raw.longitude)
+    start_jd = ephemeris.local_datetime_to_jd_ut(start_date.isoformat(), "12:00:00", "UTC")
 
     favorability = _favorability_lookup()
     events = []
 
-    for planet_name, longitudes in positions_by_planet.items():
+    for planet_name in TRANSIT_PLANETS:
+        step = SAMPLE_STEP_DAYS.get(planet_name, 1.0)
+        n_samples = int(total_days / step) + 1
+        offsets = [i * step for i in range(n_samples)]
+        longitudes = [ephemeris.calc_planet(start_jd + offset, ephemeris.PLANET_IDS[planet_name]).longitude for offset in offsets]
+        sample_dates = [start_date + timedelta(days=offset) for offset in offsets]
+
         for natal_body in natal_bodies:
             for aspect_def in definitions:
                 orb_series = [
@@ -152,6 +214,9 @@ def compute_upcoming_transits(
                             "window_end": window_end.isoformat(),
                             "favorability": info["label"],
                             "favorability_description": info["description"],
+                            "intensity": _intensity_flames(
+                                planet_name, aspect_def["name"], orb_series[i], peak_orb_threshold
+                            ),
                         }
                     )
 

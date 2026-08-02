@@ -75,18 +75,37 @@ les maisons dérivées les plus occupées, du point de vue de CETTE personne (pa
 consultant). N'invente jamais qui est cette personne au-delà de ce que la maison de \
 référence suggère usuellement (ex. maison 7 = partenaire) ; si ce n'est pas fourni, reste \
 générique ('la personne représentée par cette maison').""",
-    "timing": """Cette lecture porte spécifiquement sur le TIMING : la période actuelle et \
-les mois à venir. Tu reçois trois éléments : (1) `profection`, la profection annuelle en \
-cours (maison et planète maîtresse de l'année) ; (2) `current_transits`, les transits \
-actuels des planètes lentes (Jupiter à Pluton) vers le thème natal ; (3) `upcoming_events`, \
-une liste d'événements de transit significatifs à venir sur les prochains mois, chacun avec \
-une date de pic (`peak_date`) et une fenêtre active (`window_start`/`window_end`). Structure \
-la lecture ainsi : d'abord le thème de l'année (profection), puis la tendance actuelle \
-(transits en cours), puis un aperçu chronologique des 3 à 5 périodes à venir les plus \
-marquantes en citant leurs fenêtres de dates (pas seulement le jour du pic). Ne fais JAMAIS \
-de prédiction fermée ('il vous arrivera X') : formule toujours en dynamique ou thème \
-disponible ('cette période favorise...', 'une tension pourrait émerger autour de...').""",
+    "timing": """Cette lecture porte spécifiquement sur LES DOUZE PROCHAINS MOIS : la période \
+actuelle et les mois à venir. Tu reçois trois éléments : (1) `profection`, la profection \
+annuelle en cours (maison et planète maîtresse de l'année) ; (2) `current_transits`, les \
+transits actuels de TOUTES les planètes (Lune, Mercure, Vénus, Soleil, Mars compris, pas \
+seulement les lentes) vers le thème natal ; (3) `upcoming_events`, une sélection déjà filtrée \
+des événements de transit les plus significatifs à venir sur les douze prochains mois \
+(les transits mineurs ou trop fréquents, notamment lunaires, ont été écartés en amont), \
+chacun avec une date de pic (`peak_date`) et une fenêtre active (`window_start`/`window_end`). \
+Chaque aspect porte aussi un champ `intensity` (1 à 4) qui reflète déjà son poids (planète, \
+type d'aspect, précision de l'orbe) : appuie-toi dessus pour doser l'espace que tu accordes à \
+chacun, mais ne cite jamais ce chiffre brut dans le texte — traduis-le en mots. Structure la \
+lecture ainsi : d'abord le thème de l'année (profection), puis la tendance actuelle (transits \
+en cours, en insistant sur les plus intenses), puis un aperçu chronologique des périodes à \
+venir les plus marquantes en citant leurs fenêtres de dates (pas seulement le jour du pic). Ne \
+fais JAMAIS de prédiction fermée ('il vous arrivera X') : formule toujours en dynamique ou \
+thème disponible ('cette période favorise...', 'une tension pourrait émerger autour de...').""",
 }
+
+
+def _select_significant_events(events: list[dict], min_count: int = 5, max_count: int = 20) -> list[dict]:
+    """Réduit la liste brute d'événements à venir (potentiellement des centaines, la Lune et \
+    les autres planètes rapides étant désormais incluses) aux plus significatifs, en \
+    s'appuyant sur `intensity` : commence par le seuil le plus strict et l'assouplit tant \
+    qu'il n'y a pas assez d'événements à proposer au modèle."""
+    candidates = events
+    for min_intensity in (4, 3, 2, 1):
+        candidates = [e for e in events if e["intensity"] >= min_intensity]
+        if len(candidates) >= min_count or min_intensity == 1:
+            break
+    candidates = sorted(candidates, key=lambda e: (-e["intensity"], e["peak_orb"]))[:max_count]
+    return sorted(candidates, key=lambda e: e["peak_date"])
 
 
 def _zodiacal_releasing_prompt_block(request: schemas.ReadingRequest) -> str:
@@ -270,7 +289,7 @@ def _build_user_payload(chart: models.NatalChart, request: schemas.ReadingReques
         payload["identity"] = _identity_context(chart_data)
         payload["profection"] = timing["profection"]
         payload["current_transits"] = {"date": timing["date"].isoformat(), "aspects": timing["aspects"]}
-        payload["upcoming_events"] = forecast["events"]
+        payload["upcoming_events"] = _select_significant_events(forecast["events"])
     elif request.reading_type == "zodiacal_releasing":
         selected_lots = request.zr_selected_lots or [FORTUNE_LOT_NAME, SPIRIT_LOT_NAME]
         lookahead_years = 10 if request.zr_mode == "predictive" else 5

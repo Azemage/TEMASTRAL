@@ -132,7 +132,7 @@
         <button class="reading-tab-btn active" data-reading-tab="global">Générale</button>
         <button class="reading-tab-btn" data-reading-tab="lots">Lots</button>
         <button class="reading-tab-btn" data-reading-tab="derived">Maisons dérivées</button>
-        <button class="reading-tab-btn" data-reading-tab="timing">Timing</button>
+        <button class="reading-tab-btn" data-reading-tab="timing">Les 12 prochains mois</button>
       </div>
 
       <div id="reading-tab-global" class="reading-tab-panel">
@@ -183,8 +183,13 @@
       </div>
 
       <div id="reading-tab-timing" class="reading-tab-panel hidden">
+        <p class="reading-section-intro">
+          Toutes les planètes (Lune, Mercure, Vénus, Soleil et Mars compris) sont prises en
+          compte : l'horizon reste borné aux douze prochains mois, donc même les transits
+          rapides restent pertinents à afficher.
+        </p>
         <div id="timing-data-panel"></div>
-        <button id="generate-timing-reading-btn">Générer la lecture du timing</button>
+        <button id="generate-timing-reading-btn">Générer la lecture des 12 prochains mois</button>
         <p id="timing-reading-error" class="error"></p>
         <div id="timing-reading-output" class="reading-output"></div>
       </div>

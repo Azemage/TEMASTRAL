@@ -579,3 +579,8 @@ footer {
 .favorability-intense { background: rgba(255, 93, 158, 0.18); color: #ff5d9e; }
 .favorability-a_nuancer { background: rgba(178, 141, 255, 0.18); color: var(--accent); }
 .favorability-neutre { background: rgba(154, 156, 189, 0.18); color: var(--muted); }
+
+.intensity-flames {
+  white-space: nowrap;
+  letter-spacing: -0.05em;
+}
