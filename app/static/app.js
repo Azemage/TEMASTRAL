@@ -19,7 +19,49 @@ const PLANET_LABELS_FR = {
   north_node: "Nœud Nord", south_node: "Nœud Sud", chiron: "Chiron", lilith_mean: "Lilith",
 };
 
+const PLANET_SYMBOLS = {
+  Sun: "☉", Moon: "☽", Mercury: "☿", Venus: "♀", Mars: "♂",
+  Jupiter: "♃", Saturn: "♄", Uranus: "⛢", Neptune: "♆", Pluto: "♇",
+  north_node: "☊", south_node: "☋", chiron: "⚷", lilith_mean: "⚸",
+};
+
+const ZODIAC_SIGNS_ORDER = [
+  "Aries", "Taurus", "Gemini", "Cancer", "Leo", "Virgo",
+  "Libra", "Scorpio", "Sagittarius", "Capricorn", "Aquarius", "Pisces",
+];
+
+const SIGN_ELEMENTS = {
+  Aries: "fire", Leo: "fire", Sagittarius: "fire",
+  Taurus: "earth", Virgo: "earth", Capricorn: "earth",
+  Gemini: "air", Libra: "air", Aquarius: "air",
+  Cancer: "water", Scorpio: "water", Pisces: "water",
+};
+
+const ELEMENT_WHEEL_COLORS = {
+  fire: "rgba(255, 107, 107, 0.15)",
+  earth: "rgba(110, 200, 130, 0.15)",
+  air: "rgba(110, 180, 231, 0.15)",
+  water: "rgba(120, 140, 255, 0.15)",
+};
+
+// Une couleur distincte par type d'aspect : majeurs en teintes vives, mineurs plus discrets.
+const ASPECT_COLORS = {
+  conjunction: "#e0b34d",
+  sextile: "#5fd4c0",
+  square: "#ff5d5d",
+  trine: "#4da3ff",
+  opposition: "#ff5d9e",
+  semi_sextile: "#8f8fce",
+  semi_square: "#c97b7b",
+  sesquiquadrate: "#c97b7b",
+  quincunx: "#a875c9",
+  quintile: "#7bc98f",
+};
+
+const MAJOR_ASPECTS = new Set(["conjunction", "sextile", "square", "trine", "opposition"]);
+
 let currentChart = null;
+let showMinorAspectsInWheel = false;
 
 function planetLabel(name) {
   return PLANET_LABELS_FR[name] || name;
@@ -154,6 +196,177 @@ function renderTraitTags(characterTraits) {
 }
 
 // ---------------------------------------------------------------------
+// Roue astrale (SVG) : zodiaque, maisons, planètes, aspects colorés
+// ---------------------------------------------------------------------
+function polarToXY(cx, cy, radius, angleDeg) {
+  const rad = (angleDeg * Math.PI) / 180;
+  return { x: cx + radius * Math.cos(rad), y: cy - radius * Math.sin(rad) };
+}
+
+// Angle SVG (sens trigonométrique standard) pour une longitude écliptique donnée,
+// avec l'Ascendant fixé à 9h (180°) et le zodiaque qui avance dans le sens
+// Ascendant -> Fond du Ciel -> Descendant -> Milieu du Ciel, comme sur une roue
+// astrologique classique.
+function longitudeToWheelAngle(longitude, ascendant) {
+  const offset = (((longitude - ascendant) % 360) + 360) % 360;
+  return (180 + offset) % 360;
+}
+
+// Écart angulaire, en degrés, entre deux longitudes en tenant compte du passage 360°->0°.
+function forwardOffset(fromLongitude, toLongitude) {
+  return (((toLongitude - fromLongitude) % 360) + 360) % 360;
+}
+
+function arcPoints(cx, cy, radius, startAngle, sweepDegrees, segments = 10) {
+  const points = [];
+  for (let i = 0; i <= segments; i++) {
+    const angle = startAngle + (sweepDegrees * i) / segments;
+    points.push(polarToXY(cx, cy, radius, angle));
+  }
+  return points;
+}
+
+function pointsToPath(points) {
+  return points.map((p, i) => `${i === 0 ? "M" : "L"} ${p.x.toFixed(2)} ${p.y.toFixed(2)}`).join(" ");
+}
+
+function buildWheelSVG(data, { showMinorAspects }) {
+  const cx = 300;
+  const cy = 300;
+  const rOuter = 290;
+  const rZodiacInner = 250;
+  const rPlanetBase = 205;
+  const rPlanetLaneStep = 18;
+  const rAspectCircle = 135;
+  const ascendant = data.angles.ascendant.absolute_longitude;
+
+  // --- Anneau du zodiaque (12 secteurs de 30°, colorés par élément) ---
+  let zodiacSvg = "";
+  ZODIAC_SIGNS_ORDER.forEach((sign, i) => {
+    const signStartLon = i * 30;
+    const startAngle = longitudeToWheelAngle(signStartLon, ascendant);
+    const outer = arcPoints(cx, cy, rOuter, startAngle, 30);
+    const inner = arcPoints(cx, cy, rZodiacInner, startAngle + 30, -30);
+    const path = pointsToPath([...outer, ...inner]) + " Z";
+    const color = ELEMENT_WHEEL_COLORS[SIGN_ELEMENTS[sign]];
+    zodiacSvg += `<path d="${path}" fill="${color}" stroke="#2c2f4a" stroke-width="1" />`;
+
+    const midAngle = startAngle + 15;
+    const labelPos = polarToXY(cx, cy, (rOuter + rZodiacInner) / 2, midAngle);
+    zodiacSvg += `<text x="${labelPos.x.toFixed(2)}" y="${labelPos.y.toFixed(2)}" class="wheel-sign-symbol" text-anchor="middle" dominant-baseline="middle">${SIGN_SYMBOLS[sign]}</text>`;
+  });
+
+  // --- Cuspides des maisons (lignes radiales + numéros) ---
+  let housesSvg = "";
+  data.houses.forEach((house, i) => {
+    const angle = longitudeToWheelAngle(house.absolute_longitude, ascendant);
+    const inner = polarToXY(cx, cy, 0, angle);
+    const outer = polarToXY(cx, cy, rZodiacInner, angle);
+    const isAngular = [1, 4, 7, 10].includes(house.number);
+    housesSvg += `<line x1="${inner.x.toFixed(2)}" y1="${inner.y.toFixed(2)}" x2="${outer.x.toFixed(2)}" y2="${outer.y.toFixed(2)}" stroke="${isAngular ? "#9a9cbd" : "#3a3d5c"}" stroke-width="${isAngular ? 1.5 : 1}" />`;
+
+    const next = data.houses[(i + 1) % 12];
+    const nextAngle = angle + forwardOffset(house.absolute_longitude, next.absolute_longitude);
+    const midAngle = (angle + nextAngle) / 2;
+    const labelPos = polarToXY(cx, cy, rAspectCircle + 18, midAngle);
+    housesSvg += `<text x="${labelPos.x.toFixed(2)}" y="${labelPos.y.toFixed(2)}" class="wheel-house-number" text-anchor="middle" dominant-baseline="middle">${house.number}</text>`;
+  });
+
+  // --- Cercle intérieur (support des lignes d'aspect) ---
+  const aspectCircleSvg = `<circle cx="${cx}" cy="${cy}" r="${rAspectCircle}" fill="none" stroke="#2c2f4a" stroke-width="1" />`;
+
+  // --- Planètes : glyphe sur un anneau dédié + trait radial vers le point exact ---
+  // Tri par angle affiché (relatif à l'Ascendant), pas par longitude brute : sinon la
+  // coupure 0°/360° du zodiaque casse la détection de proximité près de l'Ascendant.
+  const sortedPlanets = [...data.planets].sort(
+    (a, b) => longitudeToWheelAngle(a.absolute_longitude, ascendant) - longitudeToWheelAngle(b.absolute_longitude, ascendant)
+  );
+  let lastAngle = null;
+  let lane = 0;
+  let planetsSvg = "";
+  const planetPoints = {};
+  sortedPlanets.forEach((planet) => {
+    const trueAngle = longitudeToWheelAngle(planet.absolute_longitude, ascendant);
+    if (lastAngle !== null && forwardOffset(0, trueAngle - lastAngle) < 6) {
+      lane = (lane + 1) % 3;
+    } else {
+      lane = 0;
+    }
+    lastAngle = trueAngle;
+
+    const displayRadius = rPlanetBase + lane * rPlanetLaneStep;
+    const glyphPos = polarToXY(cx, cy, displayRadius, trueAngle);
+    const tickInner = polarToXY(cx, cy, rAspectCircle, trueAngle);
+    const tickOuter = polarToXY(cx, cy, rZodiacInner, trueAngle);
+    planetPoints[planet.name] = polarToXY(cx, cy, rAspectCircle, trueAngle);
+
+    planetsSvg += `<line x1="${tickInner.x.toFixed(2)}" y1="${tickInner.y.toFixed(2)}" x2="${tickOuter.x.toFixed(2)}" y2="${tickOuter.y.toFixed(2)}" stroke="#4a4d6c" stroke-width="0.75" stroke-dasharray="2,2" />`;
+    planetsSvg += `<circle cx="${glyphPos.x.toFixed(2)}" cy="${glyphPos.y.toFixed(2)}" r="11" fill="#1a1e33" stroke="${planet.retrograde ? "#ff8080" : "#b28dff"}" stroke-width="1.5" />`;
+    planetsSvg += `<text x="${glyphPos.x.toFixed(2)}" y="${glyphPos.y.toFixed(2)}" class="wheel-planet-symbol" text-anchor="middle" dominant-baseline="middle">${PLANET_SYMBOLS[planet.name] || "•"}</text>`;
+  });
+
+  // --- Aspects : traits colorés reliant les points exacts sur le cercle intérieur ---
+  let aspectsSvg = "";
+  data.aspects.forEach((aspect) => {
+    if (!showMinorAspects && !MAJOR_ASPECTS.has(aspect.type)) return;
+    const p1 = planetPoints[aspect.planet1];
+    const p2 = planetPoints[aspect.planet2];
+    if (!p1 || !p2) return;
+    const color = ASPECT_COLORS[aspect.type] || "#888";
+    const isMajor = MAJOR_ASPECTS.has(aspect.type);
+    aspectsSvg += `<line x1="${p1.x.toFixed(2)}" y1="${p1.y.toFixed(2)}" x2="${p2.x.toFixed(2)}" y2="${p2.y.toFixed(2)}" stroke="${color}" stroke-width="${isMajor ? 1.4 : 0.9}" stroke-opacity="0.75" ${isMajor ? "" : 'stroke-dasharray="3,3"'} />`;
+  });
+
+  return `
+    <svg viewBox="0 0 600 600" class="wheel-svg" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="${cx}" cy="${cy}" r="${rOuter}" fill="#12152a" />
+      ${zodiacSvg}
+      <circle cx="${cx}" cy="${cy}" r="${rZodiacInner}" fill="none" stroke="#2c2f4a" stroke-width="1.5" />
+      ${aspectCircleSvg}
+      ${aspectsSvg}
+      ${housesSvg}
+      ${planetsSvg}
+    </svg>
+  `;
+}
+
+function renderAspectLegend() {
+  const items = [
+    ["conjunction", "Conjonction"], ["sextile", "Sextile"], ["square", "Carré"],
+    ["trine", "Trigone"], ["opposition", "Opposition"],
+  ];
+  const minorItems = [
+    ["semi_sextile", "Semi-sextile"], ["semi_square", "Semi-carré"], ["sesquiquadrate", "Sesqui-carré"],
+    ["quincunx", "Quinconce"], ["quintile", "Quintile"],
+  ];
+  const swatch = ([key, label]) =>
+    `<span class="legend-item"><span class="legend-swatch" style="background:${ASPECT_COLORS[key]}"></span>${label}</span>`;
+
+  return `
+    <div class="wheel-legend">
+      <div class="wheel-legend-row">${items.map(swatch).join("")}</div>
+      <div class="wheel-legend-row wheel-legend-minor ${showMinorAspectsInWheel ? "" : "hidden"}">${minorItems.map(swatch).join("")}</div>
+    </div>
+  `;
+}
+
+function renderWheelTab(data) {
+  const container = document.getElementById("tab-wheel");
+  container.innerHTML = `
+    <label class="checkbox-label wheel-toggle">
+      <input type="checkbox" id="toggle-minor-aspects" ${showMinorAspectsInWheel ? "checked" : ""} />
+      Afficher les aspects mineurs
+    </label>
+    <div class="wheel-wrapper">${buildWheelSVG(data, { showMinorAspects: showMinorAspectsInWheel })}</div>
+    ${renderAspectLegend()}
+  `;
+  document.getElementById("toggle-minor-aspects").addEventListener("change", (e) => {
+    showMinorAspectsInWheel = e.target.checked;
+    renderWheelTab(data);
+  });
+}
+
+// ---------------------------------------------------------------------
 // Rendu du thème
 // ---------------------------------------------------------------------
 function renderChart(chart) {
@@ -180,6 +393,7 @@ function renderChart(chart) {
     ${renderTraitTags(data.character_traits)}
   `;
 
+  renderWheelTab(data);
   renderPlanetsTab(data);
   renderHousesTab(data);
   renderAspectsTab(data);

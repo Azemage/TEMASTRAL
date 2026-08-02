@@ -236,6 +236,71 @@ th { color: var(--accent-2); }
   margin-top: 0.5rem;
 }
 
+.wheel-toggle {
+  flex-direction: row;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--text);
+  margin-bottom: 1rem;
+}
+
+.wheel-wrapper {
+  display: flex;
+  justify-content: center;
+}
+
+.wheel-svg {
+  width: 100%;
+  max-width: 560px;
+  height: auto;
+}
+
+.wheel-sign-symbol {
+  fill: var(--text);
+  font-size: 18px;
+}
+
+.wheel-house-number {
+  fill: var(--muted);
+  font-size: 13px;
+}
+
+.wheel-planet-symbol {
+  fill: var(--text);
+  font-size: 13px;
+}
+
+.wheel-legend {
+  margin-top: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.wheel-legend-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.9rem;
+  justify-content: center;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.legend-swatch {
+  display: inline-block;
+  width: 18px;
+  height: 3px;
+  border-radius: 2px;
+}
+
 .balance-bar-track {
   flex: 1;
   background: #12152a;
