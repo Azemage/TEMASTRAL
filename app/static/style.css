@@ -236,24 +236,86 @@ th { color: var(--accent-2); }
   margin-top: 0.5rem;
 }
 
+.wheel-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
 .wheel-toggle {
   flex-direction: row;
   display: flex;
   align-items: center;
   gap: 0.4rem;
   color: var(--text);
-  margin-bottom: 1rem;
+  margin-bottom: 0;
+}
+
+.wheel-fullscreen-btn {
+  background: transparent;
+  color: var(--accent-2);
+  border: 1px solid var(--border);
+  font-weight: 500;
+  padding: 0.4rem 0.9rem;
+}
+
+.wheel-fullscreen-target {
+  position: relative;
 }
 
 .wheel-wrapper {
   display: flex;
   justify-content: center;
+  width: 100%;
 }
 
 .wheel-svg {
   width: 100%;
   max-width: 560px;
   height: auto;
+  cursor: default;
+}
+
+.wheel-svg .wheel-hoverable {
+  cursor: help;
+}
+
+/* Plein écran : centrer et agrandir la roue, garder la légende visible sous elle. */
+.wheel-fullscreen-target.is-fullscreen,
+.wheel-fullscreen-target:fullscreen,
+.wheel-fullscreen-target:-webkit-full-screen {
+  background: var(--bg);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5rem;
+  width: 100vw;
+  height: 100vh;
+  padding: 2rem;
+}
+
+.wheel-fullscreen-target.is-fullscreen .wheel-svg,
+.wheel-fullscreen-target:fullscreen .wheel-svg,
+.wheel-fullscreen-target:-webkit-full-screen .wheel-svg {
+  max-width: min(85vh, 85vw);
+}
+
+.wheel-tooltip {
+  position: absolute;
+  z-index: 20;
+  pointer-events: none;
+  background: #0d0f1c;
+  border: 1px solid var(--accent);
+  color: var(--text);
+  padding: 0.4rem 0.7rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  max-width: 250px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
 }
 
 .wheel-sign-symbol {

@@ -73,6 +73,10 @@ function el(html) {
   return template.content.firstElementChild;
 }
 
+function escapeHtml(str) {
+  return String(str).replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
 // ---------------------------------------------------------------------
 // Liste des fuseaux horaires (menu déroulant)
 // ---------------------------------------------------------------------
@@ -300,9 +304,16 @@ function buildWheelSVG(data, { showMinorAspects }) {
     const tickOuter = polarToXY(cx, cy, rZodiacInner, trueAngle);
     planetPoints[planet.name] = polarToXY(cx, cy, rAspectCircle, trueAngle);
 
+    const planetTooltip = escapeHtml(
+      `${planetLabel(planet.name)} — ${signLabel(planet.sign)} ${planet.degree}° — Maison ${planet.house ?? "—"}${planet.retrograde ? " · rétrograde" : ""}`
+    );
+
     planetsSvg += `<line x1="${tickInner.x.toFixed(2)}" y1="${tickInner.y.toFixed(2)}" x2="${tickOuter.x.toFixed(2)}" y2="${tickOuter.y.toFixed(2)}" stroke="#4a4d6c" stroke-width="0.75" stroke-dasharray="2,2" />`;
+    planetsSvg += `<g class="wheel-hoverable" data-tooltip="${planetTooltip}">`;
+    planetsSvg += `<circle cx="${glyphPos.x.toFixed(2)}" cy="${glyphPos.y.toFixed(2)}" r="16" fill="transparent" pointer-events="all" />`;
     planetsSvg += `<circle cx="${glyphPos.x.toFixed(2)}" cy="${glyphPos.y.toFixed(2)}" r="11" fill="#1a1e33" stroke="${planet.retrograde ? "#ff8080" : "#b28dff"}" stroke-width="1.5" />`;
     planetsSvg += `<text x="${glyphPos.x.toFixed(2)}" y="${glyphPos.y.toFixed(2)}" class="wheel-planet-symbol" text-anchor="middle" dominant-baseline="middle">${PLANET_SYMBOLS[planet.name] || "•"}</text>`;
+    planetsSvg += `</g>`;
   });
 
   // --- Aspects : traits colorés reliant les points exacts sur le cercle intérieur ---
@@ -314,7 +325,13 @@ function buildWheelSVG(data, { showMinorAspects }) {
     if (!p1 || !p2) return;
     const color = ASPECT_COLORS[aspect.type] || "#888";
     const isMajor = MAJOR_ASPECTS.has(aspect.type);
-    aspectsSvg += `<line x1="${p1.x.toFixed(2)}" y1="${p1.y.toFixed(2)}" x2="${p2.x.toFixed(2)}" y2="${p2.y.toFixed(2)}" stroke="${color}" stroke-width="${isMajor ? 1.4 : 0.9}" stroke-opacity="0.75" ${isMajor ? "" : 'stroke-dasharray="3,3"'} />`;
+    const aspectTooltip = escapeHtml(
+      `${planetLabel(aspect.planet1)} ${aspect.type_fr} ${planetLabel(aspect.planet2)} — orbe ${aspect.orb}° (${aspect.applying ? "applicatif" : "séparatif"})`
+    );
+    aspectsSvg += `<g class="wheel-hoverable" data-tooltip="${aspectTooltip}">`;
+    aspectsSvg += `<line x1="${p1.x.toFixed(2)}" y1="${p1.y.toFixed(2)}" x2="${p2.x.toFixed(2)}" y2="${p2.y.toFixed(2)}" stroke="transparent" stroke-width="10" pointer-events="all" />`;
+    aspectsSvg += `<line x1="${p1.x.toFixed(2)}" y1="${p1.y.toFixed(2)}" x2="${p2.x.toFixed(2)}" y2="${p2.y.toFixed(2)}" stroke="${color}" stroke-width="${isMajor ? 1.4 : 0.9}" stroke-opacity="0.75" ${isMajor ? "" : 'stroke-dasharray="3,3"'} pointer-events="none" />`;
+    aspectsSvg += `</g>`;
   });
 
   return `
@@ -350,20 +367,98 @@ function renderAspectLegend() {
   `;
 }
 
+function requestElementFullscreen(element) {
+  const request = element.requestFullscreen || element.webkitRequestFullscreen;
+  if (request) request.call(element);
+}
+
+function exitFullscreen() {
+  const exit = document.exitFullscreen || document.webkitExitFullscreen;
+  if (exit) exit.call(document);
+}
+
+function isFullscreenActive() {
+  return !!(document.fullscreenElement || document.webkitFullscreenElement);
+}
+
+function attachWheelTooltip(wrapper) {
+  const tooltip = document.createElement("div");
+  tooltip.className = "wheel-tooltip hidden";
+  wrapper.appendChild(tooltip);
+
+  wrapper.addEventListener("mousemove", (e) => {
+    const target = e.target.closest("[data-tooltip]");
+    if (!target) {
+      tooltip.classList.add("hidden");
+      return;
+    }
+    tooltip.textContent = target.getAttribute("data-tooltip");
+    tooltip.classList.remove("hidden");
+    const rect = wrapper.getBoundingClientRect();
+    let left = e.clientX - rect.left + 16;
+    let top = e.clientY - rect.top + 16;
+    // Évite que l'info-bulle ne déborde du cadre à droite/en bas.
+    if (left + 260 > rect.width) left = e.clientX - rect.left - 270;
+    if (top + 50 > rect.height) top = e.clientY - rect.top - 50;
+    tooltip.style.left = `${left}px`;
+    tooltip.style.top = `${top}px`;
+  });
+  wrapper.addEventListener("mouseleave", () => tooltip.classList.add("hidden"));
+}
+
 function renderWheelTab(data) {
+  ensureWheelFullscreenListener();
   const container = document.getElementById("tab-wheel");
   container.innerHTML = `
-    <label class="checkbox-label wheel-toggle">
-      <input type="checkbox" id="toggle-minor-aspects" ${showMinorAspectsInWheel ? "checked" : ""} />
-      Afficher les aspects mineurs
-    </label>
-    <div class="wheel-wrapper">${buildWheelSVG(data, { showMinorAspects: showMinorAspectsInWheel })}</div>
-    ${renderAspectLegend()}
+    <div class="wheel-controls">
+      <label class="checkbox-label wheel-toggle">
+        <input type="checkbox" id="toggle-minor-aspects" ${showMinorAspectsInWheel ? "checked" : ""} />
+        Afficher les aspects mineurs
+      </label>
+      <button type="button" id="wheel-fullscreen-btn" class="wheel-fullscreen-btn">🔍 Plein écran</button>
+    </div>
+    <div id="wheel-fullscreen-target" class="wheel-fullscreen-target">
+      <div class="wheel-wrapper">${buildWheelSVG(data, { showMinorAspects: showMinorAspectsInWheel })}</div>
+      ${renderAspectLegend()}
+    </div>
   `;
+
   document.getElementById("toggle-minor-aspects").addEventListener("change", (e) => {
     showMinorAspectsInWheel = e.target.checked;
     renderWheelTab(data);
   });
+
+  const fullscreenTarget = document.getElementById("wheel-fullscreen-target");
+  attachWheelTooltip(fullscreenTarget);
+
+  document.getElementById("wheel-fullscreen-btn").addEventListener("click", () => {
+    if (isFullscreenActive()) {
+      exitFullscreen();
+    } else {
+      requestElementFullscreen(fullscreenTarget);
+    }
+  });
+  updateWheelFullscreenState();
+}
+
+// Recherche les éléments courants par id plutôt que de fermer sur des références figées :
+// le contenu de l'onglet est régénéré à chaque bascule "aspects mineurs", donc un handler
+// attaché une seule fois sur `document` doit toujours cibler le DOM actuel, pas l'ancien.
+function updateWheelFullscreenState() {
+  const btn = document.getElementById("wheel-fullscreen-btn");
+  const target = document.getElementById("wheel-fullscreen-target");
+  if (!btn || !target) return;
+  const active = isFullscreenActive();
+  btn.textContent = active ? "✕ Quitter le plein écran" : "🔍 Plein écran";
+  target.classList.toggle("is-fullscreen", active);
+}
+
+let wheelFullscreenListenerAttached = false;
+function ensureWheelFullscreenListener() {
+  if (wheelFullscreenListenerAttached) return;
+  document.addEventListener("fullscreenchange", updateWheelFullscreenState);
+  document.addEventListener("webkitfullscreenchange", updateWheelFullscreenState);
+  wheelFullscreenListenerAttached = true;
 }
 
 // ---------------------------------------------------------------------
