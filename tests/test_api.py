@@ -76,6 +76,16 @@ def test_reference_config_endpoint(client):
     assert "house_systems" in res.json()
 
 
+def test_reference_timezones_endpoint(client):
+    res = client.get("/api/reference/timezones")
+    assert res.status_code == 200
+    zones = res.json()
+    assert "Europe/Paris" in zones
+    assert zones == sorted(zones)
+    # Alias historiques exclus au profit des identifiants canoniques 'Continent/Ville'.
+    assert not any(z.startswith(("Etc/", "US/", "SystemV/")) for z in zones)
+
+
 def _settings_without_key():
     from app.config import Settings
 

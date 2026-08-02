@@ -32,6 +32,24 @@ function el(html) {
 }
 
 // ---------------------------------------------------------------------
+// Liste des fuseaux horaires (menu déroulant)
+// ---------------------------------------------------------------------
+async function loadTimezones() {
+  const select = document.getElementById("timezone");
+  try {
+    const res = await fetch("/api/reference/timezones");
+    const zones = await res.json();
+    select.innerHTML = zones.map((tz) => `<option value="${tz}">${tz}</option>`).join("");
+    select.value = "Europe/Paris";
+  } catch (err) {
+    // Pas de réseau/API indisponible : on retombe sur un champ texte libre plutôt que de bloquer le formulaire.
+    const fallbackInput = el(`<input type="text" id="timezone" value="Europe/Paris" placeholder="Europe/Paris" required />`);
+    select.replaceWith(fallbackInput);
+  }
+}
+loadTimezones();
+
+// ---------------------------------------------------------------------
 // Recherche de ville (géocodage)
 // ---------------------------------------------------------------------
 document.getElementById("search-city-btn").addEventListener("click", async () => {
