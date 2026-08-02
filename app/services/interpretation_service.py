@@ -50,14 +50,14 @@ MAX_CONTINUATION_ROUNDS = 2
 
 
 def _zodiacal_releasing_max_tokens(request: schemas.ReadingRequest) -> int:
-    """Plus de lots sélectionnés ou mode prévisionnel (frise sur 10 ans) => lecture plus
-    longue, donc plus de budget de tokens que les autres lectures spécialisées à un seul
-    sujet."""
+    """Plus de lots sélectionnés ou mode prévisionnel (frise sur 10 ans, années fortes,
+    scénarios croisés) => lecture plus longue, donc plus de budget de tokens que les autres
+    lectures spécialisées à un seul sujet."""
     n_lots = len(request.zr_selected_lots) or 2
-    tokens = 2500 + 500 * n_lots
+    tokens = 3000 + 600 * n_lots
     if request.zr_mode == "predictive":
-        tokens += 1000
-    return min(tokens, 7000)
+        tokens += 1500
+    return min(tokens, 8000)
 
 _SPECIALIZED_PROMPT_BLOCKS = {
     "lots": """Cette lecture porte spécifiquement sur les LOTS (parts arabes/hermétiques), une \
@@ -133,34 +133,68 @@ le ou les lots suivants, sélectionnés par l'utilisateur :
 Chaque entrée précise aussi `signification`, un rappel en une phrase de ce que ce lot \
 représente : appuie-toi dessus pour ancrer la lecture dans le bon domaine de vie."""
 
-    if len(selected) == 1:
+    multiple_lots = len(selected) > 1
+
+    if multiple_lots:
+        depth = """Plusieurs lots sont sélectionnés : NE les traite PAS chacun dans une \
+section séparée et cloisonnée façon 'd'abord Fortune, puis Esprit, puis...'. COMPILE-les en \
+un seul récit qui avance dans le temps, en précisant à chaque étape quel(s) lot(s) sont \
+concernés — c'est en voyant où leurs périodes se recoupent dans le temps que la lecture \
+prend tout son sens, pas en les lisant côte à côte sans lien entre elles."""
+        cross_lot_guidance = """
+
+Quand plusieurs lots traversent une phase marquante (période de pointe, déliement du lien, \
+ou simplement un climat de fond difficile ou faste selon le signe et la planète maîtresse) \
+SUR LA MÊME FENÊTRE DE TEMPS, croise explicitement leurs domaines de vie respectifs (via \
+`signification`) et propose un ou deux scénarios concrets et plausibles de ce que cette \
+convergence pourrait recouvrir dans la vie de la personne. Exemple de raisonnement attendu : \
+un lot lié à l'argent en climat tendu EN MÊME TEMPS qu'un lot lié au mariage également tendu \
+peut évoquer une tension financière qui pèse sur le couple, une dépense commune difficile, ou \
+une décision à deux compliquée par l'argent — ose nommer ce genre de scénario concret plutôt \
+que de rester au niveau de l'énergie abstraite. Formule toujours ces hypothèses avec prudence \
+('cela peut se traduire par...', 'un scénario possible est...', 'cela peut annoncer...'), \
+jamais comme une certitude absolue — mais ne les édulcore pas non plus au point de les rendre \
+méconnaissables."""
+    else:
         depth = """Un seul lot est sélectionné : consacre-lui une lecture approfondie, sans \
 te presser — une plongée détaillée sur ce domaine de vie précis, pas un survol."""
-    else:
-        depth = """Plusieurs lots sont sélectionnés : traite d'abord chacun individuellement \
-(brièvement), PUIS ajoute une section de LECTURE CROISÉE qui relie leurs phases entre elles \
-— par exemple des périodes de pointe ou des déliements du lien qui se chevauchent dans le \
-temps (convergence de plusieurs domaines de vie sur la même période), ou au contraire un lot \
-en phase calme pendant qu'un autre traverse un tournant. Cette mise en résonance entre lots \
-est la vraie valeur ajoutée d'une sélection multiple : ne la saute pas."""
+        cross_lot_guidance = ""
+
+    sign_texture = """Pour donner de la texture à chaque période (pas seulement \
+'favorable/difficile'), appuie-toi sur ce que représente traditionnellement le SIGNE de la \
+période (ex. Cancer : foyer, famille, sécurité affective ; Lion : reconnaissance, créativité, \
+enfants ; Balance : relations, partenariats, équilibre ; Scorpion : transformation, intimité, \
+pertes/gains profonds — et ainsi de suite selon le signe rencontré) et sur sa planète \
+maîtresse (`ruling_planet`), en plus de la `signification` propre du lot. C'est la \
+combinaison signe + planète maîtresse + domaine du lot qui doit nourrir tes hypothèses \
+concrètes, pas un simple horoscope général du signe."""
 
     if request.zr_mode == "predictive":
-        mode_block = """MODE : PRÉVISIONNEL (environ 10 ans). Pour chaque lot, tu reçois \
-dans `l1_periods` la liste chronologique des périodes L1 sur l'horizon demandé, ainsi que \
-`current_l1` pour situer la période en cours dans cette liste. Construis une frise \
-chronologique en langage naturel des grandes périodes à venir sur la décennie, en citant \
-leurs fenêtres de dates (`start_date`/`end_date`) et leur signe. Mets en avant les \
-transitions marquantes : changement de période L1 (bascule de thème de vie dans ce domaine), \
-périodes `is_peak_period` (sommets d'activité/d'enjeu) et `is_loosing_of_the_bond` (tournants \
-nets, changements de trajectoire). Ne donne jamais une date comme une prédiction fermée \
-d'événement précis : parle de fenêtres propices à tel type de dynamique, jamais d'un \
-événement certain qui \"arrivera\"."""
+        mode_block = f"""MODE : PRÉVISIONNEL (environ 10 ans). Pour chaque lot, tu reçois \
+dans `l1_periods` la liste chronologique complète des périodes L1 sur l'horizon demandé, \
+ainsi que `current_l1` pour situer la période en cours dans cette liste.
+
+Construis UNE frise chronologique en langage naturel des grandes périodes à venir sur la \
+décennie, en citant les fenêtres de dates (`start_date`/`end_date`) et le signe de chaque \
+période. Repère et signale explicitement les ANNÉES FORTES de cette décennie : les moments où \
+plusieurs signaux convergent en même temps — changement de période L1 (bascule de thème de \
+vie dans ce domaine), période(s) `is_peak_period` active(s) (sommet d'activité/d'enjeu), \
+`is_loosing_of_the_bond` (tournant net, changement de trajectoire){" sur un ou plusieurs lots à la fois" if multiple_lots else ""}. \
+Plus les signaux se superposent dans le temps, plus le moment mérite d'être mis en avant \
+comme une année charnière et développé en conséquence ; à l'inverse, résume en une phrase les \
+périodes plus calmes ou sans convergence particulière, sans t'y attarder.{cross_lot_guidance}
+
+{sign_texture} Ne donne jamais une date comme une prédiction fermée d'un événement précis : \
+parle de fenêtres propices à tel type de dynamique ou de thème de vie, jamais d'un événement \
+certain qui \"arrivera\"."""
     else:
-        mode_block = """MODE : ACTUEL. Pour chaque lot, tu reçois `current_l1` (la période en \
+        mode_block = f"""MODE : ACTUEL. Pour chaque lot, tu reçois `current_l1` (la période en \
 cours, plusieurs années), `current_l1_l2_periods` (sa subdivision complète en sous-périodes \
 L2 de quelques mois chacune) et `current_l2` (la sous-période en cours). Explique d'abord le \
 climat général de la période L1 en cours, puis précise ce que la sous-période L2 actuelle \
-vient nuancer ou affiner par rapport à ce climat général."""
+vient nuancer ou affiner par rapport à ce climat général.{cross_lot_guidance}
+
+{sign_texture}"""
 
     badges = """Deux indicateurs accompagnent chaque période : `is_peak_period` (période 'de \
 pointe', angulaire par rapport au signe parent — un sommet d'activité ou d'enjeu dans le \
@@ -179,8 +213,10 @@ vrai pour une période évoquée, signale-le explicitement comme un moment charn
 {badges}
 
 Donne toujours les fenêtres de dates (début/fin) pour situer temporellement chaque période \
-évoquée. Ne fais jamais de prédiction fermée : parle de dynamiques, de thèmes dominants et de \
-tonalité de la période, jamais d'événements certains."""
+évoquée. Ne fais jamais de prédiction fermée sur un événement précis et daté avec certitude : \
+mais entre l'abstraction pure et la certitude, il y a un juste milieu concret que cette \
+lecture doit viser — nomme des thèmes de vie et des scénarios plausibles, pas seulement des \
+'dynamiques' et des 'tonalités'."""
 
 
 def _basic_chart_data(chart_data: dict) -> dict:

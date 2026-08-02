@@ -130,19 +130,31 @@ def test_zodiacal_releasing_predictive_mode_returns_l1_periods_instead_of_l2_det
         assert "current_l1_l2_periods" not in lot_entry
 
 
-def test_zodiacal_releasing_prompt_mentions_cross_reading_for_multiple_lots():
+def test_zodiacal_releasing_prompt_asks_for_compiled_chronology_with_multiple_lots():
     request = schemas.ReadingRequest(
         reading_type="zodiacal_releasing", zr_selected_lots=["Lot d'Amour", "Lot de Mariage"]
     )
     prompt = interpretation_service._build_system_prompt(request)
-    assert "LECTURE CROISÉE" in prompt
+    assert "COMPILE-les en un seul récit" in prompt
+    assert "convergence" in prompt
 
 
 def test_zodiacal_releasing_prompt_goes_deep_for_a_single_lot():
     request = schemas.ReadingRequest(reading_type="zodiacal_releasing", zr_selected_lots=["Lot de Carrière"])
     prompt = interpretation_service._build_system_prompt(request)
     assert "lecture approfondie" in prompt
-    assert "LECTURE CROISÉE" not in prompt
+    assert "COMPILE-les en un seul récit" not in prompt
+    assert "convergence" not in prompt
+
+
+def test_zodiacal_releasing_predictive_prompt_asks_for_strong_years_and_concrete_scenarios():
+    request = schemas.ReadingRequest(
+        reading_type="zodiacal_releasing", zr_selected_lots=["Lot d'Argent (Richesse)", "Lot de Mariage"], zr_mode="predictive"
+    )
+    prompt = interpretation_service._build_system_prompt(request)
+    assert "ANNÉES FORTES" in prompt
+    assert "scénarios concrets" in prompt
+    assert "SIGNE" in prompt and "ruling_planet" in prompt
 
 
 def test_zodiacal_releasing_max_tokens_scale_with_lots_and_mode():
