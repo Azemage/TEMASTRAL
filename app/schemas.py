@@ -158,6 +158,40 @@ class CharacterTraits(BaseModel):
     sources: list[CharacterTraitSource]
 
 
+class LotAspectToNatal(BaseModel):
+    planet: str
+    type: str
+    type_fr: str
+    orb: float
+
+
+class Lot(BaseModel):
+    name: str
+    name_en: str
+    category: str
+    signification: str
+    formula_used: str
+    sign: str
+    sign_fr: str
+    degree: float
+    absolute_longitude: float
+    house: int
+    aspects_to_natal: list[LotAspectToNatal]
+
+
+class DerivedHouseMappingEntry(BaseModel):
+    derived_house_number: int
+    represents_house: int
+    keyword: str
+    themes: list[str]
+    planets: list[str]
+
+
+class DerivedHouseSet(BaseModel):
+    reference_house: int
+    mapping: list[DerivedHouseMappingEntry]
+
+
 class NatalChartComputed(BaseModel):
     schema_version: int = 1
     time_known: bool = True
@@ -171,7 +205,47 @@ class NatalChartComputed(BaseModel):
     dispositors_traditional: DispositorsAnalysis | None = None
     dispositors_modern: DispositorsAnalysis | None = None
     character_traits: CharacterTraits
+    lots: list[Lot] = Field(default_factory=list)
+    derived_houses: list[DerivedHouseSet] = Field(default_factory=list)
     unavailable_points: list[str] = Field(default_factory=list)
+
+
+class TransitingPlanet(BaseModel):
+    name: str
+    sign: str
+    sign_fr: str
+    degree: float
+    absolute_longitude: float
+    retrograde: bool
+
+
+class TransitAspect(BaseModel):
+    transiting_planet: str
+    natal_point: str
+    type: str
+    type_fr: str
+    orb: float
+    applying: bool
+    favorability: str
+    favorability_description: str
+
+
+class ProfectionResult(BaseModel):
+    as_of_date: date_type
+    age: int
+    profected_house: int
+    profected_sign: str
+    profected_sign_fr: str
+    year_ruler: str
+    profected_year_start: date_type
+    profected_year_end: date_type
+
+
+class TimingResponse(BaseModel):
+    date: date_type
+    transiting_planets: list[TransitingPlanet]
+    aspects: list[TransitAspect]
+    profection: ProfectionResult
 
 
 class NatalChartResponse(BaseModel):

@@ -4,7 +4,9 @@ from __future__ import annotations
 
 from app.core import ephemeris
 from app.core.aspects import BodyForAspect, compute_aspects
+from app.core.derived_houses import compute_derived_houses
 from app.core.dispositors import CLASSIC_PLANETS, compute_dispositors
+from app.core.lots import compute_lots
 from app.core.traits import compute_character_traits
 from app.core.zodiac import ELEMENTS, MODALITIES, sign_and_degree
 
@@ -136,6 +138,19 @@ def calculate_natal_chart(
         modality_balance=modality_balance,
     )
 
+    lot_points = {"ASC": ascendant, "MC": midheaven, "Descendant": descendant, "IC": imum_coeli}
+    lot_points.update({name: raw.longitude for name, raw in bodies_result.bodies.items()})
+    lot_points.update({f"house_cusp_{i + 1}": cusp for i, cusp in enumerate(cusps)})
+    lots = compute_lots(
+        points=lot_points,
+        is_day_chart=is_day_chart,
+        find_house_fn=lambda lon: find_house(lon, cusps),
+        natal_bodies=aspect_bodies,
+        aspect_orbs=aspect_orbs,
+    )
+
+    derived_houses = compute_derived_houses(planets)
+
     return {
         "schema_version": 1,
         "time_known": time_known,
@@ -149,5 +164,7 @@ def calculate_natal_chart(
         "dispositors_traditional": dispositors_traditional,
         "dispositors_modern": dispositors_modern,
         "character_traits": character_traits,
+        "lots": lots,
+        "derived_houses": derived_houses,
         "unavailable_points": bodies_result.unavailable_points,
     }

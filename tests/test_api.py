@@ -86,6 +86,39 @@ def test_reference_timezones_endpoint(client):
     assert not any(z.startswith(("Etc/", "US/", "SystemV/")) for z in zones)
 
 
+def test_chart_includes_lots_and_derived_houses(client):
+    res = client.post("/api/charts", json=VALID_CHART_PAYLOAD)
+    data = res.json()["computed_chart_data"]
+    assert len(data["lots"]) == 14
+    assert len(data["derived_houses"]) == 12
+
+
+def test_timing_endpoint_returns_transits_and_profection(client):
+    create_res = client.post("/api/charts", json=VALID_CHART_PAYLOAD)
+    chart_id = create_res.json()["id"]
+
+    res = client.get(f"/api/charts/{chart_id}/timing")
+    assert res.status_code == 200
+    body = res.json()
+    assert len(body["transiting_planets"]) == 5
+    assert "profection" in body
+    assert body["profection"]["profected_house"] in range(1, 13)
+
+
+def test_timing_endpoint_accepts_explicit_date(client):
+    create_res = client.post("/api/charts", json=VALID_CHART_PAYLOAD)
+    chart_id = create_res.json()["id"]
+
+    res = client.get(f"/api/charts/{chart_id}/timing", params={"date": "2000-01-01"})
+    assert res.status_code == 200
+    assert res.json()["date"] == "2000-01-01"
+
+
+def test_timing_endpoint_404_for_unknown_chart(client):
+    res = client.get("/api/charts/does-not-exist/timing")
+    assert res.status_code == 404
+
+
 def _settings_without_key():
     from app.config import Settings
 

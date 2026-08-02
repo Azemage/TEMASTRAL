@@ -17,6 +17,7 @@ const PLANET_LABELS_FR = {
   Sun: "Soleil", Moon: "Lune", Mercury: "Mercure", Venus: "Vénus", Mars: "Mars",
   Jupiter: "Jupiter", Saturn: "Saturne", Uranus: "Uranus", Neptune: "Neptune", Pluto: "Pluton",
   north_node: "Nœud Nord", south_node: "Nœud Sud", chiron: "Chiron", lilith_mean: "Lilith",
+  ascendant: "Ascendant", midheaven: "Milieu du Ciel", descendant: "Descendant", imum_coeli: "Fond du Ciel",
 };
 
 const PLANET_SYMBOLS = {
@@ -494,6 +495,8 @@ function renderChart(chart) {
   renderAspectsTab(data);
   renderBalanceTab(data);
   renderDispositorsTab(data);
+  renderLotsTab(data);
+  renderDerivedHousesTab(data);
 }
 
 function renderPlanetsTab(data) {
@@ -652,6 +655,188 @@ function renderDispositorsTab(data) {
 }
 
 // ---------------------------------------------------------------------
+// Lots (parts arabes)
+// ---------------------------------------------------------------------
+function renderLotsTab(data) {
+  const container = document.getElementById("tab-lots");
+  if (!data.lots || data.lots.length === 0) {
+    container.innerHTML = "<p>Aucun lot calculé.</p>";
+    return;
+  }
+  const rows = data.lots
+    .map((lot) => {
+      const aspects = lot.aspects_to_natal.length
+        ? lot.aspects_to_natal.map((a) => `${planetLabel(a.planet)} ${a.type_fr} (${a.orb}°)`).join(", ")
+        : "—";
+      return `
+      <tr>
+        <td>${lot.name}</td>
+        <td>${lot.signification}</td>
+        <td>${signLabel(lot.sign)} ${lot.degree}°</td>
+        <td>Maison ${lot.house}</td>
+        <td>${aspects}</td>
+      </tr>`;
+    })
+    .join("");
+
+  container.innerHTML = `
+    <p>Un thème de ${data.is_day_chart ? "jour" : "nuit"} utilise les formules diurnes/nocturnes appropriées pour chaque lot.</p>
+    <table>
+      <thead><tr><th>Lot</th><th>Signification</th><th>Position</th><th>Maison</th><th>Aspects natals</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+  `;
+}
+
+// ---------------------------------------------------------------------
+// Maisons dérivées
+// ---------------------------------------------------------------------
+const DERIVED_HOUSE_PRESET_LABELS = {
+  3: "Frères/sœurs", 4: "Mère", 5: "Enfants", 7: "Partenaire", 10: "Père", 11: "Amis",
+};
+
+function renderDerivedHousesTab(data) {
+  const container = document.getElementById("tab-derived");
+  if (!data.derived_houses || data.derived_houses.length === 0) {
+    container.innerHTML = "<p>Maisons dérivées non disponibles.</p>";
+    return;
+  }
+
+  const options = Array.from({ length: 12 }, (_, i) => i + 1)
+    .map((n) => {
+      const preset = DERIVED_HOUSE_PRESET_LABELS[n];
+      return `<option value="${n}" ${n === 7 ? "selected" : ""}>Maison ${n}${preset ? " — " + preset : ""}</option>`;
+    })
+    .join("");
+
+  container.innerHTML = `
+    <div class="form-row">
+      <label for="derived-house-select">Maison de référence (la personne à analyser)</label>
+      <select id="derived-house-select">${options}</select>
+    </div>
+    <p class="derived-house-explainer">
+      Maison de référence + 1 = la maison 1 (identité) de cette personne, +2 = sa maison 2 (argent), etc.
+    </p>
+    <div id="derived-house-table"></div>
+  `;
+
+  const renderTable = (referenceHouse) => {
+    const entry = data.derived_houses.find((d) => d.reference_house === referenceHouse);
+    const rows = entry.mapping
+      .map(
+        (m) => `
+      <tr>
+        <td>Maison ${m.derived_house_number}</td>
+        <td>Sa maison ${m.represents_house} — ${m.keyword}</td>
+        <td>${m.planets.length ? m.planets.map(planetLabel).join(", ") : "—"}</td>
+      </tr>`
+      )
+      .join("");
+    document.getElementById("derived-house-table").innerHTML = `
+      <table>
+        <thead><tr><th>Ma maison natale</th><th>Représente, pour elle</th><th>Planètes natales concernées</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    `;
+  };
+
+  document.getElementById("derived-house-select").addEventListener("change", (e) => {
+    renderTable(parseInt(e.target.value, 10));
+  });
+  renderTable(7);
+}
+
+// ---------------------------------------------------------------------
+// Timing (transits actuels + profection)
+// ---------------------------------------------------------------------
+let timingLoadedForChartId = null;
+
+const FAVORABILITY_LABELS_FR = {
+  favorable: "Favorable", a_nuancer: "À nuancer", exigeant: "Exigeant",
+  instable: "Instable", intense: "Intense", neutre: "Neutre",
+};
+
+function renderTimingResult(result) {
+  const transitRows = result.transiting_planets
+    .map(
+      (p) => `
+      <tr>
+        <td>${planetLabel(p.name)}</td>
+        <td>${signLabel(p.sign)} ${p.degree}°</td>
+        <td>${p.retrograde ? '<span class="retro">Rétrograde</span>' : "—"}</td>
+      </tr>`
+    )
+    .join("");
+
+  const aspectRows = result.aspects.length
+    ? result.aspects
+        .map(
+          (a) => `
+      <tr>
+        <td>${planetLabel(a.transiting_planet)}</td>
+        <td>${a.type_fr}</td>
+        <td>${planetLabel(a.natal_point)}</td>
+        <td>orbe ${a.orb}° · ${a.applying ? "applicatif" : "séparatif"}</td>
+        <td><span class="favorability-badge favorability-${a.favorability}">${FAVORABILITY_LABELS_FR[a.favorability] || a.favorability}</span></td>
+      </tr>`
+        )
+        .join("")
+    : `<tr><td colspan="5">Aucun aspect actif avec l'orbe utilisé (3°).</td></tr>`;
+
+  const prof = result.profection;
+
+  document.getElementById("tab-timing").innerHTML = `
+    <div class="form-row timing-controls">
+      <label for="timing-date">Date</label>
+      <input type="date" id="timing-date" value="${result.date}" />
+      <button type="button" id="timing-refresh-btn">Recalculer</button>
+    </div>
+
+    <h3>Profection de l'année</h3>
+    <p>
+      Année profectée en <strong>maison ${prof.profected_house}</strong> (${signLabel(prof.profected_sign)}) —
+      planète maîtresse de l'année : <strong>${planetLabel(prof.year_ruler)}</strong>.
+      Période du ${prof.profected_year_start} au ${prof.profected_year_end} (${prof.age} ans révolus).
+    </p>
+
+    <h3>Planètes en transit (${result.date})</h3>
+    <table>
+      <thead><tr><th>Planète</th><th>Position</th><th>Mouvement</th></tr></thead>
+      <tbody>${transitRows}</tbody>
+    </table>
+
+    <h3>Aspects actifs vers le thème natal</h3>
+    <table>
+      <thead><tr><th>Transit</th><th>Aspect</th><th>Point natal</th><th>Détail</th><th>Tendance</th></tr></thead>
+      <tbody>${aspectRows}</tbody>
+    </table>
+  `;
+
+  document.getElementById("timing-refresh-btn").addEventListener("click", () => {
+    const date = document.getElementById("timing-date").value;
+    loadTimingTab(date);
+  });
+}
+
+async function loadTimingTab(date) {
+  if (!currentChart) return;
+  const container = document.getElementById("tab-timing");
+  container.innerHTML = "<p>Calcul en cours...</p>";
+  try {
+    const url = date
+      ? `/api/charts/${currentChart.id}/timing?date=${date}`
+      : `/api/charts/${currentChart.id}/timing`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`Erreur ${res.status}`);
+    const result = await res.json();
+    renderTimingResult(result);
+    timingLoadedForChartId = currentChart.id;
+  } catch (err) {
+    container.innerHTML = `<p class="error">Impossible de charger les transits : ${err.message}</p>`;
+  }
+}
+
+// ---------------------------------------------------------------------
 // Onglets
 // ---------------------------------------------------------------------
 document.querySelectorAll(".tab-btn").forEach((btn) => {
@@ -660,6 +845,10 @@ document.querySelectorAll(".tab-btn").forEach((btn) => {
     document.querySelectorAll(".tab-panel").forEach((p) => p.classList.add("hidden"));
     btn.classList.add("active");
     document.getElementById(`tab-${btn.dataset.tab}`).classList.remove("hidden");
+
+    if (btn.dataset.tab === "timing" && currentChart && timingLoadedForChartId !== currentChart.id) {
+      loadTimingTab();
+    }
   });
 });
 

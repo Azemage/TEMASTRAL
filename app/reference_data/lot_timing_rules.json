@@ -1,0 +1,44 @@
+{
+  "description": "Règles de timing basées sur les lots. Un lot seul donne une POSITION, pas une période. Pour en tirer un calendrier favorable/défavorable, deux techniques complémentaires sont nécessaires.",
+
+  "technique_1_zodiacal_releasing": {
+    "name_fr": "Libération zodiacale (Zodiacal Releasing)",
+    "source": "Technique hellénistique (Vettius Valens), reconstituée par Robert Hand / Chris Brennan",
+    "principle": "Découpe le temps de vie en périodes emboîtées (niveaux L1 à L4), en faisant 'avancer' un point de départ (le Lot de Fortune ou le Lot d'Esprit) de signe en signe, chaque signe durant un nombre d'années fixe selon sa maîtrise planétaire.",
+    "primary_lots_used": ["Lot de Fortune", "Lot d'Esprit"],
+    "usage_note": "Zodiacal Releasing depuis le Lot de Fortune éclaire le corps/circonstances matérielles (santé, patrimoine, événements extérieurs). Depuis le Lot d'Esprit, cela éclaire la carrière/l'action/la réputation.",
+    "sign_period_lengths_years": {
+      "Aries": 15, "Taurus": 8, "Gemini": 20, "Cancer": 25,
+      "Leo": 19, "Virgo": 20, "Libra": 8, "Scorpio": 15,
+      "Sagittarius": 12, "Capricorn": 27, "Aquarius": 30, "Pisces": 12,
+      "notes": "Durées standard = années de la planète maîtresse du signe (ex. Bélier=Mars=15). Utiliser rulerships.json (système traditionnel) pour la cohérence."
+    },
+    "status": "non implémenté (V3+) : conservé ici pour référence future"
+  },
+
+  "technique_2_transits_to_lots": {
+    "name_fr": "Transits aux lots (technique simplifiée, complémentaire)",
+    "principle": "Traiter la position natale de chaque lot comme un point sensible et observer les transits des planètes lentes (Jupiter, Saturne, Uranus, Neptune, Pluton) qui l'aspectent.",
+    "status": "non implémenté (V3+) : conservé ici pour référence future"
+  },
+
+  "transit_to_natal_favorability": {
+    "description": "Règles utilisées pour l'onglet Timing (transits actuels vers le thème natal), simplifiées de la technique 2.",
+    "harmonious_aspects": ["trine", "sextile"],
+    "tense_aspects": ["square", "opposition"],
+    "slow_planets_considered": ["Jupiter", "Saturn", "Uranus", "Neptune", "Pluto"],
+    "rules": [
+      { "transiting_planet": "Jupiter", "aspects": ["trine", "sextile", "conjunction"], "label": "favorable", "description": "expansion, opportunité, optimisme" },
+      { "transiting_planet": "Jupiter", "aspects": ["square", "opposition"], "label": "a_nuancer", "description": "excès, dispersion, sur-confiance à canaliser" },
+      { "transiting_planet": "Saturn", "aspects": ["trine", "sextile"], "label": "favorable", "description": "structuration, stabilisation durable" },
+      { "transiting_planet": "Saturn", "aspects": ["conjunction", "square", "opposition"], "label": "exigeant", "description": "restriction, épreuve constructive, sens des responsabilités" },
+      { "transiting_planet": "Uranus", "aspects": ["trine", "sextile"], "label": "favorable", "description": "changement bienvenu, liberté, originalité" },
+      { "transiting_planet": "Uranus", "aspects": ["conjunction", "square", "opposition"], "label": "instable", "description": "rupture, imprévu, changement rapide à formuler en neutre" },
+      { "transiting_planet": "Neptune", "aspects": ["trine", "sextile"], "label": "favorable", "description": "inspiration, intuition, ouverture" },
+      { "transiting_planet": "Neptune", "aspects": ["conjunction", "square", "opposition"], "label": "a_nuancer", "description": "flou, illusion possible, besoin de discernement" },
+      { "transiting_planet": "Pluto", "aspects": ["trine", "sextile"], "label": "favorable", "description": "transformation profonde soutenue" },
+      { "transiting_planet": "Pluto", "aspects": ["conjunction", "square", "opposition"], "label": "intense", "description": "transformation majeure, à formuler en neutre plutôt qu'anxiogène" }
+    ],
+    "notes": "Ces qualificatifs sont indicatifs et doivent être nuancés par le LLM au moment de la rédaction, jamais présentés comme une prédiction déterministe."
+  }
+}

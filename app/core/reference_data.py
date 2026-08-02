@@ -43,6 +43,10 @@ def character_traits() -> dict:
     return _load("character_traits.json")
 
 
+def lot_timing_rules() -> dict:
+    return _load("lot_timing_rules.json")
+
+
 @lru_cache
 def ruler_map(system: str) -> dict[str, str]:
     """sign -> planet name, pour system in {'traditional', 'modern'}."""

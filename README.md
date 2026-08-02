@@ -15,14 +15,21 @@ backend (Jinja2 + JS vanilla), usage anonyme par session (pas de comptes au MVP)
 Implémenté :
 - Thème natal complet (planètes, angles, maisons — Placidus/Koch/Whole Sign/Équal/Regiomontanus,
   aspects majeurs et mineurs avec orbes configurables, applicatif/séparatif, balance éléments/modalités)
-- Dispositeurs : maîtres traditionnel et moderne, chaînes de dispositeurs, réceptions mutuelles
+- Dispositeurs : maîtres traditionnel et moderne, chaînes de dispositeurs, réceptions mutuelles,
+  détection de convergence (planète "clé de voûte" du thème)
+- Traits de caractère (résumé rapide déterministe : Soleil/Lune/Ascendant/dominantes)
+- Roue astrale SVG interactive (info-bulles, plein écran, aspects colorés par type)
+- Lots (parts arabes) : bibliothèque complète (14 lots), formules jour/nuit, aspects natals
+- Maisons dérivées : mapping complet pour les 12 maisons de référence possibles
+- Timing : transits actuels (planètes lentes) vers le thème natal + profection annuelle
 - Lecture interprétée par l'API Anthropic (globale ou ciblée : amour, carrière, famille)
 - Web app simple pour saisir une naissance, visualiser le thème et générer une lecture
 
-Pas encore implémenté (voir cahier des charges fourni, sections V1/V2) : maisons dérivées,
-bibliothèque des lots (parts arabes), transits/profections/révolution solaire, synastrie,
-comptes utilisateurs. Les tables de référence (`app/reference_data/lots.json`, etc.) sont déjà
-en place pour faciliter ces extensions.
+Pas encore implémenté (voir cahier des charges fourni, section V2/V3) : révolution solaire,
+progressions secondaires, synastrie et composite, calendrier visuel des périodes favorables
+(libération zodiacale), comptes utilisateurs. Les tables de référence
+(`app/reference_data/lot_timing_rules.json`, etc.) sont déjà en place pour faciliter ces
+extensions.
 
 ## Installation
 
@@ -86,7 +93,9 @@ Principe directeur repris du cahier des charges : tout ce qui est dans `app/core
 | GET | `/api/charts/{id}` | Récupère un thème calculé |
 | POST | `/api/charts/{id}/readings` | Génère une lecture interprétée (LLM) pour un thème |
 | GET | `/api/charts/{id}/readings` | Liste les lectures déjà générées pour un thème |
+| GET | `/api/charts/{id}/timing?date=YYYY-MM-DD` | Transits actuels (planètes lentes) + profection annuelle, calculés à la demande (non persisté) |
 | GET | `/api/reference/config` | Options de configuration (systèmes de maisons, dispositeurs, points optionnels) |
+| GET | `/api/reference/timezones` | Liste des ~490 fuseaux horaires IANA canoniques |
 | GET | `/api/geocode?query=...` | Recherche ville -> latitude/longitude/fuseau horaire |
 
 La session anonyme est gérée par un cookie HTTPOnly posé automatiquement à la première requête ;
