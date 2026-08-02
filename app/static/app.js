@@ -495,8 +495,9 @@ function renderChart(chart) {
   renderAspectsTab(data);
   renderBalanceTab(data);
   renderDispositorsTab(data);
-  renderLotsTab(data);
-  renderDerivedHousesTab(data);
+  renderLotsDataPanel(data);
+  renderDerivedHousesDataPanel(data);
+  timingLoadedForChartId = null; // nouveau thème : re-fetcher le timing au prochain accès
 }
 
 function renderPlanetsTab(data) {
@@ -655,10 +656,10 @@ function renderDispositorsTab(data) {
 }
 
 // ---------------------------------------------------------------------
-// Lots (parts arabes)
+// Lots (parts arabes) — affichés dans "Lecture interprétée > Lots"
 // ---------------------------------------------------------------------
-function renderLotsTab(data) {
-  const container = document.getElementById("tab-lots");
+function renderLotsDataPanel(data) {
+  const container = document.getElementById("lots-data-panel");
   if (!data.lots || data.lots.length === 0) {
     container.innerHTML = "<p>Aucun lot calculé.</p>";
     return;
@@ -689,14 +690,15 @@ function renderLotsTab(data) {
 }
 
 // ---------------------------------------------------------------------
-// Maisons dérivées
+// Maisons dérivées — affichées dans "Lecture interprétée > Maisons dérivées"
 // ---------------------------------------------------------------------
 const DERIVED_HOUSE_PRESET_LABELS = {
   3: "Frères/sœurs", 4: "Mère", 5: "Enfants", 7: "Partenaire", 10: "Père", 11: "Amis",
 };
+let selectedDerivedReferenceHouse = 7;
 
-function renderDerivedHousesTab(data) {
-  const container = document.getElementById("tab-derived");
+function renderDerivedHousesDataPanel(data) {
+  const container = document.getElementById("derived-data-panel");
   if (!data.derived_houses || data.derived_houses.length === 0) {
     container.innerHTML = "<p>Maisons dérivées non disponibles.</p>";
     return;
@@ -705,7 +707,7 @@ function renderDerivedHousesTab(data) {
   const options = Array.from({ length: 12 }, (_, i) => i + 1)
     .map((n) => {
       const preset = DERIVED_HOUSE_PRESET_LABELS[n];
-      return `<option value="${n}" ${n === 7 ? "selected" : ""}>Maison ${n}${preset ? " — " + preset : ""}</option>`;
+      return `<option value="${n}" ${n === selectedDerivedReferenceHouse ? "selected" : ""}>Maison ${n}${preset ? " — " + preset : ""}</option>`;
     })
     .join("");
 
@@ -741,13 +743,14 @@ function renderDerivedHousesTab(data) {
   };
 
   document.getElementById("derived-house-select").addEventListener("change", (e) => {
-    renderTable(parseInt(e.target.value, 10));
+    selectedDerivedReferenceHouse = parseInt(e.target.value, 10);
+    renderTable(selectedDerivedReferenceHouse);
   });
-  renderTable(7);
+  renderTable(selectedDerivedReferenceHouse);
 }
 
 // ---------------------------------------------------------------------
-// Timing (transits actuels + profection)
+// Timing (transits actuels + prévisions + profection)
 // ---------------------------------------------------------------------
 let timingLoadedForChartId = null;
 
@@ -756,8 +759,32 @@ const FAVORABILITY_LABELS_FR = {
   instable: "Instable", intense: "Intense", neutre: "Neutre",
 };
 
-function renderTimingResult(result) {
-  const transitRows = result.transiting_planets
+function renderUpcomingEventsTable(events) {
+  if (events.length === 0) {
+    return "<p>Aucun transit majeur détecté sur les 12 prochains mois.</p>";
+  }
+  const rows = events
+    .map(
+      (e) => `
+      <tr>
+        <td>${planetLabel(e.transiting_planet)}</td>
+        <td>${e.type_fr}</td>
+        <td>${planetLabel(e.natal_point)}</td>
+        <td>${e.window_start} → ${e.window_end}</td>
+        <td><span class="favorability-badge favorability-${e.favorability}">${FAVORABILITY_LABELS_FR[e.favorability] || e.favorability}</span></td>
+      </tr>`
+    )
+    .join("");
+  return `
+    <table>
+      <thead><tr><th>Transit</th><th>Aspect</th><th>Point natal</th><th>Fenêtre active</th><th>Tendance</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+  `;
+}
+
+function renderTimingDataPanel(timing, forecast) {
+  const transitRows = timing.transiting_planets
     .map(
       (p) => `
       <tr>
@@ -768,8 +795,8 @@ function renderTimingResult(result) {
     )
     .join("");
 
-  const aspectRows = result.aspects.length
-    ? result.aspects
+  const aspectRows = timing.aspects.length
+    ? timing.aspects
         .map(
           (a) => `
       <tr>
@@ -783,12 +810,12 @@ function renderTimingResult(result) {
         .join("")
     : `<tr><td colspan="5">Aucun aspect actif avec l'orbe utilisé (3°).</td></tr>`;
 
-  const prof = result.profection;
+  const prof = timing.profection;
 
-  document.getElementById("tab-timing").innerHTML = `
+  document.getElementById("timing-data-panel").innerHTML = `
     <div class="form-row timing-controls">
       <label for="timing-date">Date</label>
-      <input type="date" id="timing-date" value="${result.date}" />
+      <input type="date" id="timing-date" value="${timing.date}" />
       <button type="button" id="timing-refresh-btn">Recalculer</button>
     </div>
 
@@ -799,7 +826,7 @@ function renderTimingResult(result) {
       Période du ${prof.profected_year_start} au ${prof.profected_year_end} (${prof.age} ans révolus).
     </p>
 
-    <h3>Planètes en transit (${result.date})</h3>
+    <h3>Planètes en transit (${timing.date})</h3>
     <table>
       <thead><tr><th>Planète</th><th>Position</th><th>Mouvement</th></tr></thead>
       <tbody>${transitRows}</tbody>
@@ -810,34 +837,39 @@ function renderTimingResult(result) {
       <thead><tr><th>Transit</th><th>Aspect</th><th>Point natal</th><th>Détail</th><th>Tendance</th></tr></thead>
       <tbody>${aspectRows}</tbody>
     </table>
+
+    <h3>Transits majeurs à venir (12 prochains mois)</h3>
+    ${renderUpcomingEventsTable(forecast.events)}
   `;
 
   document.getElementById("timing-refresh-btn").addEventListener("click", () => {
-    const date = document.getElementById("timing-date").value;
-    loadTimingTab(date);
+    loadTimingDataPanel(document.getElementById("timing-date").value);
   });
 }
 
-async function loadTimingTab(date) {
+async function loadTimingDataPanel(date) {
   if (!currentChart) return;
-  const container = document.getElementById("tab-timing");
-  container.innerHTML = "<p>Calcul en cours...</p>";
+  const container = document.getElementById("timing-data-panel");
+  container.innerHTML = "<p>Calcul en cours (transits + prévisions sur l'année)...</p>";
   try {
-    const url = date
-      ? `/api/charts/${currentChart.id}/timing?date=${date}`
-      : `/api/charts/${currentChart.id}/timing`;
-    const res = await fetch(url);
-    if (!res.ok) throw new Error(`Erreur ${res.status}`);
-    const result = await res.json();
-    renderTimingResult(result);
+    const dateParam = date ? `?date=${date}` : "";
+    const [timingRes, forecastRes] = await Promise.all([
+      fetch(`/api/charts/${currentChart.id}/timing${dateParam}`),
+      fetch(`/api/charts/${currentChart.id}/timing/forecast${dateParam}`),
+    ]);
+    if (!timingRes.ok) throw new Error(`Erreur ${timingRes.status} (transits)`);
+    if (!forecastRes.ok) throw new Error(`Erreur ${forecastRes.status} (prévisions)`);
+    const timing = await timingRes.json();
+    const forecast = await forecastRes.json();
+    renderTimingDataPanel(timing, forecast);
     timingLoadedForChartId = currentChart.id;
   } catch (err) {
-    container.innerHTML = `<p class="error">Impossible de charger les transits : ${err.message}</p>`;
+    container.innerHTML = `<p class="error">Impossible de charger le timing : ${err.message}</p>`;
   }
 }
 
 // ---------------------------------------------------------------------
-// Onglets
+// Onglets (section "Thème natal")
 // ---------------------------------------------------------------------
 document.querySelectorAll(".tab-btn").forEach((btn) => {
   btn.addEventListener("click", () => {
@@ -845,9 +877,21 @@ document.querySelectorAll(".tab-btn").forEach((btn) => {
     document.querySelectorAll(".tab-panel").forEach((p) => p.classList.add("hidden"));
     btn.classList.add("active");
     document.getElementById(`tab-${btn.dataset.tab}`).classList.remove("hidden");
+  });
+});
 
-    if (btn.dataset.tab === "timing" && currentChart && timingLoadedForChartId !== currentChart.id) {
-      loadTimingTab();
+// ---------------------------------------------------------------------
+// Sous-onglets de "Lecture interprétée" (Générale / Lots / Maisons dérivées / Timing)
+// ---------------------------------------------------------------------
+document.querySelectorAll(".reading-tab-btn").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll(".reading-tab-btn").forEach((b) => b.classList.remove("active"));
+    document.querySelectorAll(".reading-tab-panel").forEach((p) => p.classList.add("hidden"));
+    btn.classList.add("active");
+    document.getElementById(`reading-tab-${btn.dataset.readingTab}`).classList.remove("hidden");
+
+    if (btn.dataset.readingTab === "timing" && currentChart && timingLoadedForChartId !== currentChart.id) {
+      loadTimingDataPanel();
     }
   });
 });
@@ -924,4 +968,72 @@ document.getElementById("generate-reading-btn").addEventListener("click", async 
     btn.disabled = false;
     btn.textContent = "Générer la lecture";
   }
+});
+
+// ---------------------------------------------------------------------
+// Lectures spécialisées (Lots / Maisons dérivées / Timing)
+// ---------------------------------------------------------------------
+async function generateSpecializedReading({ btnId, errorId, outputId, defaultLabel, requestBody }) {
+  const errorEl = document.getElementById(errorId);
+  const outputEl = document.getElementById(outputId);
+  const btn = document.getElementById(btnId);
+  errorEl.textContent = "";
+  outputEl.innerHTML = "";
+
+  if (!currentChart) {
+    errorEl.textContent = "Calculez d'abord un thème natal.";
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = "Génération en cours...";
+  try {
+    const res = await fetch(`/api/charts/${currentChart.id}/readings`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(requestBody),
+    });
+    if (!res.ok) {
+      const detail = await res.json().catch(() => ({}));
+      throw new Error(detail.detail || `Erreur ${res.status}`);
+    }
+    const reading = await res.json();
+    outputEl.innerHTML = tinyMarkdownToHtml(reading.reading_text);
+  } catch (err) {
+    errorEl.textContent = err.message;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = defaultLabel;
+  }
+}
+
+document.getElementById("generate-lots-reading-btn").addEventListener("click", () => {
+  generateSpecializedReading({
+    btnId: "generate-lots-reading-btn",
+    errorId: "lots-reading-error",
+    outputId: "lots-reading-output",
+    defaultLabel: "Générer la lecture des lots",
+    requestBody: { reading_type: "lots" },
+  });
+});
+
+document.getElementById("generate-derived-reading-btn").addEventListener("click", () => {
+  generateSpecializedReading({
+    btnId: "generate-derived-reading-btn",
+    errorId: "derived-reading-error",
+    outputId: "derived-reading-output",
+    defaultLabel: "Générer la lecture des maisons dérivées",
+    requestBody: { reading_type: "derived_houses", reference_house: selectedDerivedReferenceHouse },
+  });
+});
+
+document.getElementById("generate-timing-reading-btn").addEventListener("click", () => {
+  const dateInput = document.getElementById("timing-date");
+  generateSpecializedReading({
+    btnId: "generate-timing-reading-btn",
+    errorId: "timing-reading-error",
+    outputId: "timing-reading-output",
+    defaultLabel: "Générer la lecture du timing",
+    requestBody: { reading_type: "timing", as_of_date: dateInput ? dateInput.value : undefined },
+  });
 });

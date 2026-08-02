@@ -21,9 +21,15 @@ Implémenté :
 - Roue astrale SVG interactive (info-bulles, plein écran, aspects colorés par type)
 - Lots (parts arabes) : bibliothèque complète (14 lots), formules jour/nuit, aspects natals
 - Maisons dérivées : mapping complet pour les 12 maisons de référence possibles
-- Timing : transits actuels (planètes lentes) vers le thème natal + profection annuelle
-- Lecture interprétée par l'API Anthropic (globale ou ciblée : amour, carrière, famille)
-- Web app simple pour saisir une naissance, visualiser le thème et générer une lecture
+- Timing : transits actuels (planètes lentes) + prévision des transits majeurs à venir sur
+  12 mois (détection des pics d'orbe, gère les boucles rétrogrades) + profection annuelle
+- Lecture interprétée par l'API Anthropic avec **prompt dédié par catégorie** : lecture
+  générale (thème de base uniquement — planètes/maisons/aspects/dispositeurs, sans les lots
+  ni les maisons dérivées), et trois lectures spécialisées (Lots, Maisons dérivées, Timing)
+  qui ne reçoivent que les données de leur propre technique
+- Web app simple pour saisir une naissance, visualiser le thème et générer une lecture,
+  organisée en "Thème natal" (données calculées) et "Lecture interprétée" (générale + les
+  3 lectures spécialisées, chacune affichant d'abord ses données puis un bouton de génération)
 
 Pas encore implémenté (voir cahier des charges fourni, section V2/V3) : révolution solaire,
 progressions secondaires, synastrie et composite, calendrier visuel des périodes favorables
@@ -91,9 +97,10 @@ Principe directeur repris du cahier des charges : tout ce qui est dans `app/core
 | POST | `/api/charts` | Calcule et sauvegarde un thème natal à partir des données de naissance |
 | GET | `/api/charts` | Liste les thèmes de la session courante |
 | GET | `/api/charts/{id}` | Récupère un thème calculé |
-| POST | `/api/charts/{id}/readings` | Génère une lecture interprétée (LLM) pour un thème |
+| POST | `/api/charts/{id}/readings` | Génère une lecture interprétée (LLM). `reading_type` = `global`\|`love`\|`career`\|`family`\|`lots`\|`derived_houses`\|`timing` ; `reference_house` (1-12) pour `derived_houses`, `as_of_date` pour `timing` |
 | GET | `/api/charts/{id}/readings` | Liste les lectures déjà générées pour un thème |
 | GET | `/api/charts/{id}/timing?date=YYYY-MM-DD` | Transits actuels (planètes lentes) + profection annuelle, calculés à la demande (non persisté) |
+| GET | `/api/charts/{id}/timing/forecast?date=...&months=12` | Transits majeurs à venir sur la période (pics d'orbe, fenêtres actives) |
 | GET | `/api/reference/config` | Options de configuration (systèmes de maisons, dispositeurs, points optionnels) |
 | GET | `/api/reference/timezones` | Liste des ~490 fuseaux horaires IANA canoniques |
 | GET | `/api/geocode?query=...` | Recherche ville -> latitude/longitude/fuseau horaire |

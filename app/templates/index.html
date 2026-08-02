@@ -110,9 +110,6 @@
         <button class="tab-btn" data-tab="aspects">Aspects</button>
         <button class="tab-btn" data-tab="balance">Éléments</button>
         <button class="tab-btn" data-tab="dispositors">Dispositeurs</button>
-        <button class="tab-btn" data-tab="lots">Lots</button>
-        <button class="tab-btn" data-tab="derived">Maisons dérivées</button>
-        <button class="tab-btn" data-tab="timing">Timing</button>
       </div>
 
       <div id="tab-wheel" class="tab-panel"></div>
@@ -121,25 +118,58 @@
       <div id="tab-aspects" class="tab-panel hidden"></div>
       <div id="tab-balance" class="tab-panel hidden"></div>
       <div id="tab-dispositors" class="tab-panel hidden"></div>
-      <div id="tab-lots" class="tab-panel hidden"></div>
-      <div id="tab-derived" class="tab-panel hidden"></div>
-      <div id="tab-timing" class="tab-panel hidden"></div>
     </section>
 
     <section id="reading-section" class="card hidden">
       <h2>3. Lecture interprétée</h2>
-      <div class="form-row">
-        <label>Zones à couvrir</label>
-        <div class="focus-checkboxes">
-          <label><input type="checkbox" name="focus" value="general" checked /> Vue d'ensemble</label>
-          <label><input type="checkbox" name="focus" value="love" /> Amour</label>
-          <label><input type="checkbox" name="focus" value="career" /> Carrière</label>
-          <label><input type="checkbox" name="focus" value="family" /> Famille</label>
-        </div>
+      <p class="reading-section-intro">
+        Chaque catégorie ci-dessous a son propre prompt d'interprétation, focalisé sur sa
+        technique : la lecture générale ne voit que le thème de base (planètes, maisons,
+        aspects, dispositeurs), pas les lots ni les maisons dérivées.
+      </p>
+
+      <div class="tabs reading-type-tabs">
+        <button class="reading-tab-btn active" data-reading-tab="global">Générale</button>
+        <button class="reading-tab-btn" data-reading-tab="lots">Lots</button>
+        <button class="reading-tab-btn" data-reading-tab="derived">Maisons dérivées</button>
+        <button class="reading-tab-btn" data-reading-tab="timing">Timing</button>
       </div>
-      <button id="generate-reading-btn">Générer la lecture</button>
-      <p id="reading-error" class="error"></p>
-      <div id="reading-output" class="reading-output"></div>
+
+      <div id="reading-tab-global" class="reading-tab-panel">
+        <div class="form-row">
+          <label>Zones à couvrir</label>
+          <div class="focus-checkboxes">
+            <label><input type="checkbox" name="focus" value="general" checked /> Vue d'ensemble</label>
+            <label><input type="checkbox" name="focus" value="love" /> Amour</label>
+            <label><input type="checkbox" name="focus" value="career" /> Carrière</label>
+            <label><input type="checkbox" name="focus" value="family" /> Famille</label>
+          </div>
+        </div>
+        <button id="generate-reading-btn">Générer la lecture</button>
+        <p id="reading-error" class="error"></p>
+        <div id="reading-output" class="reading-output"></div>
+      </div>
+
+      <div id="reading-tab-lots" class="reading-tab-panel hidden">
+        <div id="lots-data-panel"></div>
+        <button id="generate-lots-reading-btn">Générer la lecture des lots</button>
+        <p id="lots-reading-error" class="error"></p>
+        <div id="lots-reading-output" class="reading-output"></div>
+      </div>
+
+      <div id="reading-tab-derived" class="reading-tab-panel hidden">
+        <div id="derived-data-panel"></div>
+        <button id="generate-derived-reading-btn">Générer la lecture des maisons dérivées</button>
+        <p id="derived-reading-error" class="error"></p>
+        <div id="derived-reading-output" class="reading-output"></div>
+      </div>
+
+      <div id="reading-tab-timing" class="reading-tab-panel hidden">
+        <div id="timing-data-panel"></div>
+        <button id="generate-timing-reading-btn">Générer la lecture du timing</button>
+        <p id="timing-reading-error" class="error"></p>
+        <div id="timing-reading-output" class="reading-output"></div>
+      </div>
     </section>
   </main>
 

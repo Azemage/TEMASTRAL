@@ -248,6 +248,25 @@ class TimingResponse(BaseModel):
     profection: ProfectionResult
 
 
+class UpcomingTransitEvent(BaseModel):
+    transiting_planet: str
+    natal_point: str
+    type: str
+    type_fr: str
+    peak_date: date_type
+    peak_orb: float
+    window_start: date_type
+    window_end: date_type
+    favorability: str
+    favorability_description: str
+
+
+class TransitForecastResponse(BaseModel):
+    start_date: date_type
+    end_date: date_type
+    events: list[UpcomingTransitEvent]
+
+
 class NatalChartResponse(BaseModel):
     id: str
     subject_name: str | None
@@ -274,11 +293,13 @@ class NatalChartResponse(BaseModel):
 # Interprétation LLM (cf. cahier des charges, section 4.7)
 # ---------------------------------------------------------------------------
 class ReadingRequest(BaseModel):
-    reading_type: str = "global"  # 'global' | 'love' | 'career' | 'timing' | ...
+    reading_type: str = "global"  # 'global' | 'love' | 'career' | 'family' | 'lots' | 'derived_houses' | 'timing'
     focus_areas: list[str] = Field(default_factory=lambda: ["general"])
     level: str = "débutant"
     tone: str = "accessible et bienveillant"
     language: str = "fr"
+    reference_house: int | None = Field(default=None, ge=1, le=12)  # utilisé par 'derived_houses'
+    as_of_date: date_type | None = None  # utilisé par 'timing'
 
 
 class ReadingResponse(BaseModel):

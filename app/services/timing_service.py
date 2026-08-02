@@ -1,9 +1,10 @@
 from datetime import date as date_type
+from datetime import timedelta
 
 from app import models
 from app.core.aspects import BodyForAspect
 from app.core.profections import compute_profection
-from app.core.transits import compute_current_transits
+from app.core.transits import compute_current_transits, compute_upcoming_transits
 
 
 def _natal_bodies_from_chart(chart: models.NatalChart) -> list[BodyForAspect]:
@@ -28,3 +29,11 @@ def compute_timing(chart: models.NatalChart, as_of_date: date_type | None = None
         "aspects": transits["aspects"],
         "profection": profection,
     }
+
+
+def compute_forecast(chart: models.NatalChart, start_date: date_type | None = None, months: int = 12) -> dict:
+    start_date = start_date or date_type.today()
+    end_date = start_date + timedelta(days=months * 30)
+    natal_bodies = _natal_bodies_from_chart(chart)
+    events = compute_upcoming_transits(natal_bodies, start_date, end_date)
+    return {"start_date": start_date, "end_date": end_date, "events": events}

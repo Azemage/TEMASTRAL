@@ -119,6 +119,18 @@ def test_timing_endpoint_404_for_unknown_chart(client):
     assert res.status_code == 404
 
 
+def test_timing_forecast_endpoint_returns_events(client):
+    create_res = client.post("/api/charts", json=VALID_CHART_PAYLOAD)
+    chart_id = create_res.json()["id"]
+
+    res = client.get(f"/api/charts/{chart_id}/timing/forecast", params={"date": "2026-08-02", "months": 12})
+    assert res.status_code == 200
+    body = res.json()
+    assert body["start_date"] == "2026-08-02"
+    assert len(body["events"]) > 0
+    assert body["events"] == sorted(body["events"], key=lambda e: e["peak_date"])
+
+
 def _settings_without_key():
     from app.config import Settings
 
