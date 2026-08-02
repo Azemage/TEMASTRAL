@@ -147,6 +147,17 @@ class DispositorsAnalysis(BaseModel):
     convergence: DispositorConvergence
 
 
+class CharacterTraitSource(BaseModel):
+    origin: str  # "sun" | "moon" | "ascendant" | "dominant_element" | "dominant_modality"
+    label: str
+    traits: list[str]
+
+
+class CharacterTraits(BaseModel):
+    keywords: list[str]
+    sources: list[CharacterTraitSource]
+
+
 class NatalChartComputed(BaseModel):
     schema_version: int = 1
     time_known: bool = True
@@ -159,6 +170,7 @@ class NatalChartComputed(BaseModel):
     modality_balance: ModalityBalance
     dispositors_traditional: DispositorsAnalysis | None = None
     dispositors_modern: DispositorsAnalysis | None = None
+    character_traits: CharacterTraits
     unavailable_points: list[str] = Field(default_factory=list)
 
 

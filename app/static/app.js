@@ -147,6 +147,12 @@ document.getElementById("birth-form").addEventListener("submit", async (e) => {
   }
 });
 
+function renderTraitTags(characterTraits) {
+  if (!characterTraits || !characterTraits.keywords || characterTraits.keywords.length === 0) return "";
+  const tags = characterTraits.keywords.map((trait) => `<span class="trait-tag">${trait}</span>`).join("");
+  return `<div class="trait-tags">${tags}</div>`;
+}
+
 // ---------------------------------------------------------------------
 // Rendu du thème
 // ---------------------------------------------------------------------
@@ -171,6 +177,7 @@ function renderChart(chart) {
       &nbsp;|&nbsp; Thème de ${data.is_day_chart ? "jour" : "nuit"}
     </p>
     ${!data.time_known ? '<p class="error">Heure de naissance inconnue : maisons et angles sont approximatifs (calculés à midi).</p>' : ""}
+    ${renderTraitTags(data.character_traits)}
   `;
 
   renderPlanetsTab(data);
@@ -320,8 +327,10 @@ function renderDispositorsSection(analysis, title) {
       <thead><tr><th>Planète</th><th>Signe occupé</th><th>Maître trad. / moderne</th><th>Auto-disposée</th></tr></thead>
       <tbody>${dispositorRows}</tbody>
     </table>
-    <h4>Chaînes de dispositeurs</h4>
-    <ul>${chains}</ul>
+    <details class="chains-detail">
+      <summary>Voir le détail des chaînes de dispositeurs (${analysis.dispositor_chains.length})</summary>
+      <ul>${chains}</ul>
+    </details>
     <h4>Réceptions mutuelles</h4>
     ${mutual}
   `;

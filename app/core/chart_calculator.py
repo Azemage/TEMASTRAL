@@ -5,6 +5,7 @@ from __future__ import annotations
 from app.core import ephemeris
 from app.core.aspects import BodyForAspect, compute_aspects
 from app.core.dispositors import CLASSIC_PLANETS, compute_dispositors
+from app.core.traits import compute_character_traits
 from app.core.zodiac import ELEMENTS, MODALITIES, sign_and_degree
 
 DEFAULT_TIME_WHEN_UNKNOWN = "12:00:00"
@@ -127,6 +128,14 @@ def calculate_natal_chart(
     dispositors_traditional = compute_dispositors(planet_signs, "traditional")
     dispositors_modern = compute_dispositors(planet_signs, "modern")
 
+    character_traits = compute_character_traits(
+        sun_sign=planet_signs["Sun"],
+        moon_sign=planet_signs["Moon"],
+        ascendant_sign=angles["ascendant"]["sign"],
+        elements_balance=elements_balance,
+        modality_balance=modality_balance,
+    )
+
     return {
         "schema_version": 1,
         "time_known": time_known,
@@ -139,5 +148,6 @@ def calculate_natal_chart(
         "modality_balance": modality_balance,
         "dispositors_traditional": dispositors_traditional,
         "dispositors_modern": dispositors_modern,
+        "character_traits": character_traits,
         "unavailable_points": bodies_result.unavailable_points,
     }

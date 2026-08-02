@@ -1,0 +1,28 @@
+{
+  "description": "Mots-clés de traits de caractère associés à chaque signe, élément dominant et modalité dominante. Utilisés pour générer un résumé rapide et déterministe de la personnalité (Soleil, Lune, Ascendant, élément/modalité dominants), avant la lecture détaillée rédigée par le LLM.",
+  "signs": {
+    "Aries": ["Énergique", "Impulsif", "Direct"],
+    "Taurus": ["Stable", "Sensuel", "Persévérant"],
+    "Gemini": ["Curieux", "Communicatif", "Adaptable"],
+    "Cancer": ["Sensible", "Protecteur", "Intuitif"],
+    "Leo": ["Généreux", "Charismatique", "Fier"],
+    "Virgo": ["Méthodique", "Analytique", "Serviable"],
+    "Libra": ["Diplomate", "Sociable", "Esthète"],
+    "Scorpio": ["Intense", "Déterminé", "Secret"],
+    "Sagittarius": ["Optimiste", "Aventurier", "Franc"],
+    "Capricorn": ["Discipliné", "Ambitieux", "Pragmatique"],
+    "Aquarius": ["Original", "Indépendant", "Humaniste"],
+    "Pisces": ["Empathique", "Rêveur", "Compatissant"]
+  },
+  "elements": {
+    "fire": ["Spontané", "Passionné"],
+    "earth": ["Terre-à-terre", "Fiable"],
+    "air": ["Intellectuel", "Sociable"],
+    "water": ["Émotif", "Réceptif"]
+  },
+  "modalities": {
+    "cardinal": ["Entreprenant", "Initiateur"],
+    "fixed": ["Persévérant", "Résolu"],
+    "mutable": ["Flexible", "Adaptable"]
+  }
+}

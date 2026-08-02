@@ -39,6 +39,10 @@ def config_reference() -> dict:
     return _load("config_reference.json")
 
 
+def character_traits() -> dict:
+    return _load("character_traits.json")
+
+
 @lru_cache
 def ruler_map(system: str) -> dict[str, str]:
     """sign -> planet name, pour system in {'traditional', 'modern'}."""

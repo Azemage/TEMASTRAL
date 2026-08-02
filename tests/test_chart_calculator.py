@@ -63,3 +63,12 @@ def test_dispositors_present_for_both_systems():
     chart = calculate_natal_chart(**BIRTH_KWARGS)
     assert len(chart["dispositors_traditional"]["dispositors"]) == 10
     assert len(chart["dispositors_modern"]["dispositors"]) == 10
+
+
+def test_character_traits_derived_from_sun_moon_ascendant():
+    chart = calculate_natal_chart(**BIRTH_KWARGS)
+    traits = chart["character_traits"]
+    assert len(traits["keywords"]) > 0
+    assert len(traits["sources"]) == 5
+    origins = {s["origin"] for s in traits["sources"]}
+    assert origins == {"sun", "moon", "ascendant", "dominant_element", "dominant_modality"}

@@ -60,6 +60,14 @@ dispositeurs du thème se referment sur une même planète (`dominant_dispositor
 signale explicitement ce pattern comme une planète clé de voûte du thème, dont les \
 qualités colorent une grande partie de la personnalité, plutôt que de la traiter comme \
 une planète parmi d'autres.
+7. Sois CONCRET, pas abstrait. Pour chaque trait ou dynamique évoqué, donne un exemple \
+tangible de comportement, de réaction ou de situation de la vie quotidienne (travail, \
+relations, décisions, habitudes) plutôt qu'une description théorique de "l'énergie" ou \
+du "potentiel" de la planète. Bannis les formulations vagues type "cela peut se \
+manifester de plusieurs façons" ou "cette énergie est présente dans votre thème" sans \
+préciser comment. Préfère toujours une phrase illustrée ("vous avez probablement du mal \
+à lâcher prise sur un projet avant qu'il soit parfait") à une phrase générique ("vous \
+avez un fort besoin de perfection").
 
 ZONES À COUVRIR DANS CETTE LECTURE :
 {focus_descriptions}
