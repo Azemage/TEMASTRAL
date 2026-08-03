@@ -14,6 +14,7 @@ avec un système de prompt dédié à cette technique — pas de mélange des de
 from __future__ import annotations
 
 import json
+import re
 
 from anthropic import AsyncAnthropic
 
@@ -50,6 +51,129 @@ COMPATIBILITY_MODE_LABELS_FR = {
     "friendship": "amitié",
     "professional": "relation professionnelle (collègue, associé, employeur)",
 }
+
+# Axes de notation (1 à 10) par mode de relation, affichés comme jauges dans le frontend.
+# Choisis pour être spécifiques au mode plutôt qu'un score générique de "compatibilité en %"
+# (cf. la mise en garde du document de référence sur la synastrie) : chaque axe cible un
+# sous-thème concret que l'utilisateur peut vouloir comparer d'une paire à l'autre.
+COMPATIBILITY_RATING_AXES = {
+    "romantic": [
+        {
+            "key": "passion_alchimie",
+            "label": "Passion & alchimie",
+            "hint": "attraction physique, désir, magnétisme (Vénus-Mars notamment)",
+        },
+        {
+            "key": "complicite_emotionnelle",
+            "label": "Complicité émotionnelle",
+            "hint": "confort au quotidien, facilité à se comprendre (Lune-Lune, Soleil-Lune)",
+        },
+        {
+            "key": "engagement_duree",
+            "label": "Engagement & durabilité",
+            "hint": "capacité à construire dans la durée (Saturne-planètes personnelles)",
+        },
+        {
+            "key": "valeurs_partagees",
+            "label": "Valeurs partagées",
+            "hint": "goûts et vision de vie communs (Vénus-Vénus, Soleil-Soleil)",
+        },
+    ],
+    "friendship": [
+        {"key": "complicite_humour", "label": "Complicité & humour", "hint": "communication et humour (Mercure-Mercure)"},
+        {"key": "confort_relationnel", "label": "Confort relationnel", "hint": "sentiment de confort général (Soleil-Lune)"},
+        {
+            "key": "plaisir_partage",
+            "label": "Plaisir partagé",
+            "hint": "enthousiasme, sentiment d'expansion mutuelle (Jupiter-planètes personnelles)",
+        },
+        {
+            "key": "stimulation_intellectuelle",
+            "label": "Stimulation intellectuelle",
+            "hint": "ce qui sort de l'ordinaire (Uranus-planètes personnelles)",
+        },
+    ],
+    "professional": [
+        {
+            "key": "communication_pro",
+            "label": "Communication professionnelle",
+            "hint": "compréhension mutuelle des idées (Mercure-Mercure)",
+        },
+        {
+            "key": "rigueur_fiabilite",
+            "label": "Rigueur & fiabilité partagées",
+            "hint": "approche du travail et des responsabilités (Saturne-Saturne)",
+        },
+        {"key": "rythme_travail", "label": "Rythme de travail", "hint": "cadence, gestion des désaccords (Mars-Mars)"},
+        {
+            "key": "reconnaissance_croissance",
+            "label": "Reconnaissance & croissance mutuelle",
+            "hint": "dynamique d'autorité et potentiel de collaboration (Soleil-Saturne, Jupiter-Soleil)",
+        },
+    ],
+}
+
+_COMPATIBILITY_JSON_BLOCK_RE = re.compile(r"```json\s*(\{.*?\})\s*```", re.DOTALL)
+
+
+def _compatibility_ratings_prompt_section(mode: str) -> str:
+    axes = COMPATIBILITY_RATING_AXES.get(mode, [])
+    axes_desc = "\n".join(f'- "{axis["key"]}" ({axis["label"]}) : {axis["hint"]}' for axis in axes)
+    keys_example = ", ".join(f'"{axis["key"]}": {{"score": <1-10>, "justification": "..."}}' for axis in axes)
+
+    return f"""Termine IMPÉRATIVEMENT ta réponse par un bloc de notation chiffrée, dans ce \
+format exact et rien d'autre après ce bloc :
+
+```json
+{{"compatibility_ratings": {{{keys_example}}}}}
+```
+
+Les axes à noter, un score ENTIER de 1 (très faible) à 10 (très fort) pour chacun :
+{axes_desc}
+
+Chaque `justification` est une phrase courte (15-25 mots), concrète, qui s'appuie sur un ou \
+deux signaux précis déjà présents dans les données (un aspect, un placement de maison...), pas \
+une formule vague ni un simple rappel du score. Ces notes sont une impression interprétative \
+de synthèse, pas un calcul scientifique : ne prétends jamais à une précision qu'elles n'ont \
+pas, mais assume-les pleinement plutôt que de les noyer sous des réserves."""
+
+
+def _sanitize_compatibility_ratings(raw_ratings: dict | None, mode: str) -> dict | None:
+    if not raw_ratings:
+        return None
+    expected_keys = {axis["key"] for axis in COMPATIBILITY_RATING_AXES.get(mode, [])}
+    sanitized = {}
+    for key, value in raw_ratings.items():
+        if key not in expected_keys or not isinstance(value, dict):
+            continue
+        score = value.get("score")
+        if not isinstance(score, int) or not (1 <= score <= 10):
+            continue
+        justification = value.get("justification")
+        sanitized[key] = {"score": score, "justification": str(justification) if justification else ""}
+    return sanitized or None
+
+
+def _extract_compatibility_ratings(reading_text: str) -> tuple[str, dict | None]:
+    """Isole le bloc ```json final de notation chiffrée du texte de la lecture (voir
+    `_compatibility_ratings_prompt_section`) : renvoie le texte nettoyé de ce bloc (pour
+    l'affichage en prose) et les notes brutes parsées (ou None si absent/invalide)."""
+    matches = list(_COMPATIBILITY_JSON_BLOCK_RE.finditer(reading_text))
+    if not matches:
+        return reading_text, None
+
+    last_match = matches[-1]
+    try:
+        parsed = json.loads(last_match.group(1))
+    except json.JSONDecodeError:
+        return reading_text, None
+
+    ratings = parsed.get("compatibility_ratings") if isinstance(parsed, dict) else None
+    if not isinstance(ratings, dict):
+        return reading_text, None
+
+    cleaned_text = (reading_text[: last_match.start()] + reading_text[last_match.end() :]).rstrip()
+    return cleaned_text, ratings
 
 # Nombre d'appels de relance autorisés quand une réponse s'arrête faute de budget de tokens
 # (stop_reason == "max_tokens"), pour ne jamais renvoyer une lecture coupée en plein milieu
@@ -281,13 +405,17 @@ ce que les données astrologiques appuient directement ; adresse-toi à la perso
 consultante, en parlant de la relation et de ce qu'elle peut en faire, jamais comme si tu \
 jugeais B dans l'absolu. N'invente aucun fait biographique sur B."""
 
+    ratings_section = _compatibility_ratings_prompt_section(mode)
+
     return f"""{intro}
 
 {time_known_note}
 
 {structure}
 
-{ethics}"""
+{ethics}
+
+{ratings_section}"""
 
 
 def _basic_chart_data(chart_data: dict) -> dict:
@@ -498,9 +626,15 @@ async def generate_reading(
         else:
             messages.append({"role": "assistant", "content": chunk})
 
+    compatibility_ratings = None
+    if request.reading_type == "compatibility":
+        reading_text, raw_ratings = _extract_compatibility_ratings(reading_text)
+        compatibility_ratings = _sanitize_compatibility_ratings(raw_ratings, request.relationship_mode or "romantic")
+
     return {
         "reading_text": reading_text,
         "model_used": settings.anthropic_model,
         "tokens_used": tokens_used,
         "request_payload": payload,
+        "compatibility_ratings": compatibility_ratings,
     }

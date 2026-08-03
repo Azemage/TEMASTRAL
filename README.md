@@ -48,9 +48,12 @@ Implémenté :
   un score en %), chevauchement de maisons (dans quelle maison de l'autre tombe chaque
   planète), et thème composite (point médian de chaque paire de planètes homologues,
   représentant la relation comme une entité). La lecture dédiée compile ces trois techniques
-  en une analyse structurée avec une section recommandations/points de vigilance. Le mode
-  personne/entreprise n'est pas encore implémenté (nécessite un thème d'entreprise dédié,
-  cf. section V2 de la spec)
+  en une analyse structurée avec une section recommandations/points de vigilance, et se termine
+  par une notation chiffrée (1 à 10, affichée en jauges) sur 4 axes propres à chaque mode
+  (ex. en amoureux : passion & alchimie, complicité émotionnelle, engagement & durabilité,
+  valeurs partagées), générée par le modèle avec une courte justification par axe — une
+  impression interprétative de synthèse, pas un score scientifique. Le mode personne/entreprise
+  n'est pas encore implémenté (nécessite un thème d'entreprise dédié, cf. section V2 de la spec)
 - Lecture interprétée par l'API Anthropic avec **prompt dédié par catégorie** : lecture
   générale (thème de base uniquement — planètes/maisons/aspects/dispositeurs, sans les lots
   ni les maisons dérivées), et cinq lectures spécialisées (Lots, Maisons dérivées, Timing,

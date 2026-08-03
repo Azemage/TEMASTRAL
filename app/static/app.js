@@ -1048,6 +1048,51 @@ let compatChartsLoadedForChartId = null;
 
 const COMPAT_MODE_LABELS_FR = { romantic: "amoureuse", friendship: "amicale", professional: "professionnelle" };
 
+// Doit rester synchronisé avec COMPATIBILITY_RATING_AXES dans app/services/interpretation_service.py.
+const COMPAT_RATING_AXES_FR = {
+  romantic: [
+    { key: "passion_alchimie", label: "Passion & alchimie" },
+    { key: "complicite_emotionnelle", label: "Complicité émotionnelle" },
+    { key: "engagement_duree", label: "Engagement & durabilité" },
+    { key: "valeurs_partagees", label: "Valeurs partagées" },
+  ],
+  friendship: [
+    { key: "complicite_humour", label: "Complicité & humour" },
+    { key: "confort_relationnel", label: "Confort relationnel" },
+    { key: "plaisir_partage", label: "Plaisir partagé" },
+    { key: "stimulation_intellectuelle", label: "Stimulation intellectuelle" },
+  ],
+  professional: [
+    { key: "communication_pro", label: "Communication professionnelle" },
+    { key: "rigueur_fiabilite", label: "Rigueur & fiabilité partagées" },
+    { key: "rythme_travail", label: "Rythme de travail" },
+    { key: "reconnaissance_croissance", label: "Reconnaissance & croissance mutuelle" },
+  ],
+};
+
+function renderCompatibilityRatings(ratings, mode) {
+  if (!ratings) return "";
+  const axes = COMPAT_RATING_AXES_FR[mode] || [];
+  const rows = axes
+    .map((axis) => {
+      const entry = ratings[axis.key];
+      if (!entry) return "";
+      const pct = Math.max(0, Math.min(100, Math.round((entry.score / 10) * 100)));
+      return `
+        <div class="compat-rating-row">
+          <div class="compat-rating-header">
+            <span class="compat-rating-label">${axis.label}</span>
+            <span class="compat-rating-score">${entry.score}/10</span>
+          </div>
+          <div class="compat-rating-track"><div class="compat-rating-fill" style="width:${pct}%"></div></div>
+          <p class="compat-rating-justification">${entry.justification}</p>
+        </div>`;
+    })
+    .join("");
+  if (!rows) return "";
+  return `<div class="compat-ratings"><h3>Notes de compatibilité</h3>${rows}</div>`;
+}
+
 function compatWeightSlug(label) {
   if (label.includes("très fort")) return "very-strong";
   if (label.includes("fort")) return "strong";
@@ -1294,20 +1339,49 @@ document.getElementById("compat-create-chart-b-btn").addEventListener("click", a
   }
 });
 
-document.getElementById("generate-compat-reading-btn").addEventListener("click", () => {
+document.getElementById("generate-compat-reading-btn").addEventListener("click", async () => {
   const errorEl = document.getElementById("compat-reading-error");
+  const outputEl = document.getElementById("compat-reading-output");
+  const btn = document.getElementById("generate-compat-reading-btn");
+  const defaultLabel = "Générer la lecture de compatibilité";
+  errorEl.textContent = "";
+  outputEl.innerHTML = "";
+
+  if (!currentChart) {
+    errorEl.textContent = "Calculez d'abord un thème natal.";
+    return;
+  }
   if (!compatChartBId) {
     errorEl.textContent = "Sélectionnez ou créez d'abord le thème de la deuxième personne.";
     return;
   }
-  errorEl.textContent = "";
-  generateSpecializedReading({
-    btnId: "generate-compat-reading-btn",
-    errorId: "compat-reading-error",
-    outputId: "compat-reading-output",
-    defaultLabel: "Générer la lecture de compatibilité",
-    requestBody: { reading_type: "compatibility", chart_b_id: compatChartBId, relationship_mode: selectedCompatMode },
-  });
+
+  btn.disabled = true;
+  btn.textContent = "Génération en cours...";
+  try {
+    const res = await fetch(`/api/charts/${currentChart.id}/readings`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        reading_type: "compatibility",
+        chart_b_id: compatChartBId,
+        relationship_mode: selectedCompatMode,
+      }),
+    });
+    if (!res.ok) {
+      const detail = await res.json().catch(() => ({}));
+      throw new Error(detail.detail || `Erreur ${res.status}`);
+    }
+    const reading = await res.json();
+    outputEl.innerHTML =
+      renderCompatibilityRatings(reading.compatibility_ratings, selectedCompatMode) +
+      tinyMarkdownToHtml(reading.reading_text);
+  } catch (err) {
+    errorEl.textContent = err.message;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = defaultLabel;
+  }
 });
 
 // ---------------------------------------------------------------------

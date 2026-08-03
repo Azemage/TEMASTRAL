@@ -400,12 +400,18 @@ class ReadingRequest(BaseModel):
     relationship_mode: str | None = None  # 'romantic' | 'friendship' | 'professional' ; utilisé par 'compatibility'
 
 
+class CompatibilityRatingEntry(BaseModel):
+    score: int = Field(ge=1, le=10)
+    justification: str
+
+
 class ReadingResponse(BaseModel):
     id: str
     natal_chart_id: str
     reading_type: str
     focus_areas: list[str]
     reading_text: str
+    compatibility_ratings: dict[str, CompatibilityRatingEntry] | None = None
     model_used: str | None
     tokens_used: int | None
     created_at: datetime

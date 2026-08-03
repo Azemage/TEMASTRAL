@@ -234,6 +234,72 @@ def test_compatibility_prompt_forbids_closed_relationship_verdicts():
     assert "recommandations" in prompt.lower()
 
 
+def test_compatibility_prompt_lists_rating_axes_for_the_chosen_mode():
+    romantic_prompt = interpretation_service._build_system_prompt(
+        schemas.ReadingRequest(reading_type="compatibility", relationship_mode="romantic")
+    )
+    professional_prompt = interpretation_service._build_system_prompt(
+        schemas.ReadingRequest(reading_type="compatibility", relationship_mode="professional")
+    )
+    assert "passion_alchimie" in romantic_prompt
+    assert "engagement_duree" in romantic_prompt
+    assert "communication_pro" not in romantic_prompt
+
+    assert "communication_pro" in professional_prompt
+    assert "rigueur_fiabilite" in professional_prompt
+    assert "passion_alchimie" not in professional_prompt
+
+
+# ---------------------------------------------------------------------------
+# Notation chiffrée de compatibilité : extraction/validation du bloc JSON final.
+# ---------------------------------------------------------------------------
+def test_extract_compatibility_ratings_parses_trailing_json_block():
+    text = """## Vue d'ensemble
+Une belle dynamique.
+
+```json
+{"compatibility_ratings": {"passion_alchimie": {"score": 8, "justification": "Vénus-Mars en trigone serré."}}}
+```"""
+    cleaned, ratings = interpretation_service._extract_compatibility_ratings(text)
+    assert "```json" not in cleaned
+    assert "Une belle dynamique." in cleaned
+    assert ratings == {"passion_alchimie": {"score": 8, "justification": "Vénus-Mars en trigone serré."}}
+
+
+def test_extract_compatibility_ratings_returns_none_when_no_block():
+    text = "Une lecture sans bloc de notation."
+    cleaned, ratings = interpretation_service._extract_compatibility_ratings(text)
+    assert cleaned == text
+    assert ratings is None
+
+
+def test_extract_compatibility_ratings_returns_none_for_malformed_json():
+    text = """Texte.
+
+```json
+{"compatibility_ratings": {"passion_alchimie": }}
+```"""
+    cleaned, ratings = interpretation_service._extract_compatibility_ratings(text)
+    assert cleaned == text
+    assert ratings is None
+
+
+def test_sanitize_compatibility_ratings_drops_unknown_keys_and_invalid_scores():
+    raw = {
+        "passion_alchimie": {"score": 8, "justification": "ok"},
+        "unknown_axis": {"score": 5, "justification": "should be dropped"},
+        "complicite_emotionnelle": {"score": 15, "justification": "out of range"},
+        "engagement_duree": {"score": "sept", "justification": "not an int"},
+    }
+    sanitized = interpretation_service._sanitize_compatibility_ratings(raw, "romantic")
+    assert sanitized == {"passion_alchimie": {"score": 8, "justification": "ok"}}
+
+
+def test_sanitize_compatibility_ratings_returns_none_for_empty_or_none_input():
+    assert interpretation_service._sanitize_compatibility_ratings(None, "romantic") is None
+    assert interpretation_service._sanitize_compatibility_ratings({}, "romantic") is None
+
+
 # ---------------------------------------------------------------------------
 # generate_reading : ne jamais renvoyer une lecture coupée en plein milieu d'une phrase.
 # ---------------------------------------------------------------------------
@@ -328,6 +394,44 @@ def test_generate_reading_stops_after_max_continuation_rounds(monkeypatch):
 
     assert len(fake_client.messages.calls) == interpretation_service.MAX_CONTINUATION_ROUNDS + 1
     assert result["reading_text"] == "".join(f"partie {i} " for i in range(interpretation_service.MAX_CONTINUATION_ROUNDS + 1))
+
+
+def test_generate_reading_extracts_compatibility_ratings_and_strips_json_block(monkeypatch):
+    chart_a = _make_chart()
+    chart_b = _make_chart_b()
+    request = schemas.ReadingRequest(reading_type="compatibility", relationship_mode="romantic", chart_b_id="chart-b")
+
+    reading_body = "## Vue d'ensemble\nUne belle dynamique entre vous deux."
+    json_block = (
+        '```json\n{"compatibility_ratings": {'
+        '"passion_alchimie": {"score": 8, "justification": "Vénus-Mars en trigone serré."}, '
+        '"complicite_emotionnelle": {"score": 6, "justification": "Lune en sextile."}'
+        "}}\n```"
+    )
+    fake_client = _FakeAnthropicClient([_FakeResponse(f"{reading_body}\n\n{json_block}", stop_reason="end_turn")])
+    monkeypatch.setattr(interpretation_service, "get_settings", _settings_with_key)
+    monkeypatch.setattr(interpretation_service, "AsyncAnthropic", lambda api_key: fake_client)
+
+    result = asyncio.run(interpretation_service.generate_reading(chart_a, request, chart_b=chart_b))
+
+    assert "```json" not in result["reading_text"]
+    assert "Une belle dynamique" in result["reading_text"]
+    assert result["compatibility_ratings"] == {
+        "passion_alchimie": {"score": 8, "justification": "Vénus-Mars en trigone serré."},
+        "complicite_emotionnelle": {"score": 6, "justification": "Lune en sextile."},
+    }
+
+
+def test_generate_reading_compatibility_ratings_none_for_other_reading_types(monkeypatch):
+    chart = _make_chart()
+    request = schemas.ReadingRequest(reading_type="global", focus_areas=["general"])
+
+    fake_client = _FakeAnthropicClient([_FakeResponse("Lecture générale sans notation.", stop_reason="end_turn")])
+    monkeypatch.setattr(interpretation_service, "get_settings", _settings_with_key)
+    monkeypatch.setattr(interpretation_service, "AsyncAnthropic", lambda api_key: fake_client)
+
+    result = asyncio.run(interpretation_service.generate_reading(chart, request))
+    assert result["compatibility_ratings"] is None
 
 
 def test_basic_reading_types_include_focus_zone_section():

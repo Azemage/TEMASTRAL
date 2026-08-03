@@ -292,6 +292,57 @@ button:disabled { opacity: 0.6; cursor: wait; }
   }
 }
 
+.compat-ratings {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1rem 1.2rem;
+  margin-bottom: 1.5rem;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.compat-rating-row {
+  margin-bottom: 1rem;
+}
+
+.compat-rating-row:last-child {
+  margin-bottom: 0;
+}
+
+.compat-rating-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 0.3rem;
+}
+
+.compat-rating-label {
+  font-weight: 600;
+}
+
+.compat-rating-score {
+  color: var(--accent-2);
+  font-weight: 700;
+}
+
+.compat-rating-track {
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+  height: 8px;
+  overflow: hidden;
+}
+
+.compat-rating-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), var(--accent-2));
+  border-radius: 999px;
+}
+
+.compat-rating-justification {
+  margin: 0.4rem 0 0;
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
 .zr-phase-card {
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid var(--border);

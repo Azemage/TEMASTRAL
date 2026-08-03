@@ -72,6 +72,7 @@ class SavedReading(Base):
 
     request_payload: Mapped[dict] = mapped_column(JSON, nullable=False)
     reading_text: Mapped[str] = mapped_column(Text, nullable=False)
+    compatibility_ratings: Mapped[dict | None] = mapped_column(JSON, nullable=True)
 
     model_used: Mapped[str | None] = mapped_column(String(50), nullable=True)
     tokens_used: Mapped[int | None] = mapped_column(Integer, nullable=True)
