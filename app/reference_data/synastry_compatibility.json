@@ -1,0 +1,145 @@
+{
+  "description": "Spécification de la fonctionnalité de compatibilité, s'appuyant sur trois techniques (inter-aspects, chevauchement de maisons, thème composite) avec DEUX jeux de règles de pondération distincts selon le type de relation analysée. Vient compléter le cahier des charges (à ajouter comme module 3.6 Synastrie et composite).",
+
+  "relationship_modes": {
+    "description": "L'app doit distinguer explicitement le mode choisi par l'utilisateur avant de générer la lecture — les significateurs pertinents changent radicalement selon le contexte.",
+    "modes": [
+      { "code": "romantic", "name_fr": "Relation amoureuse/romantique" },
+      { "code": "friendship", "name_fr": "Amitié" },
+      { "code": "professional", "name_fr": "Relation professionnelle (collègue, associé, employeur)" },
+      { "code": "person_company", "name_fr": "Personne / Entreprise (candidat-employeur, freelance-client, fondateur-entreprise)" },
+      { "code": "family", "name_fr": "Relation familiale (optionnel, V2)" }
+    ]
+  },
+
+  "technique_1_inter_aspects": {
+    "description": "Calcul des aspects entre les planètes du thème A et les planètes du thème B (jamais entre planètes d'un même thème). Utilise les mêmes définitions d'aspects et d'orbes que aspects.json, avec un orbe généralement plus serré (3-5°) pour la synastrie.",
+
+    "significator_pairs_by_mode": {
+      "romantic": [
+        { "pair": "Sun-Moon", "weight": "très fort", "meaning": "compatibilité fondamentale, sentiment d'être sur la même longueur d'onde" },
+        { "pair": "Venus-Mars", "weight": "très fort", "meaning": "attraction, désir, alchimie romantique et physique" },
+        { "pair": "Sun-Sun", "weight": "moyen", "meaning": "reconnaissance identitaire mutuelle" },
+        { "pair": "Moon-Moon", "weight": "fort", "meaning": "résonance émotionnelle, confort au quotidien" },
+        { "pair": "Venus-Venus", "weight": "moyen", "meaning": "valeurs affectives et esthétiques partagées" },
+        { "pair": "Saturn-personal_planets", "weight": "très fort", "meaning": "engagement, structure, durabilité — stabilisant en aspect harmonique, source de friction ou de déséquilibre en aspect tendu ; indicateur le plus fiable de la longévité d'une relation" },
+        { "pair": "Nodes-personal_planets", "weight": "fort (symbolique)", "meaning": "sentiment de lien 'destiné' — à présenter comme évocateur, jamais comme une preuve ou une prédiction" },
+        { "pair": "Mars-Saturn", "weight": "moyen", "meaning": "tension possible entre désir d'action et besoin de contrôle/structure de l'autre" }
+      ],
+      "friendship": [
+        { "pair": "Mercury-Mercury", "weight": "fort", "meaning": "compatibilité de communication et d'humour" },
+        { "pair": "Sun-Moon", "weight": "moyen", "meaning": "confort relationnel général" },
+        { "pair": "Jupiter-personal_planets", "weight": "fort", "meaning": "plaisir partagé, sentiment d'expansion mutuelle" },
+        { "pair": "Uranus-personal_planets", "weight": "moyen", "meaning": "stimulation intellectuelle, relation qui sort de l'ordinaire" }
+      ],
+      "professional": [
+        { "pair": "Saturn-Saturn", "weight": "fort", "meaning": "compatibilité dans l'approche du travail, de la rigueur et des responsabilités" },
+        { "pair": "Mercury-Mercury", "weight": "très fort", "meaning": "qualité de la communication professionnelle, compréhension mutuelle des idées" },
+        { "pair": "Mars-Mars", "weight": "moyen", "meaning": "compatibilité dans le rythme de travail et la gestion des désaccords" },
+        { "pair": "Sun-Saturn", "weight": "moyen", "meaning": "dynamique d'autorité/reconnaissance entre les deux profils" },
+        { "pair": "Jupiter-Sun", "weight": "fort", "meaning": "potentiel de croissance mutuelle dans la collaboration" }
+      ],
+      "person_company": [
+        { "pair": "Sun(person)-Sun/MC(company)", "weight": "très fort", "meaning": "résonance entre l'identité de la personne et la mission/l'image publique de l'entreprise" },
+        { "pair": "Saturn(person)-Saturn(company)", "weight": "très fort", "meaning": "compatibilité de rythme, de structure organisationnelle et de durabilité de la collaboration" },
+        { "pair": "Mercury(person)-Mercury(company)", "weight": "fort", "meaning": "fluidité de la communication contractuelle et quotidienne" },
+        { "pair": "Jupiter(company)-personal_planets(person)", "weight": "fort", "meaning": "potentiel de croissance et d'opportunités offert par l'entreprise à la personne" },
+        { "pair": "planets(company)-house_6_10(person)", "weight": "fort", "meaning": "voir technique_2, recoupement direct avec le travail quotidien et la carrière de la personne" },
+        { "pair": "planets(company)-house_2_8(person)", "weight": "moyen", "meaning": "impact sur les ressources matérielles partagées (rémunération, partage de revenus)" }
+      ]
+    },
+
+    "scoring_note": "Ne pas transformer la synastrie en un simple score numérique de 'compatibilité en %' — c'est réducteur et peu défendable astrologiquement. Préférer une pondération interne (fort/moyen/faible) utilisée pour prioriser ce que le LLM développe en premier, sur le même principe que themes_confirmes (voir strategie_lecture_professionnelle.md)."
+  },
+
+  "technique_2_house_overlay": {
+    "description": "Chevauchement de maisons : placer les planètes du thème B dans les maisons du thème A (et inversement). Montre DANS QUELLE SPHÈRE DE VIE l'autre s'insère structurellement — complémentaire aux inter-aspects qui montrent COMMENT les énergies interagissent.",
+    "calculation": "Pour chaque planète de B, déterminer dans quelle maison de A elle tombe (selon les cuspides du thème A), et réciproquement.",
+    "key_placements_by_mode": {
+      "romantic": {
+        "house_7": "l'autre est vécu comme partenaire au sens propre — placement le plus significatif en synastrie amoureuse",
+        "house_5": "l'autre active la sphère de la romance, du plaisir, du jeu",
+        "house_4": "l'autre est vécu comme faisant partie du foyer/de la famille",
+        "house_8": "intimité profonde, fusion, ou enjeux de pouvoir/contrôle partagés",
+        "house_12": "lien inconscient fort, parfois difficile à objectiver, potentiel de dépendance"
+      },
+      "professional": {
+        "house_10": "l'autre est associé à la réussite professionnelle et à la réputation",
+        "house_6": "l'autre s'insère dans le travail quotidien",
+        "house_11": "l'autre est vécu comme un allié/partenaire de projet plutôt qu'une hiérarchie"
+      },
+      "person_company": {
+        "house_10": "PLACEMENT CLÉ — les planètes de l'entreprise tombant en maison 10 de la personne indiquent un fort potentiel d'épanouissement/reconnaissance professionnelle via cette entreprise",
+        "house_6": "PLACEMENT CLÉ — indique une bonne intégration dans le travail quotidien et les routines de l'entreprise",
+        "house_2": "impact sur la stabilité financière personnelle",
+        "house_8": "ressources partagées, dépendance financière à l'entreprise, enjeux de pouvoir hiérarchique"
+      }
+    }
+  },
+
+  "technique_3_composite_chart": {
+    "description": "Thème composite : calcul d'un thème unique représentant la relation elle-même comme une entité, à partir des points médians de chaque paire de planètes homologues.",
+    "calculation_method": "midpoint",
+    "formula": "Pour chaque planète (Soleil, Lune, Mercure, Vénus, Mars, Jupiter, Saturne, Uranus, Neptune, Pluton) : position_composite = point médian entre position_A et position_B sur le cercle zodiacal (attention à prendre le point médian du plus petit arc, pas du plus grand, en cas d'ambiguïté à 180°).",
+    "ascendant_composite": "Se calcule soit par point médian des deux Ascendants (méthode la plus simple), soit par la méthode Ascendant composite dérivé (recalcul complet à partir du MC composite) — la première est plus simple à implémenter et largement acceptée en pratique moderne.",
+    "usage": "Décrit la relation comme une entité en soi ('à quoi ressemble ce couple/cette collaboration'), complémentaire aux deux techniques précédentes qui décrivent plutôt 'comment A et B interagissent individuellement'.",
+    "applicability_by_mode": {
+      "romantic": "très pertinent, technique standard en synastrie amoureuse",
+      "friendship": "pertinent",
+      "professional": "pertinent, notamment pour un partenariat d'affaires entre deux personnes",
+      "person_company": "à utiliser avec prudence — le composite fonctionne bien entre deux thèmes de personnes, son application à une entité collective (entreprise) est plus discutable théoriquement ; le proposer en option secondaire plutôt qu'en pilier de l'analyse pour ce mode"
+    }
+  },
+
+  "company_chart_note": {
+    "description": "Note sur le calcul du thème d'une entreprise, nécessaire pour le mode person_company",
+    "data_required": "Date, heure et lieu de constitution officielle (immatriculation / signature des statuts / premher acte juridique fondateur)",
+    "reliability_caveat": "La précision de l'heure de constitution est rarement documentée avec certitude (contrairement à une naissance) — traiter le thème d'entreprise comme potentiellement 'sans heure connue' par défaut (voir birth_time_known dans le schéma natal_charts), avec Ascendant et maisons non fiables sauf si l'heure exacte de dépôt légal est connue.",
+    "practice_status": "Pratique reconnue en astrologie mondaine/financière (astrologie d'entreprise), mais moins standardisée que la synastrie interpersonnelle classique — à présenter à l'utilisateur comme une approche complémentaire, pas comme une science exacte."
+  },
+
+  "output_schema": {
+    "description": "Structure de sortie recommandée pour une analyse de compatibilité",
+    "example": {
+      "relationship_mode": "romantic",
+      "chart_a_id": "uuid",
+      "chart_b_id": "uuid",
+      "inter_aspects": [
+        {
+          "planet_a": "Venus",
+          "planet_b": "Mars",
+          "aspect_type": "trine",
+          "orb": 2.1,
+          "weight": "très fort",
+          "direction": "applying"
+        }
+      ],
+      "house_overlay": {
+        "a_planets_in_b_houses": [
+          { "planet": "Sun", "house_in_b_chart": 7 }
+        ],
+        "b_planets_in_a_houses": [
+          { "planet": "Moon", "house_in_a_chart": 4 }
+        ]
+      },
+      "composite_chart": {
+        "sun": { "sign": "Libra", "degree": 12.4 },
+        "ascendant": { "sign": "Cancer", "degree": 8.1 }
+      },
+      "themes_confirmes_relation": [
+        {
+          "theme": "attraction_forte_engagement_solide",
+          "signaux_convergents": ["Venus-Mars trigone applicatif", "Saturne A en maison 7 de B", "Soleil composite en signe cardinal"],
+          "poids": "fort"
+        }
+      ]
+    }
+  },
+
+  "app_implementation_recommendation": {
+    "mvp": "Implémenter la technique 1 (inter-aspects) pour le mode romantic uniquement — c'est la plus simple et la plus attendue par les utilisateurs.",
+    "v1": "Ajouter le chevauchement de maisons (technique 2) et les modes friendship/professional.",
+    "v2": "Ajouter le thème composite (technique 3) et le mode person_company, avec la gestion spécifique du thème d'entreprise (sans heure fiable par défaut).",
+    "critical_ui_point": "Toujours demander explicitement à l'utilisateur quel mode de relation il analyse AVANT de lancer le calcul — ne jamais appliquer les pondérations romantiques par défaut à une relation professionnelle ou une évaluation d'entreprise."
+  }
+}

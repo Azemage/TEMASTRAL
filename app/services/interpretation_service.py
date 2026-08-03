@@ -22,6 +22,7 @@ from app.config import get_settings
 from app.core.reference_data import houses_meanings, rulerships
 from app.core.zodiacal_releasing import FORTUNE_LOT_NAME, SPIRIT_LOT_NAME
 from app.services import timing_service
+from app.services.synastry_service import compute_synastry_for_charts
 from app.services.zodiacal_releasing_service import compute_zodiacal_releasing_for_chart
 
 BASIC_READING_TYPES = {"global", "love", "career", "family"}
@@ -41,6 +42,13 @@ READING_TYPE_MAX_TOKENS = {
     "lots": 3000,
     "derived_houses": 2400,
     "timing": 3500,
+    "compatibility": 4500,
+}
+
+COMPATIBILITY_MODE_LABELS_FR = {
+    "romantic": "relation amoureuse/romantique",
+    "friendship": "amitié",
+    "professional": "relation professionnelle (collègue, associé, employeur)",
 }
 
 # Nombre d'appels de relance autorisés quand une réponse s'arrête faute de budget de tokens
@@ -219,6 +227,69 @@ lecture doit viser — nomme des thèmes de vie et des scénarios plausibles, pa
 'dynamiques' et des 'tonalités'."""
 
 
+def _compatibility_prompt_block(request: schemas.ReadingRequest) -> str:
+    mode = request.relationship_mode or "romantic"
+    mode_label = COMPATIBILITY_MODE_LABELS_FR.get(mode, mode)
+
+    intro = f"""Cette lecture porte sur la COMPATIBILITÉ entre deux personnes (synastrie), \
+dans le contexte d'une {mode_label} — garde ce contexte présent à l'esprit du début à la fin : \
+les significateurs et les enjeux qui comptent changent radicalement selon qu'il s'agit d'un \
+couple, d'une amitié ou d'une collaboration professionnelle. Elle s'appuie sur trois \
+techniques complémentaires, toutes déjà calculées dans les données reçues :
+
+1. `inter_aspects` : les aspects entre les planètes de la personne A (`planet_a`) et celles \
+de la personne B (`planet_b`) — jamais entre deux planètes d'une même personne. Chaque aspect \
+porte une liste `significator_matches` (peut être vide) : les couples de planètes reconnus \
+comme particulièrement significatifs pour ce type de relation, avec leur poids ('très fort' à \
+'faible') et leur signification déjà rédigée. La liste est déjà triée par poids décroissant \
+puis par orbe la plus serrée : développe en priorité les premiers éléments, traite les \
+suivants plus rapidement ou groupe-les ; les aspects sans `significator_matches` sont \
+secondaires, à ne mentionner que s'ils viennent nuancer ou renforcer un point déjà établi.
+2. `house_overlay` : dans quelle maison de l'autre thème tombe chaque planète \
+(`a_planets_in_b_houses` et `b_planets_in_a_houses`), avec un `key_meaning` déjà renseigné \
+quand ce placement est particulièrement significatif pour ce mode de relation (sinon `null` \
+— reste alors secondaire). Sers-toi de `reference.houses_meanings` pour les maisons sans \
+`key_meaning` mais qui reviennent avec plusieurs planètes.
+3. `composite_chart` : un thème unique représentant la relation elle-même comme une entité \
+(point médian de chaque paire de planètes homologues), dans `points` (par planète) et \
+`ascendant`. Décrit 'à quoi ressemble ce duo vu de l'extérieur', en complément des deux \
+techniques précédentes qui décrivent plutôt comment A et B interagissent individuellement."""
+
+    time_known_note = """Vérifie `charts_time_known` : si `chart_a` ou `chart_b` est `false`, \
+l'heure de naissance de cette personne est inconnue — précise que le `house_overlay` et \
+l'Ascendant composite sont alors approximatifs pour elle, mais que les `inter_aspects` restent \
+pleinement fiables (ils ne dépendent pas de l'heure)."""
+
+    structure = """Structure la lecture ainsi : (1) une vue d'ensemble de la dynamique \
+relationnelle en 2-3 phrases ; (2) le détail des inter-aspects les plus significatifs, \
+organisés par thème plutôt que comme une liste plate (ex. regrouper ce qui touche à \
+l'alchimie/l'attraction, puis ce qui touche à la communication, puis à l'engagement/la durée, \
+selon ce que les données font ressortir) ; (3) ce que révèle le chevauchement de maisons sur \
+la sphère de vie où chacun s'insère chez l'autre ; (4) le thème composite comme portrait de la \
+relation elle-même ; (5) une section finale 'Points de vigilance et recommandations' qui nomme \
+explicitement les frictions ou déséquilibres les plus significatifs (notamment tout aspect \
+tendu impliquant Saturne : à la fois source de friction ET indicateur de longévité potentielle \
+si bien géré) et propose des recommandations concrètes et actionnables pour composer avec — \
+jamais un simple 'communiquez bien', mais quelque chose d'ancré dans les signaux relevés plus \
+haut."""
+
+    ethics = """RÈGLES SPÉCIFIQUES À CETTE LECTURE : ne rends jamais un verdict fermé sur la \
+réussite ou l'échec de la relation ('vous êtes faits l'un pour l'autre' / 'ça ne marchera \
+jamais') : les inter-aspects décrivent des dynamiques à vivre et à travailler, pas un destin. \
+Ne porte aucun jugement de valeur sur la personne B (qui ne lit pas cette lecture) au-delà de \
+ce que les données astrologiques appuient directement ; adresse-toi à la personne A comme \
+consultante, en parlant de la relation et de ce qu'elle peut en faire, jamais comme si tu \
+jugeais B dans l'absolu. N'invente aucun fait biographique sur B."""
+
+    return f"""{intro}
+
+{time_known_note}
+
+{structure}
+
+{ethics}"""
+
+
 def _basic_chart_data(chart_data: dict) -> dict:
     """Sous-ensemble du thème calculé pour les lectures basiques : pas de lots ni de
     maisons dérivées, qui ont leurs propres lectures dédiées."""
@@ -275,11 +346,12 @@ ZONES À COUVRIR DANS CETTE LECTURE :
 
 Termine toujours par un court paragraphe de synthèse bienveillant et encourageant."""
 
-    specialized_block = (
-        _zodiacal_releasing_prompt_block(request)
-        if request.reading_type == "zodiacal_releasing"
-        else _SPECIALIZED_PROMPT_BLOCKS[request.reading_type]
-    )
+    if request.reading_type == "zodiacal_releasing":
+        specialized_block = _zodiacal_releasing_prompt_block(request)
+    elif request.reading_type == "compatibility":
+        specialized_block = _compatibility_prompt_block(request)
+    else:
+        specialized_block = _SPECIALIZED_PROMPT_BLOCKS[request.reading_type]
     return f"""{base}
 
 {specialized_block}
@@ -287,7 +359,9 @@ Termine toujours par un court paragraphe de synthèse bienveillant et encouragea
 Termine toujours par un court paragraphe de synthèse bienveillant et encourageant."""
 
 
-def _build_user_payload(chart: models.NatalChart, request: schemas.ReadingRequest) -> dict:
+def _build_user_payload(
+    chart: models.NatalChart, request: schemas.ReadingRequest, chart_b: models.NatalChart | None = None
+) -> dict:
     payload = {
         "request_type": f"{request.reading_type}_reading",
         "subject": {
@@ -356,11 +430,32 @@ def _build_user_payload(chart: models.NatalChart, request: schemas.ReadingReques
                 entry["current_l1_l2_periods"] = lot_result["current_l1_l2_periods"]
                 entry["current_l2"] = lot_result["current_l2"]
             payload["lots"][lot_name] = entry
+    elif request.reading_type == "compatibility":
+        assert chart_b is not None  # vérifié en amont par l'appelant (api/readings.py)
+        mode = request.relationship_mode or "romantic"
+        synastry = compute_synastry_for_charts(chart, chart_b, mode)
+
+        payload["relationship_mode"] = mode
+        payload["person_a"] = {"identity": _identity_context(chart_data)}
+        payload["person_b"] = {
+            "name": chart_b.subject_name,
+            "birth_date": chart_b.birth_date.isoformat(),
+            "birth_time_known": chart_b.birth_time_known,
+            "birth_city": chart_b.birth_city,
+            "identity": _identity_context(chart_b.computed_chart_data),
+        }
+        payload["inter_aspects"] = synastry["inter_aspects"]
+        payload["house_overlay"] = synastry["house_overlay"]
+        payload["composite_chart"] = synastry["composite_chart"]
+        payload["charts_time_known"] = synastry["charts_time_known"]
+        payload["reference"] = {"houses_meanings": houses_meanings()["houses"]}
 
     return payload
 
 
-async def generate_reading(chart: models.NatalChart, request: schemas.ReadingRequest) -> dict:
+async def generate_reading(
+    chart: models.NatalChart, request: schemas.ReadingRequest, chart_b: models.NatalChart | None = None
+) -> dict:
     settings = get_settings()
     if not settings.anthropic_api_key:
         raise RuntimeError(
@@ -370,7 +465,7 @@ async def generate_reading(chart: models.NatalChart, request: schemas.ReadingReq
 
     client = AsyncAnthropic(api_key=settings.anthropic_api_key)
     system_prompt = _build_system_prompt(request)
-    payload = _build_user_payload(chart, request)
+    payload = _build_user_payload(chart, request, chart_b=chart_b)
     if request.reading_type == "zodiacal_releasing":
         max_tokens = _zodiacal_releasing_max_tokens(request)
     else:

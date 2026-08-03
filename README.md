@@ -42,17 +42,28 @@ Implémenté :
   lecture dédiée permet de cocher un ou plusieurs lots (lecture approfondie sur un seul lot,
   ou lecture croisée si plusieurs sont sélectionnés) et de choisir entre une vue de la période
   actuelle ou une vue prévisionnelle sur les ~10 prochaines années
+- Compatibilité (synastrie) entre deux thèmes, pour trois modes de relation (amoureuse, amitié,
+  professionnelle — le mode change radicalement les significateurs pertinents) : aspects
+  croisés entre les planètes des deux thèmes (pondérés fort/moyen/faible selon le mode, jamais
+  un score en %), chevauchement de maisons (dans quelle maison de l'autre tombe chaque
+  planète), et thème composite (point médian de chaque paire de planètes homologues,
+  représentant la relation comme une entité). La lecture dédiée compile ces trois techniques
+  en une analyse structurée avec une section recommandations/points de vigilance. Le mode
+  personne/entreprise n'est pas encore implémenté (nécessite un thème d'entreprise dédié,
+  cf. section V2 de la spec)
 - Lecture interprétée par l'API Anthropic avec **prompt dédié par catégorie** : lecture
   générale (thème de base uniquement — planètes/maisons/aspects/dispositeurs, sans les lots
-  ni les maisons dérivées), et quatre lectures spécialisées (Lots, Maisons dérivées, Timing,
-  Libération zodiacale) qui ne reçoivent que les données de leur propre technique
+  ni les maisons dérivées), et cinq lectures spécialisées (Lots, Maisons dérivées, Timing,
+  Libération zodiacale, Compatibilité) qui ne reçoivent que les données de leur propre technique
 - Web app simple pour saisir une naissance, visualiser le thème et générer une lecture,
   organisée en "Thème natal" (données calculées) et "Lecture interprétée" (générale + les
-  4 lectures spécialisées, chacune affichant d'abord ses données puis un bouton de génération ;
-  la lecture des phases de Libération zodiacale est un second bouton dans l'onglet Lots)
+  5 lectures spécialisées, chacune affichant d'abord ses données puis un bouton de génération ;
+  la lecture des phases de Libération zodiacale est un second bouton dans l'onglet Lots ;
+  l'onglet Compatibilité permet de sélectionner une carte existante ou d'en créer une nouvelle
+  pour la deuxième personne, directement depuis cet onglet)
 
 Pas encore implémenté (voir cahier des charges fourni, section V2/V3) : révolution solaire,
-progressions secondaires, synastrie et composite, comptes utilisateurs.
+progressions secondaires, mode de compatibilité personne/entreprise, comptes utilisateurs.
 
 ## Installation
 
@@ -114,11 +125,12 @@ Principe directeur repris du cahier des charges : tout ce qui est dans `app/core
 | POST | `/api/charts` | Calcule et sauvegarde un thème natal à partir des données de naissance |
 | GET | `/api/charts` | Liste les thèmes de la session courante |
 | GET | `/api/charts/{id}` | Récupère un thème calculé |
-| POST | `/api/charts/{id}/readings` | Génère une lecture interprétée (LLM). `reading_type` = `global`\|`love`\|`career`\|`family`\|`lots`\|`derived_houses`\|`timing`\|`zodiacal_releasing` ; `reference_house` (1-12) pour `derived_houses`, `as_of_date` pour `timing`/`zodiacal_releasing` |
+| POST | `/api/charts/{id}/readings` | Génère une lecture interprétée (LLM). `reading_type` = `global`\|`love`\|`career`\|`family`\|`lots`\|`derived_houses`\|`timing`\|`zodiacal_releasing`\|`compatibility` ; `reference_house` (1-12) pour `derived_houses`, `as_of_date` pour `timing`/`zodiacal_releasing`, `chart_b_id`+`relationship_mode` pour `compatibility` |
 | GET | `/api/charts/{id}/readings` | Liste les lectures déjà générées pour un thème |
 | GET | `/api/charts/{id}/timing?date=YYYY-MM-DD` | Transits actuels de toutes les planètes + profection annuelle, calculés à la demande (non persisté) |
 | GET | `/api/charts/{id}/timing/forecast?date=...&months=12` | Transits à venir sur la période, toutes planètes (pics d'orbe, fenêtres actives, intensité 1-4) |
 | GET | `/api/charts/{id}/zodiacal-releasing?date=YYYY-MM-DD&lookahead_years=5` | Phases L1/sous-phases L2 en cours pour les 14 lots, calculées à la demande (non persisté) |
+| GET | `/api/charts/{id}/compatibility?chart_b_id=...&mode=romantic\|friendship\|professional` | Inter-aspects pondérés, chevauchement de maisons et thème composite entre deux thèmes, calculés à la demande (non persisté) |
 | GET | `/api/reference/config` | Options de configuration (systèmes de maisons, dispositeurs, points optionnels) |
 | GET | `/api/reference/timezones` | Liste des ~490 fuseaux horaires IANA canoniques |
 | GET | `/api/geocode?query=...` | Recherche ville -> latitude/longitude/fuseau horaire |

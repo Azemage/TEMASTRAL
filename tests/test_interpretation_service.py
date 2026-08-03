@@ -8,18 +8,19 @@ from app.services import interpretation_service
 
 
 class _FakeChart:
-    subject_name = "Test"
     relationship_to_user = "self"
-    birth_date = date(1990, 5, 15)
     birth_time_known = True
-    birth_city = "Lyon"
     birth_country = "France"
     house_system = "placidus"
     zodiac_type = "tropical"
     rulership_system = "both"
 
-    def __init__(self, computed_chart_data):
+    def __init__(self, computed_chart_data, subject_name="Test", birth_date=date(1990, 5, 15), birth_city="Lyon", id="fake-id"):
         self.computed_chart_data = computed_chart_data
+        self.subject_name = subject_name
+        self.birth_date = birth_date
+        self.birth_city = birth_city
+        self.id = id
 
 
 def _make_chart():
@@ -32,6 +33,18 @@ def _make_chart():
         longitude=4.8357,
     )
     return _FakeChart(data)
+
+
+def _make_chart_b():
+    data = calculate_natal_chart(
+        birth_date="1988-11-02",
+        birth_time="08:15:00",
+        time_known=True,
+        timezone="Europe/Paris",
+        latitude=48.8566,
+        longitude=2.3522,
+    )
+    return _FakeChart(data, subject_name="Partenaire", birth_date=date(1988, 11, 2), birth_city="Paris", id="fake-id-b")
 
 
 def test_global_reading_payload_excludes_lots_and_derived_houses():
@@ -172,13 +185,53 @@ def test_zodiacal_releasing_max_tokens_scale_with_lots_and_mode():
 def test_specialized_system_prompts_are_distinct_per_reading_type():
     prompts = {
         rtype: interpretation_service._build_system_prompt(schemas.ReadingRequest(reading_type=rtype))
-        for rtype in ["global", "lots", "derived_houses", "timing", "zodiacal_releasing"]
+        for rtype in ["global", "lots", "derived_houses", "timing", "zodiacal_releasing", "compatibility"]
     }
-    assert len(set(prompts.values())) == 5  # les 5 prompts doivent différer
+    assert len(set(prompts.values())) == 6  # les 6 prompts doivent différer
     assert "LOTS" in prompts["lots"]
     assert "MAISONS DÉRIVÉES" in prompts["derived_houses"]
     assert "DOUZE PROCHAINS MOIS" in prompts["timing"]
     assert "RÉPARTITION ZODIACALE" in prompts["zodiacal_releasing"]
+    assert "COMPATIBILITÉ" in prompts["compatibility"]
+
+
+def test_compatibility_reading_payload_includes_both_persons_and_synastry_data():
+    chart_a = _make_chart()
+    chart_b = _make_chart_b()
+    request = schemas.ReadingRequest(reading_type="compatibility", relationship_mode="romantic", chart_b_id="chart-b")
+    payload = interpretation_service._build_user_payload(chart_a, request, chart_b=chart_b)
+
+    assert payload["relationship_mode"] == "romantic"
+    assert payload["person_b"]["name"] == "Partenaire"
+    assert "identity" in payload["person_a"]
+    assert "identity" in payload["person_b"]
+    assert len(payload["inter_aspects"]) > 0
+    assert "a_planets_in_b_houses" in payload["house_overlay"]
+    assert "Sun" in payload["composite_chart"]["points"]
+    assert payload["charts_time_known"] == {"chart_a": True, "chart_b": True}
+    assert "houses_meanings" in payload["reference"]
+
+
+def test_compatibility_reading_payload_defaults_to_romantic_mode():
+    chart_a = _make_chart()
+    chart_b = _make_chart_b()
+    request = schemas.ReadingRequest(reading_type="compatibility", chart_b_id="chart-b")
+    payload = interpretation_service._build_user_payload(chart_a, request, chart_b=chart_b)
+    assert payload["relationship_mode"] == "romantic"
+
+
+def test_compatibility_prompt_mentions_the_chosen_relationship_mode():
+    request = schemas.ReadingRequest(reading_type="compatibility", relationship_mode="professional")
+    prompt = interpretation_service._build_system_prompt(request)
+    assert "relation professionnelle" in prompt
+    assert "romantique" not in prompt
+
+
+def test_compatibility_prompt_forbids_closed_relationship_verdicts():
+    request = schemas.ReadingRequest(reading_type="compatibility", relationship_mode="romantic")
+    prompt = interpretation_service._build_system_prompt(request)
+    assert "verdict fermé" in prompt
+    assert "recommandations" in prompt.lower()
 
 
 # ---------------------------------------------------------------------------

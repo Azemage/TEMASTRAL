@@ -239,6 +239,59 @@ button:disabled { opacity: 0.6; cursor: wait; }
   border-color: var(--accent);
 }
 
+.compat-mode-tabs {
+  margin: 0.4rem 0 0.8rem;
+}
+
+.compat-mode-btn {
+  background: transparent;
+  color: var(--muted);
+  font-weight: 500;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+}
+
+.compat-mode-btn.active {
+  background: var(--accent);
+  color: #10121f;
+  border-color: var(--accent);
+}
+
+.compat-weight-badge {
+  display: inline-block;
+  padding: 0.15rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.compat-weight-very-strong { background: rgba(255, 93, 158, 0.18); color: #ff5d9e; }
+.compat-weight-strong { background: rgba(255, 189, 89, 0.18); color: #ffbd59; }
+.compat-weight-medium { background: rgba(178, 141, 255, 0.18); color: var(--accent); }
+.compat-weight-weak { background: rgba(154, 156, 189, 0.18); color: var(--muted); }
+
+.compat-meaning-row td {
+  color: var(--muted);
+  font-size: 0.85rem;
+  padding-top: 0;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.compat-overlay-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+}
+
+@media (max-width: 700px) {
+  .compat-overlay-columns {
+    grid-template-columns: 1fr;
+  }
+}
+
 .zr-phase-card {
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid var(--border);

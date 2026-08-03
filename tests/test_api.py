@@ -13,6 +13,16 @@ VALID_CHART_PAYLOAD = {
     }
 }
 
+OTHER_CHART_PAYLOAD = {
+    "birth_data": {
+        "date": "1988-11-02",
+        "time": "08:15:00",
+        "time_known": True,
+        "timezone": "Europe/Paris",
+        "location": {"city": "Paris", "country": "France", "latitude": 48.8566, "longitude": 2.3522},
+    }
+}
+
 
 @pytest.fixture
 def client():
@@ -165,6 +175,86 @@ def test_zodiacal_releasing_endpoint_accepts_lookahead_years(client):
 def test_zodiacal_releasing_endpoint_404_for_unknown_chart(client):
     res = client.get("/api/charts/does-not-exist/zodiacal-releasing")
     assert res.status_code == 404
+
+
+def test_compatibility_endpoint_returns_synastry_data(client):
+    chart_a_id = client.post("/api/charts", json=VALID_CHART_PAYLOAD).json()["id"]
+    chart_b_id = client.post("/api/charts", json=OTHER_CHART_PAYLOAD).json()["id"]
+
+    res = client.get(
+        f"/api/charts/{chart_a_id}/compatibility", params={"chart_b_id": chart_b_id, "mode": "romantic"}
+    )
+    assert res.status_code == 200
+    body = res.json()
+    assert body["relationship_mode"] == "romantic"
+    assert body["chart_a_id"] == chart_a_id
+    assert body["chart_b_id"] == chart_b_id
+    assert len(body["inter_aspects"]) > 0
+    assert len(body["house_overlay"]["a_planets_in_b_houses"]) == 12  # 10 classiques + nœuds N/S par défaut
+    assert "Sun" in body["composite_chart"]["points"]
+
+
+def test_compatibility_endpoint_rejects_invalid_mode(client):
+    chart_a_id = client.post("/api/charts", json=VALID_CHART_PAYLOAD).json()["id"]
+    chart_b_id = client.post("/api/charts", json=OTHER_CHART_PAYLOAD).json()["id"]
+
+    res = client.get(
+        f"/api/charts/{chart_a_id}/compatibility", params={"chart_b_id": chart_b_id, "mode": "person_company"}
+    )
+    assert res.status_code == 422
+
+
+def test_compatibility_endpoint_rejects_same_chart_twice(client):
+    chart_a_id = client.post("/api/charts", json=VALID_CHART_PAYLOAD).json()["id"]
+
+    res = client.get(
+        f"/api/charts/{chart_a_id}/compatibility", params={"chart_b_id": chart_a_id, "mode": "romantic"}
+    )
+    assert res.status_code == 422
+
+
+def test_compatibility_endpoint_404_when_chart_b_unknown(client):
+    chart_a_id = client.post("/api/charts", json=VALID_CHART_PAYLOAD).json()["id"]
+
+    res = client.get(
+        f"/api/charts/{chart_a_id}/compatibility", params={"chart_b_id": "does-not-exist", "mode": "romantic"}
+    )
+    assert res.status_code == 404
+
+
+def test_compatibility_reading_requires_chart_b_id(client):
+    chart_a_id = client.post("/api/charts", json=VALID_CHART_PAYLOAD).json()["id"]
+
+    res = client.post(
+        f"/api/charts/{chart_a_id}/readings",
+        json={"reading_type": "compatibility", "relationship_mode": "romantic"},
+    )
+    assert res.status_code == 422
+
+
+def test_compatibility_reading_checks_ownership_of_chart_b(client):
+    chart_a_id = client.post("/api/charts", json=VALID_CHART_PAYLOAD).json()["id"]
+
+    with TestClient(app) as other_client:
+        other_chart_id = other_client.post("/api/charts", json=OTHER_CHART_PAYLOAD).json()["id"]
+
+    res = client.post(
+        f"/api/charts/{chart_a_id}/readings",
+        json={"reading_type": "compatibility", "relationship_mode": "romantic", "chart_b_id": other_chart_id},
+    )
+    assert res.status_code == 403
+
+
+def test_compatibility_endpoint_403_when_chart_b_belongs_to_another_session(client):
+    chart_a_id = client.post("/api/charts", json=VALID_CHART_PAYLOAD).json()["id"]
+
+    with TestClient(app) as other_client:
+        other_chart_id = other_client.post("/api/charts", json=OTHER_CHART_PAYLOAD).json()["id"]
+
+    res = client.get(
+        f"/api/charts/{chart_a_id}/compatibility", params={"chart_b_id": other_chart_id, "mode": "romantic"}
+    )
+    assert res.status_code == 403
 
 
 def _settings_without_key():

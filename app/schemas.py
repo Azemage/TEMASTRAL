@@ -308,6 +308,59 @@ class ZodiacalReleasingResponse(BaseModel):
     lots: dict[str, ZodiacalReleasingLotResult]
 
 
+class SignificatorMatch(BaseModel):
+    weight: str  # "très fort" | "fort" | "moyen" | "faible" (libellés bruts de la table de référence)
+    meaning: str
+
+
+class SynastryInterAspect(BaseModel):
+    planet_a: str
+    planet_b: str
+    type: str
+    type_fr: str
+    orb: float
+    significator_matches: list[SignificatorMatch]
+
+
+class SynastryHouseOverlayEntry(BaseModel):
+    planet: str
+    house: int
+    key_meaning: str | None
+
+
+class SynastryHouseOverlay(BaseModel):
+    a_planets_in_b_houses: list[SynastryHouseOverlayEntry]
+    b_planets_in_a_houses: list[SynastryHouseOverlayEntry]
+
+
+class SynastryCompositePoint(BaseModel):
+    sign: str
+    sign_fr: str
+    degree: float
+    absolute_longitude: float
+
+
+class SynastryCompositeChart(BaseModel):
+    points: dict[str, SynastryCompositePoint]
+    ascendant: SynastryCompositePoint
+    method: str
+
+
+class SynastryChartsTimeKnown(BaseModel):
+    chart_a: bool
+    chart_b: bool
+
+
+class SynastryResponse(BaseModel):
+    relationship_mode: str
+    chart_a_id: str
+    chart_b_id: str
+    inter_aspects: list[SynastryInterAspect]
+    house_overlay: SynastryHouseOverlay
+    composite_chart: SynastryCompositeChart
+    charts_time_known: SynastryChartsTimeKnown
+
+
 class NatalChartResponse(BaseModel):
     id: str
     subject_name: str | None
@@ -334,7 +387,7 @@ class NatalChartResponse(BaseModel):
 # Interprétation LLM (cf. cahier des charges, section 4.7)
 # ---------------------------------------------------------------------------
 class ReadingRequest(BaseModel):
-    reading_type: str = "global"  # 'global' | 'love' | 'career' | 'family' | 'lots' | 'derived_houses' | 'timing' | 'zodiacal_releasing'
+    reading_type: str = "global"  # 'global' | 'love' | 'career' | 'family' | 'lots' | 'derived_houses' | 'timing' | 'zodiacal_releasing' | 'compatibility'
     focus_areas: list[str] = Field(default_factory=lambda: ["general"])
     level: str = "débutant"
     tone: str = "accessible et bienveillant"
@@ -343,6 +396,8 @@ class ReadingRequest(BaseModel):
     as_of_date: date_type | None = None  # utilisé par 'timing' et 'zodiacal_releasing'
     zr_selected_lots: list[str] = Field(default_factory=list)  # utilisé par 'zodiacal_releasing' ; vide = Fortune + Esprit
     zr_mode: str = "current"  # 'current' | 'predictive' (10 ans) ; utilisé par 'zodiacal_releasing'
+    chart_b_id: str | None = None  # utilisé par 'compatibility' : identifiant du second thème
+    relationship_mode: str | None = None  # 'romantic' | 'friendship' | 'professional' ; utilisé par 'compatibility'
 
 
 class ReadingResponse(BaseModel):

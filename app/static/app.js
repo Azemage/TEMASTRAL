@@ -81,20 +81,23 @@ function escapeHtml(str) {
 // ---------------------------------------------------------------------
 // Liste des fuseaux horaires (menu déroulant)
 // ---------------------------------------------------------------------
-async function loadTimezones() {
-  const select = document.getElementById("timezone");
+async function loadTimezonesInto(selectId, fallbackDefault = "Europe/Paris") {
+  const select = document.getElementById(selectId);
+  if (!select) return;
   try {
     const res = await fetch("/api/reference/timezones");
     const zones = await res.json();
     select.innerHTML = zones.map((tz) => `<option value="${tz}">${tz}</option>`).join("");
-    select.value = "Europe/Paris";
+    select.value = fallbackDefault;
   } catch (err) {
     // Pas de réseau/API indisponible : on retombe sur un champ texte libre plutôt que de bloquer le formulaire.
-    const fallbackInput = el(`<input type="text" id="timezone" value="Europe/Paris" placeholder="Europe/Paris" required />`);
+    const fallbackInput = el(
+      `<input type="text" id="${selectId}" value="${fallbackDefault}" placeholder="${fallbackDefault}" required />`
+    );
     select.replaceWith(fallbackInput);
   }
 }
-loadTimezones();
+loadTimezonesInto("timezone");
 
 // ---------------------------------------------------------------------
 // Recherche de ville (géocodage)
@@ -539,6 +542,8 @@ function renderChart(chart) {
   renderDerivedHousesDataPanel(data);
   timingLoadedForChartId = null; // nouveau thème : re-fetcher le timing au prochain accès
   zrLoadedForChartId = null; // nouveau thème : re-fetcher les phases au prochain accès
+  compatChartsLoadedForChartId = null; // nouveau thème : re-fetcher la liste des cartes au prochain accès
+  compatChartBId = null;
 }
 
 function renderPlanetsTab(data) {
@@ -1035,6 +1040,277 @@ async function loadZrDataPanel(date) {
 }
 
 // ---------------------------------------------------------------------
+// Compatibilité (synastrie) — deuxième thème + inter-aspects/chevauchement/composite
+// ---------------------------------------------------------------------
+let selectedCompatMode = "romantic";
+let compatChartBId = null;
+let compatChartsLoadedForChartId = null;
+
+const COMPAT_MODE_LABELS_FR = { romantic: "amoureuse", friendship: "amicale", professional: "professionnelle" };
+
+function compatWeightSlug(label) {
+  if (label.includes("très fort")) return "very-strong";
+  if (label.includes("fort")) return "strong";
+  if (label.includes("moyen")) return "medium";
+  return "weak";
+}
+
+async function loadCompatChartOptions() {
+  if (!currentChart) return;
+  const select = document.getElementById("compat-chart-b-select");
+  try {
+    const res = await fetch("/api/charts");
+    if (!res.ok) throw new Error(`Erreur ${res.status}`);
+    const charts = await res.json();
+    const others = charts.filter((c) => c.id !== currentChart.id);
+    const placeholder = `<option value="">— Sélectionner une carte existante —</option>`;
+    select.innerHTML =
+      placeholder +
+      others.map((c) => `<option value="${c.id}">${c.subject_name || "Sans nom"} (${c.birth_date})</option>`).join("");
+    if (compatChartBId) select.value = compatChartBId;
+    compatChartsLoadedForChartId = currentChart.id;
+  } catch (err) {
+    select.innerHTML = `<option value="">Impossible de charger les cartes existantes</option>`;
+  }
+}
+
+async function loadCompatibilityData() {
+  if (!currentChart || !compatChartBId) return;
+  const panel = document.getElementById("compat-data-panel");
+  panel.innerHTML = "<p>Calcul de la compatibilité en cours...</p>";
+  try {
+    const res = await fetch(
+      `/api/charts/${currentChart.id}/compatibility?chart_b_id=${compatChartBId}&mode=${selectedCompatMode}`
+    );
+    if (!res.ok) {
+      const detail = await res.json().catch(() => ({}));
+      throw new Error(detail.detail || `Erreur ${res.status}`);
+    }
+    renderCompatibilityData(await res.json());
+  } catch (err) {
+    panel.innerHTML = `<p class="error">Impossible de calculer la compatibilité : ${err.message}</p>`;
+  }
+}
+
+function renderCompatibilityData(data) {
+  const panel = document.getElementById("compat-data-panel");
+
+  const missingTimeFor = [];
+  if (!data.charts_time_known.chart_a) missingTimeFor.push("le premier thème");
+  if (!data.charts_time_known.chart_b) missingTimeFor.push("le second thème");
+  const timeWarning = missingTimeFor.length
+    ? `<p class="error">Heure de naissance inconnue pour ${missingTimeFor.join(" et ")} : le chevauchement de maisons et l'Ascendant composite sont approximatifs. Les aspects croisés restent fiables (ils ne dépendent pas de l'heure).</p>`
+    : "";
+
+  const aspectRows = data.inter_aspects
+    .map((a) => {
+      const bestMatch = a.significator_matches[0];
+      const weightBadge = bestMatch
+        ? `<span class="compat-weight-badge compat-weight-${compatWeightSlug(bestMatch.weight)}">${bestMatch.weight}</span>`
+        : "—";
+      const meaningRow = bestMatch
+        ? `<tr class="compat-meaning-row"><td colspan="5">${bestMatch.meaning}</td></tr>`
+        : "";
+      return `
+      <tr>
+        <td>${planetLabel(a.planet_a)}</td>
+        <td>${a.type_fr}</td>
+        <td>${planetLabel(a.planet_b)}</td>
+        <td>orbe ${a.orb}°</td>
+        <td>${weightBadge}</td>
+      </tr>
+      ${meaningRow}`;
+    })
+    .join("");
+
+  const overlayRows = (entries) =>
+    entries
+      .map(
+        (e) =>
+          `<tr><td>${planetLabel(e.planet)}</td><td>Maison ${e.house}</td><td>${e.key_meaning || "—"}</td></tr>`
+      )
+      .join("");
+
+  const compositeRows = Object.entries(data.composite_chart.points)
+    .map(([name, p]) => `<tr><td>${planetLabel(name)}</td><td>${signLabel(p.sign)} ${p.degree}°</td></tr>`)
+    .join("");
+
+  panel.innerHTML = `
+    ${timeWarning}
+    <h3>Aspects croisés (${data.inter_aspects.length})</h3>
+    <p class="reading-section-intro">Triés par importance pour une relation ${COMPAT_MODE_LABELS_FR[data.relationship_mode] || data.relationship_mode} : les plus significatifs apparaissent en premier.</p>
+    <table>
+      <thead><tr><th>Planète (vous)</th><th>Aspect</th><th>Planète (l'autre)</th><th>Orbe</th><th>Poids</th></tr></thead>
+      <tbody>${aspectRows}</tbody>
+    </table>
+
+    <h3>Chevauchement de maisons</h3>
+    <div class="compat-overlay-columns">
+      <div>
+        <h4>Vos planètes dans les maisons de l'autre</h4>
+        <table>
+          <thead><tr><th>Planète</th><th>Maison</th><th>Signification</th></tr></thead>
+          <tbody>${overlayRows(data.house_overlay.a_planets_in_b_houses)}</tbody>
+        </table>
+      </div>
+      <div>
+        <h4>Les planètes de l'autre dans vos maisons</h4>
+        <table>
+          <thead><tr><th>Planète</th><th>Maison</th><th>Signification</th></tr></thead>
+          <tbody>${overlayRows(data.house_overlay.b_planets_in_a_houses)}</tbody>
+        </table>
+      </div>
+    </div>
+
+    <h3>Thème composite (la relation comme entité)</h3>
+    <table>
+      <thead><tr><th>Point</th><th>Position</th></tr></thead>
+      <tbody>
+        <tr><td>Ascendant composite</td><td>${signLabel(data.composite_chart.ascendant.sign)} ${data.composite_chart.ascendant.degree}°</td></tr>
+        ${compositeRows}
+      </tbody>
+    </table>
+  `;
+}
+
+document.querySelectorAll(".compat-mode-btn").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll(".compat-mode-btn").forEach((b) => b.classList.remove("active"));
+    btn.classList.add("active");
+    selectedCompatMode = btn.dataset.compatMode;
+    if (compatChartBId) loadCompatibilityData();
+  });
+});
+
+document.getElementById("compat-chart-b-select").addEventListener("change", (e) => {
+  compatChartBId = e.target.value || null;
+  document.getElementById("compat-chart-b-form").classList.add("hidden");
+  if (compatChartBId) {
+    loadCompatibilityData();
+  } else {
+    document.getElementById("compat-data-panel").innerHTML = "";
+  }
+});
+
+document.getElementById("compat-new-chart-b-btn").addEventListener("click", () => {
+  document.getElementById("compat-chart-b-form").classList.toggle("hidden");
+  document.getElementById("compat-chart-b-select").value = "";
+  compatChartBId = null;
+});
+
+loadTimezonesInto("b_timezone");
+
+document.getElementById("b-search-city-btn").addEventListener("click", async () => {
+  const query = document.getElementById("b_city_search").value.trim();
+  const resultsDiv = document.getElementById("b-city-results");
+  resultsDiv.innerHTML = "";
+  if (query.length < 2) return;
+
+  try {
+    const res = await fetch(`/api/geocode?query=${encodeURIComponent(query)}`);
+    if (!res.ok) {
+      resultsDiv.innerHTML = `<p class="error">Recherche indisponible — saisissez les coordonnées manuellement.</p>`;
+      return;
+    }
+    const locations = await res.json();
+    if (locations.length === 0) {
+      resultsDiv.innerHTML = `<p>Aucun résultat. Saisissez les coordonnées manuellement.</p>`;
+      return;
+    }
+    locations.forEach((loc) => {
+      const item = el(`<div class="city-result-item">${loc.display_name}</div>`);
+      item.addEventListener("click", () => {
+        document.getElementById("b_latitude").value = loc.latitude.toFixed(4);
+        document.getElementById("b_longitude").value = loc.longitude.toFixed(4);
+        if (loc.timezone) document.getElementById("b_timezone").value = loc.timezone;
+        resultsDiv.innerHTML = "";
+        document.getElementById("b_city_search").value = loc.display_name;
+      });
+      resultsDiv.appendChild(item);
+    });
+  } catch (err) {
+    resultsDiv.innerHTML = `<p class="error">Recherche indisponible — saisissez les coordonnées manuellement.</p>`;
+  }
+});
+
+document.getElementById("b_time_unknown").addEventListener("change", (e) => {
+  document.getElementById("b_birth_time").disabled = e.target.checked;
+});
+
+document.getElementById("compat-create-chart-b-btn").addEventListener("click", async () => {
+  const errorEl = document.getElementById("compat-chart-b-error");
+  const btn = document.getElementById("compat-create-chart-b-btn");
+  errorEl.textContent = "";
+
+  const timeUnknown = document.getElementById("b_time_unknown").checked;
+  const latitude = parseFloat(document.getElementById("b_latitude").value);
+  const longitude = parseFloat(document.getElementById("b_longitude").value);
+  const birthDate = document.getElementById("b_birth_date").value;
+
+  if (!birthDate || Number.isNaN(latitude) || Number.isNaN(longitude)) {
+    errorEl.textContent = "Complétez au moins la date de naissance et les coordonnées.";
+    return;
+  }
+
+  const payload = {
+    birth_data: {
+      date: birthDate,
+      time: timeUnknown ? null : document.getElementById("b_birth_time").value,
+      time_known: !timeUnknown,
+      timezone: document.getElementById("b_timezone").value,
+      location: {
+        city: document.getElementById("b_city_search").value || null,
+        country: null,
+        latitude,
+        longitude,
+      },
+    },
+    subject_name: document.getElementById("b_subject_name").value || null,
+  };
+
+  btn.disabled = true;
+  btn.textContent = "Calcul en cours...";
+  try {
+    const res = await fetch("/api/charts", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) {
+      const detail = await res.json().catch(() => ({}));
+      throw new Error(detail.detail || `Erreur ${res.status}`);
+    }
+    const newChart = await res.json();
+    compatChartBId = newChart.id;
+    await loadCompatChartOptions();
+    document.getElementById("compat-chart-b-select").value = compatChartBId;
+    document.getElementById("compat-chart-b-form").classList.add("hidden");
+    loadCompatibilityData();
+  } catch (err) {
+    errorEl.textContent = err.message;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "Calculer ce thème";
+  }
+});
+
+document.getElementById("generate-compat-reading-btn").addEventListener("click", () => {
+  const errorEl = document.getElementById("compat-reading-error");
+  if (!compatChartBId) {
+    errorEl.textContent = "Sélectionnez ou créez d'abord le thème de la deuxième personne.";
+    return;
+  }
+  errorEl.textContent = "";
+  generateSpecializedReading({
+    btnId: "generate-compat-reading-btn",
+    errorId: "compat-reading-error",
+    outputId: "compat-reading-output",
+    defaultLabel: "Générer la lecture de compatibilité",
+    requestBody: { reading_type: "compatibility", chart_b_id: compatChartBId, relationship_mode: selectedCompatMode },
+  });
+});
+
+// ---------------------------------------------------------------------
 // Onglets (section "Thème natal")
 // ---------------------------------------------------------------------
 document.querySelectorAll(".tab-btn").forEach((btn) => {
@@ -1061,6 +1337,9 @@ document.querySelectorAll(".reading-tab-btn").forEach((btn) => {
     }
     if (btn.dataset.readingTab === "lots" && currentChart && zrLoadedForChartId !== currentChart.id) {
       loadZrDataPanel();
+    }
+    if (btn.dataset.readingTab === "compatibility" && currentChart && compatChartsLoadedForChartId !== currentChart.id) {
+      loadCompatChartOptions();
     }
   });
 });

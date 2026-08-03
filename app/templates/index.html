@@ -133,6 +133,7 @@
         <button class="reading-tab-btn" data-reading-tab="lots">Lots</button>
         <button class="reading-tab-btn" data-reading-tab="derived">Maisons dérivées</button>
         <button class="reading-tab-btn" data-reading-tab="timing">Les 12 prochains mois</button>
+        <button class="reading-tab-btn" data-reading-tab="compatibility">Compatibilité</button>
       </div>
 
       <div id="reading-tab-global" class="reading-tab-panel">
@@ -192,6 +193,86 @@
         <button id="generate-timing-reading-btn">Générer la lecture des 12 prochains mois</button>
         <p id="timing-reading-error" class="error"></p>
         <div id="timing-reading-output" class="reading-output"></div>
+      </div>
+
+      <div id="reading-tab-compatibility" class="reading-tab-panel hidden">
+        <p class="reading-section-intro">
+          Calcule la compatibilité entre le thème ci-dessus et celui d'une deuxième personne, à
+          partir de trois techniques : aspects croisés entre les deux thèmes, chevauchement de
+          maisons, et thème composite (la relation vue comme une entité à part entière). Choisissez
+          d'abord le type de relation — les significateurs pertinents changent radicalement selon
+          le contexte — puis sélectionnez ou créez le second thème.
+        </p>
+
+        <div class="form-row">
+          <label>Type de relation</label>
+          <div class="tabs compat-mode-tabs">
+            <button type="button" class="compat-mode-btn active" data-compat-mode="romantic">Amoureuse</button>
+            <button type="button" class="compat-mode-btn" data-compat-mode="friendship">Amitié</button>
+            <button type="button" class="compat-mode-btn" data-compat-mode="professional">Professionnelle</button>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <label for="compat-chart-b-select">Deuxième personne</label>
+          <div class="search-row">
+            <select id="compat-chart-b-select">
+              <option value="">— Sélectionner une carte existante —</option>
+            </select>
+            <button type="button" id="compat-new-chart-b-btn">+ Créer une nouvelle carte</button>
+          </div>
+        </div>
+
+        <div id="compat-chart-b-form" class="hidden">
+          <h3>Données de naissance — deuxième personne</h3>
+          <div class="form-row">
+            <label for="b_subject_name">Nom (optionnel)</label>
+            <input type="text" id="b_subject_name" placeholder="Ex. Camille" />
+          </div>
+          <div class="form-row">
+            <label for="b_birth_date">Date de naissance</label>
+            <input type="date" id="b_birth_date" required />
+          </div>
+          <div class="form-row">
+            <label for="b_birth_time">Heure de naissance</label>
+            <input type="time" id="b_birth_time" step="1" value="12:00:00" />
+            <label class="checkbox-label">
+              <input type="checkbox" id="b_time_unknown" />
+              Heure inconnue (maisons/angles approximatifs)
+            </label>
+          </div>
+          <div class="form-row">
+            <label for="b_city_search">Ville de naissance</label>
+            <div class="search-row">
+              <input type="text" id="b_city_search" placeholder="Ex. Lyon, France" />
+              <button type="button" id="b-search-city-btn">Rechercher</button>
+            </div>
+            <div id="b-city-results" class="city-results"></div>
+          </div>
+          <div class="form-row triple">
+            <div>
+              <label for="b_latitude">Latitude</label>
+              <input type="number" step="0.0001" id="b_latitude" required />
+            </div>
+            <div>
+              <label for="b_longitude">Longitude</label>
+              <input type="number" step="0.0001" id="b_longitude" required />
+            </div>
+            <div>
+              <label for="b_timezone">Fuseau horaire</label>
+              <select id="b_timezone" required>
+                <option value="">Chargement...</option>
+              </select>
+            </div>
+          </div>
+          <button type="button" id="compat-create-chart-b-btn">Calculer ce thème</button>
+          <p id="compat-chart-b-error" class="error"></p>
+        </div>
+
+        <div id="compat-data-panel"></div>
+        <button id="generate-compat-reading-btn">Générer la lecture de compatibilité</button>
+        <p id="compat-reading-error" class="error"></p>
+        <div id="compat-reading-output" class="reading-output"></div>
       </div>
     </section>
   </main>
