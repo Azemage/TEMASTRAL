@@ -17,8 +17,8 @@ _TOKEN_RE = re.compile(r"([+-]?)\s*([A-Za-z0-9_]+)")
 _HOUSE_CUSP_TOKEN_RE = re.compile(r"^(\d+)(?:st|nd|rd|th)_house_cusp$")
 
 _FUNDAMENTAL_LOT_TOKENS = {
-    "Lot de Fortune": "Lot_Fortune",
-    "Lot d'Esprit": "Lot_Esprit",
+    "Fortune": "Fortune",
+    "Esprit": "Esprit",
 }
 
 
@@ -86,6 +86,8 @@ def compute_lots(
                 "name_en": lot["name_en"],
                 "category": lot["category"],
                 "signification": lot["signification"],
+                "certainty": lot.get("certainty"),
+                "construction_logic": lot.get("construction_logic"),
                 "formula_used": formula,
                 "sign": sign,
                 "sign_fr": SIGNS_FR[sign],

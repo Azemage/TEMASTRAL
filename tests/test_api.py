@@ -104,11 +104,28 @@ def test_reference_derived_house_relations_endpoint(client):
     assert {r["key"] for r in data["second_order"]} >= {"belle_famille", "grand_mere_maternelle"}
 
 
+def test_reference_axes_thematiques_lots_endpoint(client):
+    res = client.get("/api/reference/axes-thematiques-lots")
+    assert res.status_code == 200
+    data = res.json()
+    assert data["liste_finale_validee"]["total"] == 17
+    codes = {axis["code"] for axis in data["axes_thematiques"]["axes"]}
+    assert codes == {
+        "famille_racines", "corps_circonstances", "amour_relations",
+        "vocation_reussite", "epreuves_resilience", "ouverture_reseau", "vue_complete",
+    }
+
+
 def test_chart_includes_lots_and_derived_houses(client):
     res = client.post("/api/charts", json=VALID_CHART_PAYLOAD)
     data = res.json()["computed_chart_data"]
-    assert len(data["lots"]) == 14
+    assert len(data["lots"]) == 17
     assert len(data["derived_houses"]) == 12
+    lots_by_name = {lot["name"]: lot for lot in data["lots"]}
+    assert lots_by_name["Fortune"]["certainty"]
+    assert lots_by_name["Fortune"]["construction_logic"] is None
+    assert lots_by_name["Amis"]["construction_logic"]
+    assert lots_by_name["Amis"]["certainty"] is None
 
 
 def test_timing_endpoint_returns_transits_and_profection(client):
@@ -158,9 +175,9 @@ def test_zodiacal_releasing_endpoint_returns_current_phases_for_all_lots(client)
     assert res.status_code == 200
     body = res.json()
     assert body["as_of_date"] == "2026-08-02"
-    assert len(body["lots"]) == 14  # les 14 lots de la bibliothèque, pas seulement Fortune/Esprit
-    assert "Lot de Fortune" in body["lots"]
-    assert "Lot d'Esprit" in body["lots"]
+    assert len(body["lots"]) == 17  # les 17 lots de la bibliothèque, pas seulement Fortune/Esprit
+    assert "Fortune" in body["lots"]
+    assert "Esprit" in body["lots"]
     for lot_result in body["lots"].values():
         assert lot_result["current_l1"] is not None
         assert lot_result["current_l2"] is not None
@@ -176,7 +193,7 @@ def test_zodiacal_releasing_endpoint_accepts_lookahead_years(client):
         f"/api/charts/{chart_id}/zodiacal-releasing", params={"date": "2026-08-02", "lookahead_years": 10}
     )
     assert res.status_code == 200
-    fortune_l1_periods = res.json()["lots"]["Lot de Fortune"]["l1_periods"]
+    fortune_l1_periods = res.json()["lots"]["Fortune"]["l1_periods"]
     assert fortune_l1_periods[-1]["end_date"] >= "2036-07-02"
 
 

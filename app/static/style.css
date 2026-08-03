@@ -239,6 +239,51 @@ button:disabled { opacity: 0.6; cursor: wait; }
   border-color: var(--accent);
 }
 
+.zr-axis-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.8rem;
+}
+
+.zr-axis-btn {
+  background: transparent;
+  color: var(--muted);
+  font-weight: 500;
+  font-size: 0.85rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 0.35rem 0.8rem;
+  cursor: pointer;
+}
+
+.zr-axis-btn.active {
+  background: var(--accent);
+  color: #10121f;
+  border-color: var(--accent);
+}
+
+.lot-badge {
+  display: inline-block;
+  font-size: 0.7rem;
+  font-weight: 600;
+  border-radius: 999px;
+  padding: 0.1rem 0.5rem;
+  margin-left: 0.4rem;
+  cursor: help;
+  vertical-align: middle;
+}
+
+.lot-badge-modern {
+  background: rgba(160, 160, 160, 0.2);
+  color: var(--muted);
+}
+
+.lot-badge-disputed {
+  background: rgba(230, 160, 60, 0.18);
+  color: #e0a03c;
+}
+
 .compat-mode-tabs {
   margin: 0.4rem 0 0.8rem;
 }

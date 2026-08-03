@@ -24,7 +24,20 @@ Implémenté :
   Pluton (générationnelles) sont affichées à part, car leur signe seul n'individualise pas —
   seule leur maison le fait
 - Roue astrale SVG interactive (info-bulles, plein écran, aspects colorés par type)
-- Lots (parts arabes) : bibliothèque complète (14 lots), formules jour/nuit, aspects natals
+- Lots (parts arabes) : bibliothèque complète des 17 lots validés (10 lots classiques
+  hellénistiques + 7 lots modernes non-canoniques construits par analogie ; Argent/Richesse,
+  Commerce/Affaires et Carrière ne sont plus implémentés, fusionnés/redondants avec
+  Substance/Esprit/Victoire), formules jour/nuit, aspects natals, avec un champ `certainty`
+  (lots classiques) ou `construction_logic` (lots modernes) exposé dans l'UI sous forme de
+  badge — pas seulement stocké
+- Axes thématiques de lots (raccourcis de sélection, non verrouillants) : 6 axes de vie
+  (Vocation & Réussite, Famille & Racines, Corps & Circonstances matérielles, Amour &
+  Relations intimes, Épreuves & Résilience, Ouverture & Réseau) + une vue complète des 17
+  lots ; pour une projection à 10 ans sur un axe, la lecture qualifie D'ABORD la nature de
+  l'axe à partir du thème natal (points focaux propres à l'axe : Milieu du Ciel, Vénus,
+  Saturne, maisons dérivées pertinentes...) avant de la situer dans le temps via la
+  Libération Zodiacale déjà calculée — avec des mises en garde renforcées et systématiques
+  sur les axes les plus sensibles (santé/mort, filiation, résilience)
 - Maisons dérivées : mapping complet pour les 12 maisons de référence possibles, avec une
   liste de relations nommées (partenaire, mère, père, associé d'affaires, supérieur
   hiérarchique, rival déclaré...) et des relations de second ordre (belle-famille,
@@ -138,12 +151,13 @@ Principe directeur repris du cahier des charges : tout ce qui est dans `app/core
 | POST | `/api/charts` | Calcule et sauvegarde un thème natal à partir des données de naissance |
 | GET | `/api/charts` | Liste les thèmes de la session courante |
 | GET | `/api/charts/{id}` | Récupère un thème calculé |
-| POST | `/api/charts/{id}/readings` | Génère une lecture interprétée (LLM). `reading_type` = `global`\|`love`\|`career`\|`family`\|`lots`\|`derived_houses`\|`timing`\|`zodiacal_releasing`\|`compatibility` ; `relation_key` (voir `/api/reference/derived-house-relations`, ou `custom:N1:N2` pour une relation de second ordre composée librement) pour `derived_houses` (repli sur `reference_house` 1-12 si absent), `as_of_date` pour `timing`/`zodiacal_releasing`, `timing_horizon` (`week`\|`month`\|`year`, défaut `year`) pour `timing`, `chart_b_id`+`relationship_mode` pour `compatibility` |
+| POST | `/api/charts/{id}/readings` | Génère une lecture interprétée (LLM). `reading_type` = `global`\|`love`\|`career`\|`family`\|`lots`\|`derived_houses`\|`timing`\|`zodiacal_releasing`\|`compatibility` ; `relation_key` (voir `/api/reference/derived-house-relations`, ou `custom:N1:N2` pour une relation de second ordre composée librement) pour `derived_houses` (repli sur `reference_house` 1-12 si absent), `as_of_date` pour `timing`/`zodiacal_releasing`, `timing_horizon` (`week`\|`month`\|`year`, défaut `year`) pour `timing`, `zr_selected_lots`+`zr_mode` (`current`\|`predictive`)+`zr_axis_key` (voir `/api/reference/axes-thematiques-lots`, qualification natale en couche 1 pour les projections 10 ans) pour `zodiacal_releasing`, `chart_b_id`+`relationship_mode` pour `compatibility` |
 | GET | `/api/charts/{id}/readings` | Liste les lectures déjà générées pour un thème |
 | GET | `/api/charts/{id}/timing?date=YYYY-MM-DD` | Transits actuels de toutes les planètes + profection annuelle, calculés à la demande (non persisté) |
 | GET | `/api/charts/{id}/timing/forecast?date=...&months=12` | Transits à venir sur la période, toutes planètes (pics d'orbe, fenêtres actives, intensité 1-4) |
 | GET | `/api/reference/derived-house-relations` | Liste des relations disponibles pour les maisons dérivées (premier ordre + presets de second ordre), avec les indications de priorité d'analyse utilisées par le prompt LLM |
-| GET | `/api/charts/{id}/zodiacal-releasing?date=YYYY-MM-DD&lookahead_years=5` | Phases L1/sous-phases L2 en cours pour les 14 lots, calculées à la demande (non persisté) |
+| GET | `/api/reference/axes-thematiques-lots` | Liste finale validée des 17 lots + les 7 axes thématiques (raccourcis de sélection) pour les projections à 10 ans |
+| GET | `/api/charts/{id}/zodiacal-releasing?date=YYYY-MM-DD&lookahead_years=5` | Phases L1/sous-phases L2 en cours pour les 17 lots, calculées à la demande (non persisté) |
 | GET | `/api/charts/{id}/compatibility?chart_b_id=...&mode=romantic\|friendship\|professional` | Inter-aspects pondérés, chevauchement de maisons et thème composite entre deux thèmes, calculés à la demande (non persisté) |
 | GET | `/api/reference/config` | Options de configuration (systèmes de maisons, dispositeurs, points optionnels) |
 | GET | `/api/reference/timezones` | Liste des ~490 fuseaux horaires IANA canoniques |

@@ -1,0 +1,74 @@
+{
+  "description": "Document de référence unique pour la liste FINALE et VALIDÉE des lots à implémenter, avec leurs axes thématiques. Fait autorité sur toute liste antérieure (notamment la première version de lots.json, qui incluait Argent/Commerce/Carrière — retirés car redondants, voir décision utilisateur). Ce fichier est celui à référencer depuis prompts_par_axe_thematique.md et tout autre document mentionnant 'axes_thematiques_lots.json' ou une sélection de lots.",
+
+  "liste_finale_validee": {
+    "total": 17,
+    "classique_10": {
+      "description": "10 lots attestés dans les sources hellénistiques anciennes (Panaretos + additions de Valens). Voir lots.json pour les formules complètes.",
+      "lots": ["Fortune", "Esprit", "Éros", "Némésis", "Nécessité", "Courage", "Victoire", "Base", "Mort", "Substance"]
+    },
+    "moderne_non_canonique_7": {
+      "description": "7 lots construits par analogie, sans attestation ancienne, conservés car ils couvrent des domaines (famille, santé, réseau) absents du système classique. Voir lots.json section moderne_non_canonique pour la logique de construction de chacun.",
+      "lots": ["Mariage", "Enfants", "Père", "Mère", "Voyages", "Amis", "Maladie"]
+    },
+    "retires_car_redondants": {
+      "description": "Lots de la toute première version, retirés par décision utilisateur pour cause de redondance thématique.",
+      "lots": [
+        { "nom": "Lot d'Argent/Richesse", "raison": "fusionné avec Lot de Substance (classique, plus rigoureux)" },
+        { "nom": "Lot du Commerce/Affaires", "raison": "fusionné avec Lot de Substance" },
+        { "nom": "Lot de Carrière", "raison": "redondant avec Lot d'Esprit (vocation) et Lot de Victoire (réussite/reconnaissance)" }
+      ]
+    }
+  },
+
+  "axes_thematiques": {
+    "description": "Regroupements prédéfinis proposés comme raccourcis de sélection dans l'app (voir section correspondante du fichier de conversation) — l'utilisateur garde toujours la possibilité de sélectionner des lots individuellement en dehors de ces axes.",
+    "axes": [
+      {
+        "code": "famille_racines",
+        "nom": "Famille & Racines",
+        "lots": ["Base", "Père", "Mère", "Enfants", "Mariage"]
+      },
+      {
+        "code": "corps_circonstances",
+        "nom": "Corps & Circonstances matérielles",
+        "lots": ["Fortune", "Maladie", "Mort", "Nécessité"]
+      },
+      {
+        "code": "amour_relations",
+        "nom": "Amour & Relations intimes",
+        "lots": ["Éros", "Mariage", "Amis"]
+      },
+      {
+        "code": "vocation_reussite",
+        "nom": "Vocation & Réussite",
+        "lots": ["Esprit", "Victoire", "Courage", "Substance"]
+      },
+      {
+        "code": "epreuves_resilience",
+        "nom": "Épreuves & Résilience",
+        "lots": ["Némésis", "Nécessité", "Courage"]
+      },
+      {
+        "code": "ouverture_reseau",
+        "nom": "Ouverture & Réseau",
+        "lots": ["Amis", "Voyages"]
+      },
+      {
+        "code": "vue_complete",
+        "nom": "Vue complète",
+        "lots": ["Fortune", "Esprit", "Éros", "Némésis", "Nécessité", "Courage", "Victoire", "Base", "Mort", "Substance", "Mariage", "Enfants", "Père", "Mère", "Voyages", "Amis", "Maladie"],
+        "note": "les 17 lots — traitement méthodologique différent, priorisation via convergence plutôt que développement uniforme"
+      }
+    ],
+    "lots_partages_entre_axes": {
+      "description": "Certains lots apparaissent dans plusieurs axes intentionnellement — double ancrage symbolique réel, pas une incohérence.",
+      "cas": [
+        { "lot": "Mariage", "axes": ["famille_racines", "amour_relations"] },
+        { "lot": "Nécessité", "axes": ["corps_circonstances", "epreuves_resilience"] },
+        { "lot": "Courage", "axes": ["vocation_reussite", "epreuves_resilience"] },
+        { "lot": "Amis", "axes": ["amour_relations", "ouverture_reseau"] }
+      ]
+    }
+  }
+}

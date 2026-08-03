@@ -75,6 +75,10 @@ def derived_house_relations() -> dict:
     return _load("derived_house_relations.json")
 
 
+def axes_thematiques_lots() -> dict:
+    return _load("axes_thematiques_lots.json")
+
+
 @lru_cache
 def ruler_map(system: str) -> dict[str, str]:
     """sign -> planet name, pour system in {'traditional', 'modern'}."""

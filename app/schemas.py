@@ -182,6 +182,8 @@ class Lot(BaseModel):
     name_en: str
     category: str
     signification: str
+    certainty: str | None = None  # lots classiques : fiabilité de l'attribution historique
+    construction_logic: str | None = None  # lots modernes non-canoniques : analogie suivie
     formula_used: str
     sign: str
     sign_fr: str
@@ -397,6 +399,7 @@ class ReadingRequest(BaseModel):
     as_of_date: date_type | None = None  # utilisé par 'timing' et 'zodiacal_releasing'
     zr_selected_lots: list[str] = Field(default_factory=list)  # utilisé par 'zodiacal_releasing' ; vide = Fortune + Esprit
     zr_mode: str = "current"  # 'current' | 'predictive' (10 ans) ; utilisé par 'zodiacal_releasing'
+    zr_axis_key: str | None = None  # utilisé par 'zodiacal_releasing' en mode 'predictive' : code d'axe de app/reference_data/axes_thematiques_lots.json
     chart_b_id: str | None = None  # utilisé par 'compatibility' : identifiant du second thème
     relationship_mode: str | None = None  # 'romantic' | 'friendship' | 'professional' ; utilisé par 'compatibility'
     timing_horizon: str = "year"  # 'week' | 'month' | 'year' ; utilisé par 'timing'

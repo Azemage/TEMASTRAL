@@ -4,9 +4,9 @@
   "technique_1_zodiacal_releasing": {
     "name_fr": "Libération zodiacale (Zodiacal Releasing)",
     "source": "Technique hellénistique (Vettius Valens), reconstituée par Robert Hand / Chris Brennan",
-    "principle": "Découpe le temps de vie en périodes emboîtées (niveaux L1 à L4), en faisant 'avancer' un point de départ (le Lot de Fortune ou le Lot d'Esprit) de signe en signe, chaque signe durant un nombre d'années fixe selon sa maîtrise planétaire.",
-    "primary_lots_used": ["Lot de Fortune", "Lot d'Esprit"],
-    "usage_note": "Zodiacal Releasing depuis le Lot de Fortune éclaire le corps/circonstances matérielles (santé, patrimoine, événements extérieurs). Depuis le Lot d'Esprit, cela éclaire la carrière/l'action/la réputation.",
+    "principle": "Découpe le temps de vie en périodes emboîtées (niveaux L1 à L4), en faisant 'avancer' un point de départ (le lot Fortune ou le lot Esprit) de signe en signe, chaque signe durant un nombre d'années fixe selon sa maîtrise planétaire.",
+    "primary_lots_used": ["Fortune", "Esprit"],
+    "usage_note": "Zodiacal Releasing depuis le lot Fortune éclaire le corps/circonstances matérielles (santé, patrimoine, événements extérieurs). Depuis le lot Esprit, cela éclaire la carrière/l'action/la réputation.",
     "sign_period_lengths_years": {
       "Aries": 15, "Taurus": 8, "Gemini": 20, "Cancer": 25,
       "Leo": 19, "Virgo": 20, "Libra": 8, "Scorpio": 15,

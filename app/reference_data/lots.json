@@ -1,122 +1,165 @@
 {
-  "description": "Bibliothèque des lots (parts arabes/hermétiques). Toutes les formules suivent le principe : position = ASC + point B - point A (jour), inversé la nuit (ASC + A - B), sauf exceptions notées.",
+  "description": "Bibliothèque des 17 lots validés (parts arabes/hermétiques) : 10 lots classiques hellénistiques + 7 lots modernes non-canoniques construits par analogie. Fait autorité avec axes_thematiques_lots.json pour la liste finale — remplace l'ancienne version qui incluait Argent/Richesse, Commerce/Affaires et Carrière (retirés pour redondance, voir axes_thematiques_lots.json section retires_car_redondants). Toutes les formules suivent le principe : position = ASC + point B - point A (thème de jour), inversé la nuit (ASC + point A - point B).",
   "calculation_rule": "Un thème est 'de jour' si le Soleil est au-dessus de l'horizon (entre l'Ascendant et le Descendant, dans les maisons 7 à 12). Sinon il est 'de nuit'.",
+  "calculation_order_note": "Éros dépend d'Esprit ; Nécessité, Courage et Némésis dépendent de Fortune ; Base dépend de Fortune ET d'Esprit. Fortune et Esprit doivent donc être calculés en premier (voir app/core/lots.py, _FUNDAMENTAL_LOT_TOKENS).",
   "lots": [
     {
-      "name": "Lot de Fortune",
+      "name": "Fortune",
       "name_en": "Part of Fortune",
-      "category": "fondamental",
+      "category": "classique",
       "day_formula": "ASC + Moon - Sun",
       "night_formula": "ASC + Sun - Moon",
-      "signification": "corps, vitalité, bien-être matériel, chance"
+      "signification": "corps, vitalité, bien-être matériel, circonstances extérieures",
+      "certainty": "haute — lot fondamental de la tradition hellénistique, le plus anciennement et universellement attesté."
     },
     {
-      "name": "Lot d'Esprit",
+      "name": "Esprit",
       "name_en": "Part of Spirit",
-      "category": "fondamental",
+      "category": "classique",
       "day_formula": "ASC + Sun - Moon",
       "night_formula": "ASC + Moon - Sun",
-      "signification": "esprit, volonté, action, carrière"
+      "signification": "volonté, vocation, choix, action consciente",
+      "certainty": "haute — lot fondamental de la tradition hellénistique, quasi aussi bien attesté que la Fortune."
     },
     {
-      "name": "Lot d'Amour",
-      "name_en": "Part of Love/Eros",
-      "category": "amour",
-      "day_formula": "ASC + Venus - Lot_Esprit",
-      "night_formula": "ASC + Lot_Esprit - Venus",
-      "signification": "désir, attirance, amour romantique"
+      "name": "Éros",
+      "name_en": "Part of Eros",
+      "category": "classique",
+      "day_formula": "ASC + Venus - Esprit",
+      "night_formula": "ASC + Esprit - Venus",
+      "signification": "désir, amour, attraction, passion",
+      "certainty": "haute — lot classique de la tradition hellénistique, formule bien attestée."
     },
     {
-      "name": "Lot de Mariage",
+      "name": "Nécessité",
+      "name_en": "Part of Necessity",
+      "category": "classique",
+      "day_formula": "ASC + Fortune - Mercury",
+      "night_formula": "ASC + Mercury - Fortune",
+      "signification": "contraintes, obligations, ce qui doit être enduré",
+      "certainty": "haute — lot classique de la tradition hellénistique, formule bien attestée."
+    },
+    {
+      "name": "Courage",
+      "name_en": "Part of Courage",
+      "category": "classique",
+      "day_formula": "ASC + Mars - Fortune",
+      "night_formula": "ASC + Fortune - Mars",
+      "signification": "audace, initiative, capacité à agir face au risque",
+      "certainty": "moyenne — attribution disputée entre sources anciennes (Valens vs Paulus) ; formule retenue confirmée par l'utilisateur."
+    },
+    {
+      "name": "Victoire",
+      "name_en": "Part of Victory",
+      "category": "classique",
+      "day_formula": "ASC + Sun - Jupiter",
+      "night_formula": "ASC + Jupiter - Sun",
+      "signification": "succès, reconnaissance, récompense de l'effort",
+      "certainty": "haute — lot classique de la tradition hellénistique, formule bien attestée."
+    },
+    {
+      "name": "Némésis",
+      "name_en": "Part of Nemesis",
+      "category": "classique",
+      "day_formula": "ASC + Fortune - Mars",
+      "night_formula": "ASC + Mars - Fortune",
+      "signification": "adversité, épreuves, conséquences, ce qui remet en question",
+      "certainty": "moyenne — attribution disputée entre sources anciennes (Valens vs Paulus) ; formule retenue confirmée par l'utilisateur."
+    },
+    {
+      "name": "Base",
+      "name_en": "Part of Foundation",
+      "category": "classique",
+      "day_formula": "ASC + Fortune - Esprit",
+      "night_formula": "ASC + Esprit - Fortune",
+      "signification": "fondations de vie, stabilité, origine profonde",
+      "certainty": "haute — lot classique de la tradition hellénistique, formule bien attestée."
+    },
+    {
+      "name": "Mort",
+      "name_en": "Part of Death",
+      "category": "classique",
+      "day_formula": "ASC + Moon - Saturn",
+      "night_formula": "ASC + Saturn - Moon",
+      "signification": "transformation profonde, fin de cycle — à présenter comme 'renaissance/mutation' dans l'interprétation, jamais en langage funeste",
+      "certainty": "haute — lot classique de la tradition hellénistique, formule bien attestée."
+    },
+    {
+      "name": "Substance",
+      "name_en": "Part of Substance",
+      "category": "classique",
+      "day_formula": "ASC + Venus - Saturn",
+      "night_formula": "ASC + Saturn - Venus",
+      "signification": "richesse, ressources durables, biens matériels",
+      "certainty": "haute — lot classique de la tradition hellénistique, formule bien attestée. Couvre aussi les domaines de l'ancien Lot d'Argent/Richesse et du Lot du Commerce/Affaires, retirés car redondants."
+    },
+    {
+      "name": "Amis",
+      "name_en": "Part of Friends",
+      "category": "moderne_non_canonique",
+      "day_formula": "ASC + Mercury - Moon",
+      "night_formula": "ASC + Moon - Mercury",
+      "signification": "amitié, alliés, réseau de soutien",
+      "construction_logic": "Construit par analogie avec les lots fondamentaux, en couplant Mercure (échange, communication, mise en réseau) et la Lune (besoin d'appartenance affective) depuis l'Ascendant."
+    },
+    {
+      "name": "Mariage",
       "name_en": "Part of Marriage",
-      "category": "amour",
+      "category": "moderne_non_canonique",
       "day_formula": "ASC + Descendant - Venus",
       "night_formula": "ASC + Venus - Descendant",
       "signification": "union, engagement conjugal",
-      "notes": "Formule variable selon les auteurs (versions homme/femme dans la tradition ancienne, non retenues ici pour neutralité)"
+      "construction_logic": "Utilise le Descendant (axe du partenariat, maison 7) et Vénus (attachement, valeurs relationnelles) — formule répandue dans les révisions modernes de la tradition hermétique pour ce thème."
     },
     {
-      "name": "Lot d'Argent (Richesse)",
-      "name_en": "Part of Wealth",
-      "category": "argent",
-      "day_formula": "ASC + Lot_Fortune - Jupiter",
-      "night_formula": "ASC + Jupiter - Lot_Fortune",
-      "signification": "abondance matérielle, ressources"
-    },
-    {
-      "name": "Lot du Commerce/Affaires",
-      "name_en": "Part of Commerce",
-      "category": "argent",
-      "day_formula": "ASC + Mercury - Lot_Fortune",
-      "night_formula": "ASC + Lot_Fortune - Mercury",
-      "signification": "revenus liés au travail, transactions"
-    },
-    {
-      "name": "Lot des Enfants",
+      "name": "Enfants",
       "name_en": "Part of Children",
-      "category": "famille",
+      "category": "moderne_non_canonique",
       "day_formula": "ASC + Jupiter - Saturn",
       "night_formula": "ASC + Saturn - Jupiter",
       "signification": "fécondité, relation aux enfants",
-      "notes": "Plusieurs variantes existent selon les sources antiques"
+      "construction_logic": "Couple Jupiter (expansion, descendance, transmission) et Saturne (structure, limite, temps long) — logique d'une expansion contenue par la structure, appliquée au thème de la descendance."
     },
     {
-      "name": "Lot du Père",
+      "name": "Père",
       "name_en": "Part of the Father",
-      "category": "famille",
+      "category": "moderne_non_canonique",
       "day_formula": "ASC + Saturn - Sun",
       "night_formula": "ASC + Sun - Saturn",
-      "signification": "relation au père, autorité"
+      "signification": "relation au père, autorité",
+      "construction_logic": "Couple Saturne (autorité, structure) et le Soleil (figure paternelle dans la tradition occidentale moderne), en écho à la maison 10 parfois associée au père."
     },
     {
-      "name": "Lot de la Mère",
+      "name": "Mère",
       "name_en": "Part of the Mother",
-      "category": "famille",
+      "category": "moderne_non_canonique",
       "day_formula": "ASC + Moon - Venus",
       "night_formula": "ASC + Venus - Moon",
-      "signification": "relation à la mère, nourricier"
+      "signification": "relation à la mère, fonction nourricière",
+      "construction_logic": "Couple la Lune (maternage, besoin nourricier) et Vénus (affection, réceptivité), en écho à la maison 4 parfois associée à la mère."
     },
     {
-      "name": "Lot de Carrière",
-      "name_en": "Part of Career/Praxis",
-      "category": "carriere",
-      "day_formula": "ASC + MC - Saturn",
-      "night_formula": "ASC + Saturn - MC",
-      "signification": "réussite professionnelle, vocation"
-    },
-    {
-      "name": "Lot de Maladie",
-      "name_en": "Part of Sickness",
-      "category": "sante",
-      "day_formula": "ASC + Mars - Saturn",
-      "night_formula": "ASC + Saturn - Mars",
-      "signification": "vulnérabilités de santé"
-    },
-    {
-      "name": "Lot de la Mort",
-      "name_en": "Part of Death",
-      "category": "sensible",
-      "day_formula": "ASC + 8th_house_cusp - Moon",
-      "night_formula": "ASC + Moon - 8th_house_cusp",
-      "signification": "transformations profondes, fins de cycle",
-      "notes": "À manier avec prudence dans l'interprétation ; reformuler en 'transformation/renaissance' pour un public non-initié"
-    },
-    {
-      "name": "Lot des Voyages",
+      "name": "Voyages",
       "name_en": "Part of Travel",
-      "category": "expansion",
+      "category": "moderne_non_canonique",
       "day_formula": "ASC + 9th_house_cusp - Moon",
       "night_formula": "ASC + Moon - 9th_house_cusp",
-      "signification": "déplacements, expansion géographique et philosophique"
+      "signification": "déplacements, expansion géographique et philosophique",
+      "construction_logic": "Reprend la structure des lots classiques bâtis sur une cuspide de maison (comme le Lot de la Mort sur la maison 8), appliquée à la maison 9 (voyages, expansion, philosophie) couplée à la Lune (mouvement, besoin de changement)."
     },
     {
-      "name": "Lot des Amis",
-      "name_en": "Part of Friends",
-      "category": "social",
-      "day_formula": "ASC + 11th_house_cusp - Sun",
-      "night_formula": "ASC + Sun - 11th_house_cusp",
-      "signification": "relations amicales, réseau social"
+      "name": "Maladie",
+      "name_en": "Part of Sickness",
+      "category": "moderne_non_canonique",
+      "day_formula": "ASC + Mars - Saturn",
+      "night_formula": "ASC + Saturn - Mars",
+      "signification": "vulnérabilités de santé — à présenter uniquement en termes d'énergie générale, jamais de diagnostic",
+      "construction_logic": "Couple Mars (agression, blessure, énergie vitale) et Saturne (limite, chronicité, contrainte du corps) — logique commune aux lots de vulnérabilité corporelle dans les révisions modernes."
     }
   ],
-  "extensibility_note": "Structure conçue pour ajouter facilement de nouveaux lots : chaque entrée est indépendante (name, day_formula, night_formula, category, signification). Les formules référencent soit des planètes, soit d'autres lots déjà calculés (ex. Lot d'Amour dépend du Lot d'Esprit), soit des cuspides de maison — le moteur doit donc calculer les lots fondamentaux (Fortune, Esprit) en premier."
+  "retires_car_redondants": [
+    { "nom": "Lot d'Argent/Richesse", "raison": "fusionné avec le Lot de Substance (classique, plus rigoureux)" },
+    { "nom": "Lot du Commerce/Affaires", "raison": "fusionné avec le Lot de Substance" },
+    { "nom": "Lot de Carrière", "raison": "redondant avec le Lot d'Esprit (vocation) et le Lot de Victoire (réussite/reconnaissance)" }
+  ]
 }

@@ -715,9 +715,15 @@ function renderLotsDataPanel(data) {
       const aspects = lot.aspects_to_natal.length
         ? lot.aspects_to_natal.map((a) => `${planetLabel(a.planet)} ${a.type_fr} (${a.orb}°)`).join(", ")
         : "—";
+      let reliabilityBadge = "";
+      if (lot.category === "moderne_non_canonique") {
+        reliabilityBadge = `<span class="lot-badge lot-badge-modern" title="${lot.construction_logic || ""}">non-canonique</span>`;
+      } else if (lot.certainty && lot.certainty.toLowerCase().startsWith("moyenne")) {
+        reliabilityBadge = `<span class="lot-badge lot-badge-disputed" title="${lot.certainty}">attribution disputée</span>`;
+      }
       return `
       <tr>
-        <td>${lot.name}</td>
+        <td>${lot.name} ${reliabilityBadge}</td>
         <td>${lot.signification}</td>
         <td>${signLabel(lot.sign)} ${lot.degree}°</td>
         <td>Maison ${lot.house}</td>
@@ -727,7 +733,7 @@ function renderLotsDataPanel(data) {
     .join("");
 
   container.innerHTML = `
-    <p>Un thème de ${data.is_day_chart ? "jour" : "nuit"} utilise les formules diurnes/nocturnes appropriées pour chaque lot.</p>
+    <p>Un thème de ${data.is_day_chart ? "jour" : "nuit"} utilise les formules diurnes/nocturnes appropriées pour chaque lot. 10 lots classiques (tradition hellénistique) et 7 lots modernes non-canoniques (construits par analogie, voir badge) : survolez un badge pour le détail.</p>
     <table>
       <thead><tr><th>Lot</th><th>Signification</th><th>Position</th><th>Maison</th><th>Aspects natals</th></tr></thead>
       <tbody>${rows}</tbody>
@@ -1023,7 +1029,9 @@ function renderZrPeriodCard(period, title) {
     </div>`;
 }
 
-const ZR_DEFAULT_SELECTED_LOTS = new Set(["Lot de Fortune", "Lot d'Esprit"]);
+const ZR_DEFAULT_SELECTED_LOTS = new Set(["Fortune", "Esprit"]);
+let selectedZrAxisKey = null;
+let axesThematiquesLotsConfig = null;
 
 function renderZrLotCard(lotName, lotResult, checked) {
   const l2Rows = lotResult.current_l1_l2_periods
@@ -1074,18 +1082,63 @@ function renderZrDataPanel(zr, previouslyChecked) {
       <input type="date" id="zr-date" value="${zr.as_of_date}" />
       <button type="button" id="zr-refresh-btn">Recalculer</button>
     </div>
-    ${zr.edge_case_same_sign_applied ? '<p class="error">Lot de Fortune et Lot d\'Esprit dans le même signe : le calcul du Lot d\'Esprit a été décalé d\'un signe, selon la convention documentée.</p>' : ""}
-    <p class="reading-section-intro">Cochez un ou plusieurs lots ci-dessous pour la lecture (par défaut : Fortune + Esprit). Un seul lot coché donne une lecture approfondie ; plusieurs lots ajoutent une lecture croisée entre eux.</p>
+    ${zr.edge_case_same_sign_applied ? '<p class="error">Fortune et Esprit dans le même signe : le calcul du lot Esprit a été décalé d\'un signe, selon la convention documentée.</p>' : ""}
+    <p class="reading-section-intro">Cochez un ou plusieurs lots ci-dessous pour la lecture (par défaut : Fortune + Esprit), ou utilisez un axe thématique ci-dessus comme raccourci de sélection. Un seul lot coché donne une lecture approfondie ; plusieurs lots ajoutent une lecture croisée entre eux.</p>
     ${lotCards}
   `;
 
   document.getElementById("zr-refresh-btn").addEventListener("click", () => {
     loadZrDataPanel(document.getElementById("zr-date").value);
   });
+  container.querySelectorAll(".zr-lot-checkbox").forEach((el) => {
+    el.addEventListener("change", () => {
+      selectedZrAxisKey = null; // sélection manuelle : la présélection d'axe ne verrouille jamais le choix
+    });
+  });
+}
+
+async function loadAxesThematiquesLotsConfig() {
+  if (axesThematiquesLotsConfig) return axesThematiquesLotsConfig;
+  const res = await fetch("/api/reference/axes-thematiques-lots");
+  axesThematiquesLotsConfig = await res.json();
+  return axesThematiquesLotsConfig;
+}
+
+async function renderZrAxisPanel() {
+  const container = document.getElementById("zr-axis-panel");
+  if (!container || container.dataset.loaded === "true") return;
+  const config = await loadAxesThematiquesLotsConfig();
+  const axisButtons = config.axes_thematiques.axes
+    .map((axis) => `<button type="button" class="zr-axis-btn" data-axis-code="${axis.code}">${axis.nom}</button>`)
+    .join("");
+  container.innerHTML = `
+    <p class="reading-section-intro">Axes thématiques (raccourcis de sélection, projection 10 ans) :</p>
+    <div class="zr-axis-buttons">${axisButtons}</div>
+  `;
+  container.dataset.loaded = "true";
+
+  container.querySelectorAll(".zr-axis-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const axis = config.axes_thematiques.axes.find((a) => a.code === btn.dataset.axisCode);
+      if (!axis) return;
+      selectedZrAxisKey = axis.code;
+      document.querySelectorAll(".zr-lot-checkbox").forEach((el) => {
+        el.checked = axis.lots.includes(el.value);
+      });
+      // Cette fonctionnalité qualifie l'axe à partir du thème natal avant de le situer dans
+      // le temps : elle ne s'applique qu'aux projections à 10 ans (voir prompts_par_axe_thematique.md).
+      selectedZrMode = "predictive";
+      document.querySelectorAll(".zr-mode-btn").forEach((b) => {
+        b.classList.toggle("active", b.dataset.zrMode === "predictive");
+      });
+      container.querySelectorAll(".zr-axis-btn").forEach((b) => b.classList.toggle("active", b === btn));
+    });
+  });
 }
 
 async function loadZrDataPanel(date) {
   if (!currentChart) return;
+  renderZrAxisPanel();
   const container = document.getElementById("zr-data-panel");
   const previouslyChecked = new Set(
     Array.from(container.querySelectorAll(".zr-lot-checkbox:checked")).map((el) => el.value)
@@ -1627,6 +1680,10 @@ document.querySelectorAll(".zr-mode-btn").forEach((btn) => {
     document.querySelectorAll(".zr-mode-btn").forEach((b) => b.classList.remove("active"));
     btn.classList.add("active");
     selectedZrMode = btn.dataset.zrMode;
+    if (selectedZrMode !== "predictive") {
+      selectedZrAxisKey = null;
+      document.querySelectorAll(".zr-axis-btn").forEach((b) => b.classList.remove("active"));
+    }
   });
 });
 
@@ -1649,6 +1706,7 @@ document.getElementById("generate-zr-reading-btn").addEventListener("click", () 
       as_of_date: dateInput ? dateInput.value : undefined,
       zr_selected_lots: selectedLots,
       zr_mode: selectedZrMode,
+      zr_axis_key: selectedZrMode === "predictive" ? selectedZrAxisKey : null,
     },
   });
 });

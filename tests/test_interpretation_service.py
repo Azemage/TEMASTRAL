@@ -63,7 +63,7 @@ def test_lots_reading_payload_contains_only_lots_and_identity():
     payload = interpretation_service._build_user_payload(chart, request)
 
     assert "chart_data" not in payload
-    assert len(payload["lots"]) == 14
+    assert len(payload["lots"]) == 17
     assert set(payload["identity"].keys()) == {"sun", "moon", "ascendant", "is_day_chart"}
 
 
@@ -209,7 +209,7 @@ def test_zodiacal_releasing_reading_payload_defaults_to_fortune_and_spirit():
     payload = interpretation_service._build_user_payload(chart, request)
 
     assert payload["as_of_date"] == "2026-08-02"
-    assert set(payload["lots"].keys()) == {"Lot de Fortune", "Lot d'Esprit"}
+    assert set(payload["lots"].keys()) == {"Fortune", "Esprit"}
     for lot_entry in payload["lots"].values():
         assert lot_entry["current_l1"] is not None
         assert lot_entry["current_l2"] is not None
@@ -220,10 +220,10 @@ def test_zodiacal_releasing_reading_payload_defaults_to_fortune_and_spirit():
 def test_zodiacal_releasing_reading_payload_honors_selected_lots():
     chart = _make_chart()
     request = schemas.ReadingRequest(
-        reading_type="zodiacal_releasing", zr_selected_lots=["Lot d'Amour", "Lot de Mariage", "Lot des Enfants"]
+        reading_type="zodiacal_releasing", zr_selected_lots=["Éros", "Mariage", "Enfants"]
     )
     payload = interpretation_service._build_user_payload(chart, request)
-    assert set(payload["lots"].keys()) == {"Lot d'Amour", "Lot de Mariage", "Lot des Enfants"}
+    assert set(payload["lots"].keys()) == {"Éros", "Mariage", "Enfants"}
 
 
 def test_zodiacal_releasing_predictive_mode_returns_l1_periods_instead_of_l2_detail():
@@ -238,7 +238,7 @@ def test_zodiacal_releasing_predictive_mode_returns_l1_periods_instead_of_l2_det
 
 def test_zodiacal_releasing_prompt_asks_for_compiled_chronology_with_multiple_lots():
     request = schemas.ReadingRequest(
-        reading_type="zodiacal_releasing", zr_selected_lots=["Lot d'Amour", "Lot de Mariage"]
+        reading_type="zodiacal_releasing", zr_selected_lots=["Éros", "Mariage"]
     )
     prompt = interpretation_service._build_system_prompt(request)
     assert "COMPILE-les en un seul récit" in prompt
@@ -246,7 +246,7 @@ def test_zodiacal_releasing_prompt_asks_for_compiled_chronology_with_multiple_lo
 
 
 def test_zodiacal_releasing_prompt_goes_deep_for_a_single_lot():
-    request = schemas.ReadingRequest(reading_type="zodiacal_releasing", zr_selected_lots=["Lot de Carrière"])
+    request = schemas.ReadingRequest(reading_type="zodiacal_releasing", zr_selected_lots=["Victoire"])
     prompt = interpretation_service._build_system_prompt(request)
     assert "lecture approfondie" in prompt
     assert "COMPILE-les en un seul récit" not in prompt
@@ -255,7 +255,7 @@ def test_zodiacal_releasing_prompt_goes_deep_for_a_single_lot():
 
 def test_zodiacal_releasing_predictive_prompt_asks_for_strong_years_and_concrete_scenarios():
     request = schemas.ReadingRequest(
-        reading_type="zodiacal_releasing", zr_selected_lots=["Lot d'Argent (Richesse)", "Lot de Mariage"], zr_mode="predictive"
+        reading_type="zodiacal_releasing", zr_selected_lots=["Substance", "Mariage"], zr_mode="predictive"
     )
     prompt = interpretation_service._build_system_prompt(request)
     assert "ANNÉES FORTES" in prompt
@@ -267,12 +267,63 @@ def test_zodiacal_releasing_max_tokens_scale_with_lots_and_mode():
     few_current = schemas.ReadingRequest(reading_type="zodiacal_releasing")
     many_predictive = schemas.ReadingRequest(
         reading_type="zodiacal_releasing",
-        zr_selected_lots=["Lot d'Amour", "Lot de Mariage", "Lot des Enfants", "Lot de Carrière"],
+        zr_selected_lots=["Éros", "Mariage", "Enfants", "Victoire"],
         zr_mode="predictive",
     )
     assert interpretation_service._zodiacal_releasing_max_tokens(
         many_predictive
     ) > interpretation_service._zodiacal_releasing_max_tokens(few_current)
+
+
+def test_zodiacal_releasing_axis_prompt_injects_layer1_qualification_and_prudence():
+    request = schemas.ReadingRequest(
+        reading_type="zodiacal_releasing",
+        zr_selected_lots=["Fortune", "Maladie", "Mort", "Nécessité"],
+        zr_mode="predictive",
+        zr_axis_key="corps_circonstances",
+    )
+    prompt = interpretation_service._build_system_prompt(request)
+    assert "AXE : Corps & Circonstances matérielles" in prompt
+    assert "Couche 1" in prompt
+    assert "JAMAIS de diagnostic" in prompt
+
+
+def test_zodiacal_releasing_axis_prompt_absent_when_mode_is_current():
+    request = schemas.ReadingRequest(
+        reading_type="zodiacal_releasing",
+        zr_selected_lots=["Fortune", "Maladie"],
+        zr_mode="current",
+        zr_axis_key="corps_circonstances",
+    )
+    prompt = interpretation_service._build_system_prompt(request)
+    assert "AXE : Corps & Circonstances matérielles" not in prompt
+
+
+def test_zodiacal_releasing_axis_payload_includes_natal_focal_data():
+    chart = _make_chart()
+    request = schemas.ReadingRequest(
+        reading_type="zodiacal_releasing",
+        zr_selected_lots=["Éros", "Mariage", "Amis"],
+        zr_mode="predictive",
+        zr_axis_key="amour_relations",
+    )
+    payload = interpretation_service._build_user_payload(chart, request)
+    assert payload["axis"] == "amour_relations"
+    assert "angles" in payload["natal_focal_data"]
+    assert "derived_houses" in payload["natal_focal_data"]
+
+
+def test_zodiacal_releasing_vue_complete_axis_has_no_natal_focal_data():
+    chart = _make_chart()
+    request = schemas.ReadingRequest(
+        reading_type="zodiacal_releasing",
+        zr_mode="predictive",
+        zr_axis_key="vue_complete",
+    )
+    payload = interpretation_service._build_user_payload(chart, request)
+    assert "natal_focal_data" not in payload
+    prompt = interpretation_service._build_system_prompt(request)
+    assert "AXE : Vue complète" in prompt
 
 
 def test_specialized_system_prompts_are_distinct_per_reading_type():

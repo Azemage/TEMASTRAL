@@ -87,13 +87,13 @@ def test_no_loosing_of_the_bond_for_short_parent_periods():
 
 def test_compute_zodiacal_releasing_returns_all_requested_lots_with_current_phase():
     result = compute_zodiacal_releasing(
-        lot_signs={"Lot de Fortune": "Taurus", "Lot d'Esprit": "Cancer", "Lot d'Amour": "Libra"},
+        lot_signs={"Fortune": "Taurus", "Esprit": "Cancer", "Éros": "Libra"},
         birth_date=date(1990, 5, 15),
         ruler_map=RULER_MAP,
         as_of_date=date(2026, 8, 2),
     )
     assert result["edge_case_same_sign_applied"] is False
-    assert set(result["lots"].keys()) == {"Lot de Fortune", "Lot d'Esprit", "Lot d'Amour"}
+    assert set(result["lots"].keys()) == {"Fortune", "Esprit", "Éros"}
     for lot_result in result["lots"].values():
         assert lot_result["current_l1"] is not None
         assert lot_result["current_l2"] is not None
@@ -102,35 +102,35 @@ def test_compute_zodiacal_releasing_returns_all_requested_lots_with_current_phas
 
 def test_edge_case_same_sign_shifts_spirit_forward_by_one_sign():
     result = compute_zodiacal_releasing(
-        lot_signs={"Lot de Fortune": "Leo", "Lot d'Esprit": "Leo"},
+        lot_signs={"Fortune": "Leo", "Esprit": "Leo"},
         birth_date=date(1990, 5, 15),
         ruler_map=RULER_MAP,
         as_of_date=date(1990, 6, 1),
     )
     assert result["edge_case_same_sign_applied"] is True
-    assert result["lots"]["Lot d'Esprit"]["lot_sign"] == "Virgo"  # signe suivant Lion
-    assert result["lots"]["Lot de Fortune"]["lot_sign"] == "Leo"
+    assert result["lots"]["Esprit"]["lot_sign"] == "Virgo"  # signe suivant Lion
+    assert result["lots"]["Fortune"]["lot_sign"] == "Leo"
 
 
 def test_same_sign_edge_case_does_not_apply_to_other_lot_pairs():
     # Le décalage documenté ne concerne que Fortune/Esprit ; deux autres lots dans le même
     # signe démarrent chacun leur propre séquence sans être modifiés.
     result = compute_zodiacal_releasing(
-        lot_signs={"Lot d'Amour": "Leo", "Lot de Mariage": "Leo"},
+        lot_signs={"Éros": "Leo", "Mariage": "Leo"},
         birth_date=date(1990, 5, 15),
         ruler_map=RULER_MAP,
         as_of_date=date(1990, 6, 1),
     )
     assert result["edge_case_same_sign_applied"] is False
-    assert result["lots"]["Lot d'Amour"]["lot_sign"] == "Leo"
-    assert result["lots"]["Lot de Mariage"]["lot_sign"] == "Leo"
+    assert result["lots"]["Éros"]["lot_sign"] == "Leo"
+    assert result["lots"]["Mariage"]["lot_sign"] == "Leo"
 
 
 def test_ruling_planet_included_in_serialized_periods():
     result = compute_zodiacal_releasing(
-        lot_signs={"Lot de Fortune": "Leo", "Lot d'Esprit": "Cancer"},
+        lot_signs={"Fortune": "Leo", "Esprit": "Cancer"},
         birth_date=date(1990, 5, 15),
         ruler_map=RULER_MAP,
         as_of_date=date(1990, 6, 1),
     )
-    assert result["lots"]["Lot de Fortune"]["current_l1"]["ruling_planet"] == "Sun"
+    assert result["lots"]["Fortune"]["current_l1"]["ruling_planet"] == "Sun"

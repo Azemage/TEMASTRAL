@@ -168,8 +168,8 @@ def _compute_for_lot(
     }
 
 
-FORTUNE_LOT_NAME = "Lot de Fortune"
-SPIRIT_LOT_NAME = "Lot d'Esprit"
+FORTUNE_LOT_NAME = "Fortune"
+SPIRIT_LOT_NAME = "Esprit"
 
 
 def compute_zodiacal_releasing(
@@ -181,10 +181,9 @@ def compute_zodiacal_releasing(
 ) -> dict:
     """Calcule la Libération Zodiacale pour un ensemble quelconque de lots (chacun démarre
     sa propre séquence de phases depuis son signe natal). Le document source ne définit
-    formellement la technique que pour le Lot de Fortune et le Lot d'Esprit (piliers
-    hellénistiques classiques, corps/vie matérielle vs esprit/action) ; son extension aux
-    autres lots ici est une généralisation du même algorithme, à lire comme exploratoire
-    pour ces lots-là.
+    formellement la technique que pour les lots Fortune et Esprit (piliers hellénistiques
+    classiques, corps/vie matérielle vs esprit/action) ; son extension aux autres lots ici
+    est une généralisation du même algorithme, à lire comme exploratoire pour ces lots-là.
     """
     as_of_date = as_of_date or date_type.today()
 

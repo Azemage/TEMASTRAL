@@ -23,10 +23,10 @@
 
   "step_1_choose_starting_lot": {
     "options": [
-      { "lot": "Lot de Fortune", "tracks": "le corps, les circonstances matérielles, la santé, les événements extérieurs de la vie" },
-      { "lot": "Lot d'Esprit", "tracks": "la carrière, l'action volontaire, la vocation, la réputation" }
+      { "lot": "Fortune", "tracks": "le corps, les circonstances matérielles, la santé, les événements extérieurs de la vie" },
+      { "lot": "Esprit", "tracks": "la carrière, l'action volontaire, la vocation, la réputation" }
     ],
-    "edge_case_rule": "Si le Lot de Fortune et le Lot d'Esprit tombent dans le même signe au natal, décaler le Lot d'Esprit d'un signe vers l'avant avant de commencer le calcul (règle classique rapportée par plusieurs sources)."
+    "edge_case_rule": "Si le lot Fortune et le lot Esprit tombent dans le même signe au natal, décaler le lot Esprit d'un signe vers l'avant avant de commencer le calcul (règle classique rapportée par plusieurs sources)."
   },
 
   "step_2_level_1_calculation": {
@@ -86,7 +86,7 @@
   "step_4_peak_periods": {
     "name_fr": "Périodes de pointe (Peak Periods)",
     "rule": "Une sous-période de niveau L(n+1) est une 'période de pointe' si son signe est ANGULAIRE par rapport au signe de la période L(n) parente — c'est-à-dire s'il occupe la 1re, 4e, 7e ou 10e position en comptant depuis le signe parent (inclus).",
-    "interpretation": "Les périodes de pointe sont statistiquement associées aux événements les plus marquants et actifs dans le domaine de vie du Lot utilisé (corps/circonstances pour le Lot de Fortune, carrière/action pour le Lot d'Esprit).",
+    "interpretation": "Les périodes de pointe sont statistiquement associées aux événements les plus marquants et actifs dans le domaine de vie du Lot utilisé (corps/circonstances pour le lot Fortune, carrière/action pour le lot Esprit).",
     "calculation": "position = ((index_zodiacal(sign_du_L(n+1)) - index_zodiacal(sign_du_L(n))) mod 12) + 1 ; si position est dans [1, 4, 7, 10] => peak_period = true"
   },
 
@@ -126,6 +126,6 @@
   "recommended_app_strategy_update": {
     "mvp": "Implémenter L1 et L2 uniquement (couvre plusieurs années à quelques mois de précision) — suffisant pour la majorité des lectures de timing.",
     "v2": "Ajouter L3 (précision à la semaine) pour les demandes de calendrier fin (ex. 'quel mois de 2028 est le plus favorable').",
-    "always_compute_both_lots": "Calculer la Libération Zodiacale depuis le Lot de Fortune ET depuis le Lot d'Esprit en parallèle — ils éclairent des domaines de vie différents (circonstances/corps vs carrière/action) et se complètent dans une lecture de timing complète."
+    "always_compute_both_lots": "Calculer la Libération Zodiacale depuis le lot Fortune ET depuis le lot Esprit en parallèle — ils éclairent des domaines de vie différents (circonstances/corps vs carrière/action) et se complètent dans une lecture de timing complète."
   }
 }

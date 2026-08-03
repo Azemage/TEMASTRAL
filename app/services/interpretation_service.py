@@ -267,6 +267,8 @@ def _zodiacal_releasing_max_tokens(request: schemas.ReadingRequest) -> int:
     tokens = 3000 + 600 * n_lots
     if request.zr_mode == "predictive":
         tokens += 1500
+    if request.zr_mode == "predictive" and request.zr_axis_key and request.zr_axis_key in _AXIS_PROMPT_MODULES:
+        tokens += 800  # couche 1 (qualification natale) supplémentaire
     return min(tokens, 8000)
 
 _SPECIALIZED_PROMPT_BLOCKS = {
@@ -276,9 +278,12 @@ de trois points du thème (le plus souvent l'Ascendant et deux autres points), q
 lecture d'un domaine de vie précis. Tu reçois la liste des lots déjà calculés (position, \
 maison, aspects aux planètes natales) dans `lots`, ainsi qu'un contexte d'identité minimal \
 dans `identity`. Pour chaque lot, explique d'abord en une phrase simple ce qu'il représente, \
-puis interprète sa position et ses aspects. Priorise le Lot de Fortune et le Lot d'Esprit \
-(les deux lots fondamentaux), et les lots dont un aspect a une orbe serrée (< 3°) : ne traite \
-pas les 14 lots avec la même profondeur, ce serait répétitif et diluerait la lecture.""",
+puis interprète sa position et ses aspects. Chaque lot porte un champ `certainty` (lots \
+classiques) ou `construction_logic` (lots modernes non-canoniques) : mentionne brièvement ce \
+niveau de fiabilité pour les lots moins bien attestés (`certainty` moyenne, ou modernes), sans \
+en faire un sujet central. Priorise Fortune et Esprit (les deux lots fondamentaux), et les \
+lots dont un aspect a une orbe serrée (< 3°) : ne traite pas les 17 lots avec la même \
+profondeur, ce serait répétitif et diluerait la lecture.""",
 }
 
 
@@ -447,14 +452,134 @@ def _select_events_for_horizon(events: list[dict], horizon: str, as_of_date: dat
     return _select_significant_events(in_window, max_count=max_count)
 
 
+# Modules de prompt par axe thématique de lots (voir prompts_par_axe_thematique.md), pour
+# les projections à 10 ans (zr_mode='predictive'). Chaque module qualifie D'ABORD la nature
+# de l'axe à partir du thème natal (couche 1, statique) avant de la situer dans le temps via
+# la Libération Zodiacale déjà calculée (couche 2, dynamique) — jamais l'inverse. Le cas
+# 'vue_complete' (17 lots) n'a volontairement pas de module dédié : il reprend la lecture
+# générique déjà en place (convergence multi-lots), pas une qualification par axe.
+_AXIS_PROMPT_MODULES = {
+    "vocation_reussite": """AXE : Vocation & Réussite
+
+Couche 1 — Avant toute chronologie, détermine la nature de la vocation de cette personne à \
+partir de (voir `natal_focal_data`) : signe et maître du Milieu du Ciel, planètes en maison \
+10, signe/maison/aspects du lot Esprit, et du lot Victoire. Ne nomme pas un métier précis — \
+décris un MODE d'accomplissement (ex. "à travers la transmission et l'enseignement", "à \
+travers la construction concrète et durable", "à travers la prise de risque et \
+l'innovation").
+
+Couche 2 — Pour chaque période L1/L2 de la Libération Zodiacale (lots Esprit/Victoire/\
+Courage/Substance) sur les 10 prochaines années, explique COMMENT le signe actif cette \
+période-là vient colorer ce mode d'accomplissement déjà défini en couche 1 — pas comme un \
+évènement séparé, mais comme une nuance ou une phase de la même trajectoire.
+
+Signale en particulier :
+- Les Libérations du lien (tournants structurels majeurs, changements de direction)
+- Les périodes de pointe (moments de concrétisation la plus probable)
+- Toute période où plusieurs des lots sélectionnés convergent vers le même signe/la même maison""",
+    "famille_racines": """AXE : Famille & Racines
+
+Couche 1 — Détermine la nature du rapport de cette personne à ses racines à partir de (voir \
+`natal_focal_data`) : signe/maître/planètes de la maison 4, position et aspects du lot Base, \
+et les maisons dérivées pertinentes (`natal_focal_data.derived_houses` : maison 4 → maison 1 \
+pour la mère, maison 10 ou 4 → maison 1 pour le père selon la convention retenue). Distingue \
+clairement, si les données le permettent, le rapport au père vs à la mère vs à sa propre \
+construction familiale future (Enfants/Mariage) — ce sont 3 sous-thèmes liés mais distincts.
+
+Couche 2 — Pour chaque période L1/L2 des lots Base/Père/Mère/Enfants/Mariage sur 10 ans, \
+relie le signe actif à une PHASE de ce rapport aux racines (consolidation, remise en \
+question, ouverture à une nouvelle structure familiale, etc.) plutôt qu'à un événement \
+familial daté et spécifique — reste au niveau de la dynamique, jamais de la prédiction \
+factuelle.
+
+MISE EN GARDE IMPÉRATIVE : cet axe touche à des sujets sensibles (deuil, filiation). \
+N'émets JAMAIS de prédiction factuelle datée (naissance, décès, rupture) — reste au niveau \
+des dynamiques et des invitations à la réflexion.""",
+    "corps_circonstances": """AXE : Corps & Circonstances matérielles
+
+Couche 1 — Détermine le rapport de base de cette personne à son corps et aux circonstances \
+extérieures à partir de (voir `natal_focal_data`) : signe/maître/dignités de l'Ascendant, \
+planètes en maison 1, et position/aspects du lot Fortune (le lot fondamental de la \
+tradition, à traiter avec le plus de poids sur cet axe).
+
+Couche 2 — Pour chaque période L1/L2 des lots Fortune/Maladie/Mort/Nécessité sur 10 ans, \
+décris des TENDANCES générales de vitalité/stabilité matérielle (période de renforcement, \
+période demandant davantage d'attention au corps, période de changement de circonstances) — \
+JAMAIS de diagnostic, de pronostic médical, ou de prédiction d'événement grave daté. Rappelle \
+systématiquement, si le climat est exigeant sur une période, qu'il s'agit d'un langage \
+symbolique et que toute question de santé réelle relève d'un professionnel.
+
+MISE EN GARDE IMPÉRATIVE — LA PLUS STRICTE DE CETTE LECTURE : le lot Mort et cet axe en \
+général sont les plus à risque de dérive anxiogène. Ne produis JAMAIS de contenu qui \
+pourrait inquiéter inutilement sur la santé ou la mortalité — reformule systématiquement en \
+"transformation/renouvellement" plutôt qu'en langage funeste.""",
+    "amour_relations": """AXE : Amour & Relations intimes
+
+Couche 1 — Détermine le style amoureux de cette personne à partir de (voir \
+`natal_focal_data`) : signe/maison/aspects de Vénus, signe/maître/planètes de la maison 7, \
+et position/aspects du lot Éros (et, si disponible, la maison dérivée 7→1 pour qualifier le \
+type de partenaire attiré, `natal_focal_data.derived_houses`).
+
+Couche 2 — Pour chaque période L1/L2 des lots Éros/Mariage/Amis sur 10 ans, relie le signe \
+actif à une PHASE du style amoureux déjà défini (période d'ouverture, période \
+d'approfondissement d'un lien existant, période d'indépendance affective plus marquée) — \
+sans jamais promettre une rencontre ou une rupture à date fixe.""",
+    "epreuves_resilience": """AXE : Épreuves & Résilience
+
+Couche 1 — Détermine le TYPE de défi récurrent et les ressources de résilience de cette \
+personne à partir de (voir `natal_focal_data`) : signe/maison/aspects/dignité de Saturne, \
+aspects tendus (carré/opposition) impliquant les planètes personnelles, et position/aspects \
+du lot Némésis.
+
+Couche 2 — Pour chaque période L1/L2 des lots Némésis/Nécessité/Courage sur 10 ans, présente \
+les périodes non pas comme des "mauvaises années" mais comme des phases où cette dynamique \
+de résilience déjà identifiée sera davantage sollicitée — toujours coupler un défi identifié \
+à la ressource interne correspondante établie en couche 1, jamais l'un sans l'autre.
+
+MISE EN GARDE : c'est l'axe où le risque de dérive vers un ton fataliste ou anxiogène est le \
+plus élevé. Ne formule JAMAIS de langage fataliste ('vous allez souffrir', 'période noire') — \
+reste toujours dans le registre de la dynamique et de la ressource mobilisable.""",
+    "ouverture_reseau": """AXE : Ouverture & Réseau
+
+Couche 1 — Détermine le mode de connexion sociale/exploratoire de cette personne à partir de \
+(voir `natal_focal_data`) : signe/maison/aspects de Mercure, et signe/maître/planètes de la \
+maison 11 (et maison 9 si le lot Voyages est sélectionné).
+
+Couche 2 — Pour chaque période L1/L2 des lots Amis/Voyages sur 10 ans, relie le signe actif \
+à une phase de ce mode de connexion (période d'expansion du réseau, période de consolidation \
+d'amitiés existantes, période propice au mouvement géographique/intellectuel).""",
+    "vue_complete": """AXE : Vue complète (17 lots)
+
+Ne développe pas les 17 lots avec la même profondeur — priorise les 2-3 lots (ou petits \
+groupes de lots) où les signaux convergent le plus fortement dans le temps (période de \
+pointe + déliement du lien + plusieurs lots sur le même signe/la même maison à la fois), \
+développe-les en détail, et mentionne les autres brièvement en une ou deux phrases. Il n'y a \
+pas de couche de qualification natale dédiée pour ce cas générique : structure-toi \
+uniquement sur la convergence temporelle déjà décrite ci-dessus.""",
+}
+
+# Axes avec une couche 1 (qualification natale) dédiée, nécessitant les données natales
+# complètes dans le payload — 'vue_complete' n'en fait pas partie (voir module ci-dessus).
+_AXES_REQUIRING_NATAL_FOCAL_DATA = {
+    "vocation_reussite", "famille_racines", "corps_circonstances",
+    "amour_relations", "epreuves_resilience", "ouverture_reseau",
+}
+
+
+def _axis_prompt_block(request: schemas.ReadingRequest) -> str:
+    if request.zr_mode != "predictive" or not request.zr_axis_key:
+        return ""
+    return _AXIS_PROMPT_MODULES.get(request.zr_axis_key, "")
+
+
 def _zodiacal_releasing_prompt_block(request: schemas.ReadingRequest) -> str:
     selected = request.zr_selected_lots or [FORTUNE_LOT_NAME, SPIRIT_LOT_NAME]
 
     intro = """Cette lecture porte spécifiquement sur la RÉPARTITION ZODIACALE (Zodiacal \
 Releasing), une technique de timing hellénistique (Vettius Valens) qui découpe la vie en \
 grandes périodes ('périodes L1') elles-mêmes subdivisées en sous-périodes ('périodes L2'). \
-Elle est formellement définie pour le Lot de Fortune (déroulement de la vie matérielle, du \
-corps, des circonstances extérieures) et le Lot d'Esprit (déroulement de la vie active, des \
+Elle est formellement définie pour le lot Fortune (déroulement de la vie matérielle, du \
+corps, des circonstances extérieures) et le lot Esprit (déroulement de la vie active, des \
 choix, de l'accomplissement) ; son application ici aux autres lots applique le même \
 algorithme à un domaine de vie plus spécifique (amour, carrière, famille...) — présente \
 alors cette extension comme exploratoire, pas comme une règle classique établie, sans pour \
@@ -536,9 +661,13 @@ domaine du lot) et `is_loosing_of_the_bond` ('déliement du lien' — un changem
 trajectoire marqué, souvent vécu comme une rupture ou un tournant net). Si l'un des deux est \
 vrai pour une période évoquée, signale-le explicitement comme un moment charnière."""
 
+    axis_block = _axis_prompt_block(request)
+    axis_section = f"\n\n{axis_block}\n\nLa couche 1 ci-dessus PRÉCÈDE et ENCADRE tout ce qui suit : qualifie-la avant d'aborder la chronologie." if axis_block else ""
+
     return f"""{intro}
 
 {scope}
+{axis_section}
 
 {depth}
 
@@ -777,6 +906,18 @@ def _build_user_payload(
                 entry["current_l1_l2_periods"] = lot_result["current_l1_l2_periods"]
                 entry["current_l2"] = lot_result["current_l2"]
             payload["lots"][lot_name] = entry
+        if (
+            request.zr_mode == "predictive"
+            and request.zr_axis_key in _AXES_REQUIRING_NATAL_FOCAL_DATA
+        ):
+            payload["axis"] = request.zr_axis_key
+            payload["natal_focal_data"] = {
+                "angles": chart_data["angles"],
+                "houses": chart_data["houses"],
+                "planets": chart_data["planets"],
+                "aspects": chart_data["aspects"],
+                "derived_houses": chart_data["derived_houses"],
+            }
     elif request.reading_type == "compatibility":
         assert chart_b is not None  # vérifié en amont par l'appelant (api/readings.py)
         mode = request.relationship_mode or "romantic"
