@@ -979,14 +979,20 @@ async def generate_reading(
         if response.stop_reason != "max_tokens":
             break
 
-        # La réponse s'est arrêtée faute de budget, en plein milieu d'une phrase : on repasse
-        # le texte déjà généré comme tour "assistant" (technique de préremplissage) pour que
-        # l'appel suivant reprenne exactement où le modèle s'est arrêté, sans le renvoyer à
-        # l'utilisateur coupé en plein mot.
-        if messages[-1]["role"] == "assistant":
-            messages[-1] = {"role": "assistant", "content": messages[-1]["content"] + chunk}
-        else:
-            messages.append({"role": "assistant", "content": chunk})
+        # La réponse s'est arrêtée faute de budget, en plein milieu d'une phrase. Certains
+        # modèles refusent le préremplissage (la conversation ne peut pas se terminer par un
+        # tour "assistant") : on repasse donc le texte déjà généré comme tour "assistant" suivi
+        # d'un tour "user" demandant de continuer exactement là où le modèle s'est arrêté, sans
+        # rien répéter.
+        messages.append({"role": "assistant", "content": chunk})
+        messages.append(
+            {
+                "role": "user",
+                "content": "Continue exactement là où tu t'es arrêté, sans rien répéter de ce "
+                "qui précède et sans ajouter de préambule ni de transition — reprends le texte "
+                "au milieu du mot ou de la phrase si nécessaire.",
+            }
+        )
 
     compatibility_ratings = None
     timing_ratings = None

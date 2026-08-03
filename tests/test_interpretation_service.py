@@ -503,10 +503,12 @@ def test_generate_reading_continues_when_cut_off_by_max_tokens(monkeypatch):
 
     assert result["reading_text"] == "Première partie de la lecture, coupée en pleine phrase mais qui se termine correctement."
     assert len(fake_client.messages.calls) == 2
-    # Le texte partiel doit être repassé en tour "assistant" (préremplissage), sans nouveau
-    # message "user" demandant de continuer.
+    # Certains modèles refusent le préremplissage (la conversation ne peut pas se terminer par
+    # un tour "assistant") : le texte partiel est repassé en tour "assistant" suivi d'un tour
+    # "user" demandant de continuer, pour que le deuxième appel se termine bien par "user".
     second_call_messages = fake_client.messages.calls[1]["messages"]
-    assert second_call_messages[-1] == {"role": "assistant", "content": "Première partie de la lecture, coupée en pl"}
+    assert second_call_messages[-2] == {"role": "assistant", "content": "Première partie de la lecture, coupée en pl"}
+    assert second_call_messages[-1]["role"] == "user"
     assert result["tokens_used"] == 300  # (100+50) x 2 appels
 
 
