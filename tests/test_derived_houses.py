@@ -1,29 +1,46 @@
-from app.core.derived_houses import compute_derived_houses
+from app.core.derived_houses import compute_derived_houses, derive_house
 
 
-def test_reference_house_7_maps_house_8_to_partners_house_1():
+def test_derive_house_reference_house_itself_is_the_persons_first_house():
+    # La maison de référence ELLE-MÊME devient la maison 1 (identité) de la personne
+    # représentée — pas de décalage d'un cran.
+    assert derive_house(7, 1) == 7
+    assert derive_house(4, 1) == 4
+
+
+def test_derive_house_partner_example_from_spec():
+    # maisons_derivees_extension.md section 1 : M7=partenaire, M8=sa maison 2 (pas M9).
+    assert derive_house(7, 1) == 7
+    assert derive_house(7, 2) == 8
+    assert derive_house(7, 3) == 9
+    assert derive_house(7, 12) == 6
+
+
+def test_derive_house_wraps_around_modulo_12():
+    assert derive_house(10, 5) == 2
+    assert derive_house(1, 12) == 12
+    assert derive_house(12, 2) == 1
+
+
+def test_reference_house_7_maps_house_7_to_partners_house_1():
     result = compute_derived_houses(planets=[])
     ref7 = next(r for r in result if r["reference_house"] == 7)
     entry = next(m for m in ref7["mapping"] if m["represents_house"] == 1)
-    assert entry["derived_house_number"] == 8
+    assert entry["derived_house_number"] == 7
 
 
-def test_reference_house_itself_represents_the_persons_twelfth_house():
+def test_reference_house_8_represents_partners_second_house():
     result = compute_derived_houses(planets=[])
     ref7 = next(r for r in result if r["reference_house"] == 7)
-    entry = next(m for m in ref7["mapping"] if m["derived_house_number"] == 7)
-    assert entry["represents_house"] == 12
+    entry = next(m for m in ref7["mapping"] if m["derived_house_number"] == 8)
+    assert entry["represents_house"] == 2
 
 
-def test_reference_house_1_still_starts_counting_at_the_next_house():
-    # La convention "N+1 -> 1, N+2 -> 2, ..." s'applique aussi pour R=1 (pas de cas
-    # particulier identité) : maison 2 = "sa" maison 1, ..., maison 1 elle-même = "sa" maison 12.
+def test_reference_house_4_maps_house_4_to_mothers_house_1():
     result = compute_derived_houses(planets=[])
-    ref1 = next(r for r in result if r["reference_house"] == 1)
-    entry_house2 = next(m for m in ref1["mapping"] if m["derived_house_number"] == 2)
-    assert entry_house2["represents_house"] == 1
-    entry_house1 = next(m for m in ref1["mapping"] if m["derived_house_number"] == 1)
-    assert entry_house1["represents_house"] == 12
+    ref4 = next(r for r in result if r["reference_house"] == 4)
+    entry = next(m for m in ref4["mapping"] if m["represents_house"] == 1)
+    assert entry["derived_house_number"] == 4
 
 
 def test_all_twelve_reference_houses_present_with_full_mapping():
@@ -41,3 +58,20 @@ def test_planets_are_attached_to_correct_natal_house():
     ref7 = next(r for r in result if r["reference_house"] == 7)
     house8_entry = next(m for m in ref7["mapping"] if m["derived_house_number"] == 8)
     assert set(house8_entry["planets"]) == {"Sun", "Moon"}
+
+
+def test_second_order_derivation_is_a_chained_call_belle_famille():
+    # Belle-mère/beau-père (parents du partenaire) = derive(7, 4) = maison 10.
+    assert derive_house(7, 4) == 10
+
+
+def test_second_order_derivation_grand_mere_maternelle():
+    assert derive_house(4, 4) == 7
+
+
+def test_second_order_derivation_neveux_nieces():
+    assert derive_house(3, 5) == 7
+
+
+def test_second_order_derivation_petits_enfants():
+    assert derive_house(5, 5) == 9

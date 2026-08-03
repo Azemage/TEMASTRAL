@@ -738,37 +738,82 @@ function renderLotsDataPanel(data) {
 // ---------------------------------------------------------------------
 // Maisons dérivées — affichées dans "Lecture interprétée > Maisons dérivées"
 // ---------------------------------------------------------------------
-const DERIVED_HOUSE_PRESET_LABELS = {
-  3: "Frères/sœurs", 4: "Mère", 5: "Enfants", 7: "Partenaire", 10: "Père", 11: "Amis",
-};
-let selectedDerivedReferenceHouse = 7;
+let selectedDerivedRelationKey = "partner";
+let derivedHouseRelationsConfig = null;
 
-function renderDerivedHousesDataPanel(data) {
+function deriveHouseClient(n1, n2) {
+  return ((n1 - 1 + (n2 - 1)) % 12) + 1;
+}
+
+async function loadDerivedHouseRelationsConfig() {
+  if (derivedHouseRelationsConfig) return derivedHouseRelationsConfig;
+  const res = await fetch("/api/reference/derived-house-relations");
+  derivedHouseRelationsConfig = await res.json();
+  return derivedHouseRelationsConfig;
+}
+
+function referenceHouseForRelationKey(relationKey, config) {
+  if (relationKey.startsWith("custom:")) {
+    const [, n1Str, n2Str] = relationKey.split(":");
+    return deriveHouseClient(parseInt(n1Str, 10), parseInt(n2Str, 10));
+  }
+  const first = config.first_order.find((r) => r.key === relationKey);
+  if (first) return first.reference_house;
+  const second = config.second_order.find((r) => r.key === relationKey);
+  if (second) return deriveHouseClient(second.n1, second.n2);
+  return 7;
+}
+
+async function renderDerivedHousesDataPanel(data) {
   const container = document.getElementById("derived-data-panel");
   if (!data.derived_houses || data.derived_houses.length === 0) {
     container.innerHTML = "<p>Maisons dérivées non disponibles.</p>";
     return;
   }
 
-  const options = Array.from({ length: 12 }, (_, i) => i + 1)
-    .map((n) => {
-      const preset = DERIVED_HOUSE_PRESET_LABELS[n];
-      return `<option value="${n}" ${n === selectedDerivedReferenceHouse ? "selected" : ""}>Maison ${n}${preset ? " — " + preset : ""}</option>`;
-    })
+  const config = await loadDerivedHouseRelationsConfig();
+
+  const firstOrderOptions = config.first_order
+    .map(
+      (r) => `<option value="${r.key}" ${r.key === selectedDerivedRelationKey ? "selected" : ""}>${r.label}</option>`
+    )
     .join("");
+  const secondOrderOptions = config.second_order
+    .map(
+      (r) => `<option value="${r.key}" ${r.key === selectedDerivedRelationKey ? "selected" : ""}>${r.label}</option>`
+    )
+    .join("");
+  const customSelected = selectedDerivedRelationKey.startsWith("custom:") ? "selected" : "";
 
   container.innerHTML = `
     <div class="form-row">
-      <label for="derived-house-select">Maison de référence (la personne à analyser)</label>
-      <select id="derived-house-select">${options}</select>
+      <label for="derived-house-select">Relation à analyser</label>
+      <select id="derived-house-select">
+        <optgroup label="Relations directes">${firstOrderOptions}</optgroup>
+        <optgroup label="Relations de second ordre">${secondOrderOptions}</optgroup>
+        <option value="__custom__" ${customSelected}>Autre (avancé : composer une relation)…</option>
+      </select>
+    </div>
+    <div id="derived-custom-selectors" class="form-row hidden">
+      <label for="derived-custom-n1">À partir de qui</label>
+      <select id="derived-custom-n1">${firstOrderOptions}</select>
+      <label for="derived-custom-n2">Quelle relation de cette personne</label>
+      <select id="derived-custom-n2">${firstOrderOptions}</select>
     </div>
     <p class="derived-house-explainer">
-      Maison de référence + 1 = la maison 1 (identité) de cette personne, +2 = sa maison 2 (argent), etc.
+      La maison de référence elle-même est la maison 1 (identité) de la personne représentée ;
+      la maison suivante est sa maison 2 (ressources), etc.
     </p>
     <div id="derived-house-table"></div>
   `;
 
-  const renderTable = (referenceHouse) => {
+  const relationSelect = document.getElementById("derived-house-select");
+  const customSelectors = document.getElementById("derived-custom-selectors");
+  const customN1 = document.getElementById("derived-custom-n1");
+  const customN2 = document.getElementById("derived-custom-n2");
+
+  const renderTable = (relationKey) => {
+    const referenceHouse = referenceHouseForRelationKey(relationKey, config);
     const entry = data.derived_houses.find((d) => d.reference_house === referenceHouse);
     const rows = entry.mapping
       .map(
@@ -788,11 +833,30 @@ function renderDerivedHousesDataPanel(data) {
     `;
   };
 
-  document.getElementById("derived-house-select").addEventListener("change", (e) => {
-    selectedDerivedReferenceHouse = parseInt(e.target.value, 10);
-    renderTable(selectedDerivedReferenceHouse);
+  const applyCustomVisibility = () => {
+    customSelectors.classList.toggle("hidden", relationSelect.value !== "__custom__");
+  };
+
+  const customRelationKey = () => {
+    const n1 = config.first_order.find((r) => r.key === customN1.value).reference_house;
+    const n2 = config.first_order.find((r) => r.key === customN2.value).reference_house;
+    return `custom:${n1}:${n2}`;
+  };
+
+  relationSelect.addEventListener("change", () => {
+    applyCustomVisibility();
+    selectedDerivedRelationKey = relationSelect.value === "__custom__" ? customRelationKey() : relationSelect.value;
+    renderTable(selectedDerivedRelationKey);
   });
-  renderTable(selectedDerivedReferenceHouse);
+  [customN1, customN2].forEach((el) =>
+    el.addEventListener("change", () => {
+      selectedDerivedRelationKey = customRelationKey();
+      renderTable(selectedDerivedRelationKey);
+    })
+  );
+
+  applyCustomVisibility();
+  renderTable(selectedDerivedRelationKey);
 }
 
 // ---------------------------------------------------------------------
@@ -1595,7 +1659,7 @@ document.getElementById("generate-derived-reading-btn").addEventListener("click"
     errorId: "derived-reading-error",
     outputId: "derived-reading-output",
     defaultLabel: "Générer la lecture des maisons dérivées",
-    requestBody: { reading_type: "derived_houses", reference_house: selectedDerivedReferenceHouse },
+    requestBody: { reading_type: "derived_houses", relation_key: selectedDerivedRelationKey },
   });
 });
 

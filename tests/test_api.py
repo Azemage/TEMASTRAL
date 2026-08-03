@@ -96,6 +96,14 @@ def test_reference_timezones_endpoint(client):
     assert not any(z.startswith(("Etc/", "US/", "SystemV/")) for z in zones)
 
 
+def test_reference_derived_house_relations_endpoint(client):
+    res = client.get("/api/reference/derived-house-relations")
+    assert res.status_code == 200
+    data = res.json()
+    assert {r["key"] for r in data["first_order"]} >= {"partner", "mother", "father", "business_partner"}
+    assert {r["key"] for r in data["second_order"]} >= {"belle_famille", "grand_mere_maternelle"}
+
+
 def test_chart_includes_lots_and_derived_houses(client):
     res = client.post("/api/charts", json=VALID_CHART_PAYLOAD)
     data = res.json()["computed_chart_data"]

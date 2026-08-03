@@ -83,6 +83,30 @@ def test_derived_houses_reading_defaults_to_house_7():
     assert payload["reference_house"] == 7
 
 
+def test_derived_houses_reading_resolves_relation_key_first_order():
+    chart = _make_chart()
+    request = schemas.ReadingRequest(reading_type="derived_houses", relation_key="mother")
+    payload = interpretation_service._build_user_payload(chart, request)
+    assert payload["reference_house"] == 4
+    assert payload["relation"]["key"] == "mother"
+    assert "derivation_path" not in payload["relation"]
+
+
+def test_derived_houses_reading_resolves_relation_key_second_order():
+    chart = _make_chart()
+    request = schemas.ReadingRequest(reading_type="derived_houses", relation_key="belle_famille")
+    payload = interpretation_service._build_user_payload(chart, request)
+    assert payload["reference_house"] == 10  # derive(7, 4)
+    assert payload["relation"]["derivation_path"]
+
+
+def test_derived_houses_prompt_block_is_relation_aware():
+    request = schemas.ReadingRequest(reading_type="derived_houses", relation_key="business_partner")
+    block = interpretation_service._derived_houses_prompt_block(request)
+    assert "Associé d'affaires" in block
+    assert "Saturne, Mercure" in block
+
+
 def test_timing_reading_payload_includes_profection_transits_and_forecast():
     chart = _make_chart()
     request = schemas.ReadingRequest(reading_type="timing", as_of_date=date(2026, 8, 2))

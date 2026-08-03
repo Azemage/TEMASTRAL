@@ -71,6 +71,10 @@ def synastry_compatibility() -> dict:
     return _load("synastry_compatibility.json")
 
 
+def derived_house_relations() -> dict:
+    return _load("derived_house_relations.json")
+
+
 @lru_cache
 def ruler_map(system: str) -> dict[str, str]:
     """sign -> planet name, pour system in {'traditional', 'modern'}."""

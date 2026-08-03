@@ -1,0 +1,218 @@
+{
+  "description": "Configuration des relations disponibles pour la lecture des maisons dérivées (app.core.derived_houses.derive_house). Donnée de configuration, pas de la logique codée en dur : ajouter une relation = ajouter une entrée ici, sans toucher au moteur de calcul.",
+
+  "first_order": [
+    {
+      "key": "sibling",
+      "label": "Frères/sœurs",
+      "reference_house": 3,
+      "priority": "existante",
+      "prompt": {
+        "priority_planets": ["Mercure"],
+        "angle": "qualité et nature du lien fraternel tel que suggéré par le thème, pas une description factuelle d'une personne réelle",
+        "caution": null
+      }
+    },
+    {
+      "key": "mother",
+      "label": "Mère",
+      "reference_house": 4,
+      "priority": "existante",
+      "prompt": {
+        "priority_planets": ["Lune"],
+        "angle": "la façon dont ce lien a été intégré psychologiquement, jamais un jugement sur le parent réel",
+        "caution": "Ne jamais présenter ceci comme un jugement sur la mère réelle de l'utilisateur."
+      }
+    },
+    {
+      "key": "child",
+      "label": "Enfants",
+      "reference_house": 5,
+      "priority": "existante",
+      "prompt": {
+        "priority_planets": ["Soleil", "Lune"],
+        "angle": "dynamique attendue avec la descendance, de façon générale et non prédictive",
+        "caution": null
+      }
+    },
+    {
+      "key": "partner",
+      "label": "Partenaire",
+      "reference_house": 7,
+      "priority": "existante",
+      "prompt": {
+        "priority_planets": ["Vénus", "Mars"],
+        "angle": "à quoi ressemble le partenaire type / la dynamique de couple attirée, pas une description factuelle d'une personne réelle",
+        "caution": null
+      }
+    },
+    {
+      "key": "father",
+      "label": "Père",
+      "reference_house": 10,
+      "priority": "existante",
+      "note": "Convention moderne (M10). Voir aussi 'father_hellenistic' pour la convention hellénistique (M4).",
+      "prompt": {
+        "priority_planets": ["Soleil"],
+        "angle": "la façon dont ce lien a été intégré psychologiquement, jamais un jugement sur le parent réel",
+        "caution": "Ne jamais présenter ceci comme un jugement sur le père réel de l'utilisateur."
+      }
+    },
+    {
+      "key": "father_hellenistic",
+      "label": "Père (tradition hellénistique, M4)",
+      "reference_house": 4,
+      "priority": "existante",
+      "prompt": {
+        "priority_planets": ["Soleil"],
+        "angle": "la façon dont ce lien a été intégré psychologiquement, jamais un jugement sur le parent réel",
+        "caution": "Ne jamais présenter ceci comme un jugement sur le père réel de l'utilisateur."
+      }
+    },
+    {
+      "key": "friend",
+      "label": "Amis",
+      "reference_house": 11,
+      "priority": "existante",
+      "prompt": {
+        "priority_planets": ["Mercure", "Jupiter"],
+        "angle": "type de lien social recherché/attiré",
+        "caution": null
+      }
+    },
+    {
+      "key": "business_partner",
+      "label": "Associé d'affaires",
+      "reference_house": 7,
+      "priority": "haute",
+      "note": "Distinct du partenaire romantique bien que même maison — se distingue par le contexte choisi par l'utilisateur.",
+      "prompt": {
+        "priority_planets": ["Saturne", "Mercure"],
+        "angle": "fiabilité, complémentarité de travail, nature de l'engagement contractuel",
+        "caution": null
+      }
+    },
+    {
+      "key": "authority",
+      "label": "Supérieur hiérarchique / figure d'autorité",
+      "reference_house": 10,
+      "priority": "haute",
+      "prompt": {
+        "priority_planets": ["Saturne", "Soleil"],
+        "angle": "type de rapport à l'autorité, ce qui favorise ou complique la relation avec un supérieur",
+        "caution": null
+      }
+    },
+    {
+      "key": "employee",
+      "label": "Employé / subordonné",
+      "reference_house": 6,
+      "priority": "haute",
+      "prompt": {
+        "priority_planets": ["Mars", "Mercure"],
+        "angle": "style de management naturel, ce qui motive ou démotive les personnes sous sa responsabilité",
+        "caution": null
+      }
+    },
+    {
+      "key": "rival",
+      "label": "Rival / ennemi déclaré",
+      "reference_house": 7,
+      "priority": "moyenne",
+      "note": "Signification traditionnelle alternative de la maison 7 (relation contractuelle ou conflictuelle ouverte).",
+      "prompt": {
+        "priority_planets": ["les planètes personnelles natales (Soleil, Lune, Mercure, Vénus, Mars)"],
+        "angle": "nature des conflits ouverts probables, rester au niveau du PATTERN relationnel, jamais nommer une personne réelle",
+        "caution": "Formuler avec précaution pour ne pas alimenter une vision paranoïaque des relations — présenter comme un type de friction possible dans les rapports contractuels/ouverts, pas comme une alerte sur des personnes précises."
+      }
+    },
+    {
+      "key": "neighbor",
+      "label": "Voisin",
+      "reference_house": 3,
+      "priority": "moyenne",
+      "note": "Signification traditionnelle secondaire de la maison 3.",
+      "prompt": {
+        "priority_planets": ["Mercure"],
+        "angle": "qualité des échanges de proximité (voisinage, entourage immédiat)",
+        "caution": null
+      }
+    },
+    {
+      "key": "network",
+      "label": "Groupe / réseau / association",
+      "reference_house": 11,
+      "priority": "moyenne",
+      "note": "Version collective plutôt qu'individuelle de 'ami'.",
+      "prompt": {
+        "priority_planets": ["Mercure", "Jupiter"],
+        "angle": "type de dynamique collective recherchée/attirée, à l'échelle d'un groupe plutôt que d'une personne",
+        "caution": null
+      }
+    },
+    {
+      "key": "hidden_enemy",
+      "label": "Ennemi caché / adversaire secret",
+      "reference_house": 12,
+      "priority": "basse_avancee",
+      "note": "Plus abstrait, réservé à un mode avancé de l'app.",
+      "prompt": {
+        "priority_planets": ["planètes en difficulté (carré/opposition/dignité faible)"],
+        "angle": "dynamiques cachées ou difficultés non identifiées, à un niveau très général",
+        "caution": "Rester très prudent et abstrait, ne jamais désigner une personne réelle, formuler comme un pattern psychologique inconscient plutôt qu'une menace concrète."
+      }
+    }
+  ],
+
+  "second_order": [
+    {
+      "key": "belle_famille",
+      "label": "Belle-mère / beau-père (parents du partenaire)",
+      "n1": 7,
+      "n2": 4,
+      "path_description": "maison des parents (M4) du partenaire (M7)"
+    },
+    {
+      "key": "grand_mere_maternelle",
+      "label": "Grand-mère maternelle (mère de la mère)",
+      "n1": 4,
+      "n2": 4,
+      "path_description": "maison de la mère (M4) de la mère (M4)"
+    },
+    {
+      "key": "grand_pere_paternel",
+      "label": "Grand-père paternel (père du père)",
+      "n1": 10,
+      "n2": 10,
+      "path_description": "maison du père (M10) du père (M10), convention moderne pour le père"
+    },
+    {
+      "key": "neveux_nieces",
+      "label": "Neveux / nièces (enfants de la fratrie)",
+      "n1": 3,
+      "n2": 5,
+      "path_description": "maison des enfants (M5) de la fratrie (M3)"
+    },
+    {
+      "key": "beaux_freres_soeurs",
+      "label": "Beaux-frères / belles-sœurs (fratrie du partenaire)",
+      "n1": 7,
+      "n2": 3,
+      "path_description": "maison de la fratrie (M3) du partenaire (M7)"
+    },
+    {
+      "key": "petits_enfants",
+      "label": "Petits-enfants (enfants des enfants)",
+      "n1": 5,
+      "n2": 5,
+      "path_description": "maison des enfants (M5) des enfants (M5)"
+    },
+    {
+      "key": "patron_partenaire",
+      "label": "Patron du partenaire",
+      "n1": 7,
+      "n2": 10,
+      "path_description": "maison de l'autorité/supérieur (M10) du partenaire (M7)"
+    }
+  ]
+}

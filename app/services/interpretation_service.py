@@ -22,6 +22,7 @@ from anthropic import AsyncAnthropic
 
 from app import models, schemas
 from app.config import get_settings
+from app.core.derived_houses import resolve_relation
 from app.core.reference_data import houses_meanings, rulerships
 from app.core.zodiacal_releasing import FORTUNE_LOT_NAME, SPIRIT_LOT_NAME
 from app.services import timing_service
@@ -278,18 +279,83 @@ dans `identity`. Pour chaque lot, explique d'abord en une phrase simple ce qu'il
 puis interprète sa position et ses aspects. Priorise le Lot de Fortune et le Lot d'Esprit \
 (les deux lots fondamentaux), et les lots dont un aspect a une orbe serrée (< 3°) : ne traite \
 pas les 14 lots avec la même profondeur, ce serait répétitif et diluerait la lecture.""",
-    "derived_houses": """Cette lecture porte spécifiquement sur les MAISONS DÉRIVÉES \
-('maisons de maisons'), une technique qui permet d'analyser une tierce personne (partenaire, \
-mère, père, enfant...) à partir du seul thème natal du consultant, sans disposer du thème de \
-cette personne. Principe : la maison `reference_house` du consultant devient la maison 1 \
-(identité) de la personne représentée, la maison suivante sa maison 2 (ressources), etc. \
-(mapping complet fourni dans `derived_house_mapping`). Commence par expliquer ce principe en \
-une phrase accessible, puis interprète ce que révèlent les planètes natales présentes dans \
+}
+
+
+def _derived_houses_prompt_block(request: schemas.ReadingRequest) -> str:
+    """Bloc de prompt pour la lecture des maisons dérivées, adapté à la relation choisie
+    (voir maisons_derivees_extension.md section 4) : la maison de référence devient la
+    maison 1 (identité) de la personne représentée, sans décalage d'un cran. Le module de
+    prompt est injecté selon la relation, sur le même mécanisme que les axes thématiques."""
+    intro = """Cette lecture porte spécifiquement sur les MAISONS DÉRIVÉES ('maisons de \
+maisons'), une technique qui permet d'analyser une relation (partenaire, mère, associé \
+d'affaires...) à partir du seul thème natal du consultant, sans disposer du thème de cette \
+personne. Principe : la maison de référence ELLE-MÊME devient la maison 1 (identité) de la \
+personne représentée, la maison suivante sa maison 2 (ressources), etc. — pas de décalage \
+d'un cran (mapping complet fourni dans `derived_house_mapping`). Commence par expliquer ce \
+principe en une phrase accessible."""
+
+    relation_key = request.relation_key
+    if not relation_key:
+        return f"""{intro} Interprète ce que révèlent les planètes natales présentes dans \
 les maisons dérivées les plus occupées, du point de vue de CETTE personne (pas du \
 consultant). N'invente jamais qui est cette personne au-delà de ce que la maison de \
-référence suggère usuellement (ex. maison 7 = partenaire) ; si ce n'est pas fourni, reste \
-générique ('la personne représentée par cette maison').""",
-}
+référence suggère usuellement (ex. maison 7 = partenaire) ; reste générique ('la personne \
+représentée par cette maison')."""
+
+    try:
+        relation = resolve_relation(relation_key)
+    except KeyError:
+        relation = None
+
+    if relation is None:
+        return f"""{intro} Interprète ce que révèlent les planètes natales présentes dans \
+les maisons dérivées les plus occupées, du point de vue de CETTE personne (pas du \
+consultant)."""
+
+    if relation["order"] == "second":
+        return f"""{intro}
+
+RELATION ANALYSÉE : {relation["label"]}
+MAISON DE RÉFÉRENCE : {relation["reference_house"]} (dérivation de second ordre : \
+{relation["path_description"]})
+
+Cette relation est une dérivation de SECOND ORDRE (chaînage de deux dérivations de premier \
+ordre) : rappelle explicitement, tôt dans la lecture, le chemin de dérivation utilisé (ex. \
+"cette maison représente {relation["path_description"]}") pour que l'utilisateur comprenne \
+l'origine de ce point, la technique étant peu intuitive. Analyse en priorité le maître de la \
+maison {relation["reference_house"]} (signe, maison de placement, dignité), puis les \
+planètes natales déjà présentes dans cette maison.
+
+Angle d'interprétation : reste très général et plus spéculatif que pour une relation de \
+premier ordre — ces dérivations de second ordre doivent être présentées avec davantage de \
+réserve.
+
+Ne jamais présenter cette lecture comme une description factuelle vérifiable d'une personne \
+réelle — il s'agit de la dynamique relationnelle telle que suggérée par le thème natal de \
+l'utilisateur, un miroir psychologique plutôt qu'un profil de tiers."""
+
+    prompt = relation["prompt"] or {}
+    priority_planets = ", ".join(prompt.get("priority_planets", [])) or "les planètes personnelles"
+    angle = prompt.get("angle", "la dynamique relationnelle suggérée par le thème")
+    caution = prompt.get("caution")
+    caution_block = f"\n{caution}\n" if caution else ""
+
+    return f"""{intro}
+
+RELATION ANALYSÉE : {relation["label"]}
+MAISON DE RÉFÉRENCE : {relation["reference_house"]}
+
+Analyse cette relation en suivant cet ordre de priorité :
+1. Maître de la maison {relation["reference_house"]} : signe, maison de placement, dignité (voir dignities.json)
+2. Planètes natales déjà présentes en maison {relation["reference_house"]}
+3. Aspects entre ce maître et {priority_planets}
+
+Angle d'interprétation : {angle}
+{caution_block}
+Ne jamais présenter cette lecture comme une description factuelle vérifiable d'une personne \
+réelle — il s'agit de la dynamique relationnelle telle que suggérée par le thème natal de \
+l'utilisateur, un miroir psychologique plutôt qu'un profil de tiers."""
 
 
 def _timing_prompt_block(request: schemas.ReadingRequest) -> str:
@@ -616,6 +682,8 @@ Termine toujours par un court paragraphe de synthèse bienveillant et encouragea
         specialized_block = _compatibility_prompt_block(request)
     elif request.reading_type == "timing":
         specialized_block = _timing_prompt_block(request)
+    elif request.reading_type == "derived_houses":
+        specialized_block = _derived_houses_prompt_block(request)
     else:
         specialized_block = _SPECIALIZED_PROMPT_BLOCKS[request.reading_type]
     return f"""{base}
@@ -659,10 +727,20 @@ def _build_user_payload(
         payload["identity"] = _identity_context(chart_data)
         payload["lots"] = chart_data["lots"]
     elif request.reading_type == "derived_houses":
-        reference_house = request.reference_house or 7
+        relation = None
+        if request.relation_key:
+            try:
+                relation = resolve_relation(request.relation_key)
+            except KeyError:
+                relation = None
+        reference_house = relation["reference_house"] if relation else (request.reference_house or 7)
         mapping = next(d for d in chart_data["derived_houses"] if d["reference_house"] == reference_house)
         payload["identity"] = _identity_context(chart_data)
         payload["reference_house"] = reference_house
+        if relation:
+            payload["relation"] = {"key": relation["relation_key"], "label": relation["label"]}
+            if relation["path_description"]:
+                payload["relation"]["derivation_path"] = relation["path_description"]
         payload["derived_house_mapping"] = mapping
     elif request.reading_type == "timing":
         horizon = request.timing_horizon or "year"

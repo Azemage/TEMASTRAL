@@ -3,7 +3,13 @@ from zoneinfo import available_timezones
 
 from fastapi import APIRouter
 
-from app.core.reference_data import config_reference, houses_meanings, lots_library, rulerships
+from app.core.reference_data import (
+    config_reference,
+    derived_house_relations,
+    houses_meanings,
+    lots_library,
+    rulerships,
+)
 
 router = APIRouter(prefix="/api/reference", tags=["reference"])
 
@@ -43,6 +49,11 @@ def get_rulerships():
 @router.get("/lots")
 def get_lots():
     return lots_library()
+
+
+@router.get("/derived-house-relations")
+def get_derived_house_relations():
+    return derived_house_relations()
 
 
 @router.get("/timezones")

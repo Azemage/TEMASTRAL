@@ -392,7 +392,8 @@ class ReadingRequest(BaseModel):
     level: str = "débutant"
     tone: str = "accessible et bienveillant"
     language: str = "fr"
-    reference_house: int | None = Field(default=None, ge=1, le=12)  # utilisé par 'derived_houses'
+    reference_house: int | None = Field(default=None, ge=1, le=12)  # utilisé par 'derived_houses' (repli si relation_key absent)
+    relation_key: str | None = None  # utilisé par 'derived_houses' : clé de app/reference_data/derived_house_relations.json (ou 'custom:N1:N2')
     as_of_date: date_type | None = None  # utilisé par 'timing' et 'zodiacal_releasing'
     zr_selected_lots: list[str] = Field(default_factory=list)  # utilisé par 'zodiacal_releasing' ; vide = Fortune + Esprit
     zr_mode: str = "current"  # 'current' | 'predictive' (10 ans) ; utilisé par 'zodiacal_releasing'

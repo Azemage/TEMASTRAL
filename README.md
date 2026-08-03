@@ -25,7 +25,12 @@ Implémenté :
   seule leur maison le fait
 - Roue astrale SVG interactive (info-bulles, plein écran, aspects colorés par type)
 - Lots (parts arabes) : bibliothèque complète (14 lots), formules jour/nuit, aspects natals
-- Maisons dérivées : mapping complet pour les 12 maisons de référence possibles
+- Maisons dérivées : mapping complet pour les 12 maisons de référence possibles, avec une
+  liste de relations nommées (partenaire, mère, père, associé d'affaires, supérieur
+  hiérarchique, rival déclaré...) et des relations de second ordre (belle-famille,
+  grands-parents...) calculées par chaînage générique de la même formule ; la lecture LLM
+  adapte ses priorités d'analyse (points focaux, angle d'interprétation, mises en garde)
+  à la relation choisie
 - Pronostic : transits actuels de toutes les planètes (Lune, Mercure, Vénus, Soleil, Mars
   compris, pas seulement les lentes) + prévision des transits à venir sur 12 mois (détection
   des pics d'orbe, échantillonnage adapté à la vitesse de chaque planète pour ne manquer aucun
@@ -133,10 +138,11 @@ Principe directeur repris du cahier des charges : tout ce qui est dans `app/core
 | POST | `/api/charts` | Calcule et sauvegarde un thème natal à partir des données de naissance |
 | GET | `/api/charts` | Liste les thèmes de la session courante |
 | GET | `/api/charts/{id}` | Récupère un thème calculé |
-| POST | `/api/charts/{id}/readings` | Génère une lecture interprétée (LLM). `reading_type` = `global`\|`love`\|`career`\|`family`\|`lots`\|`derived_houses`\|`timing`\|`zodiacal_releasing`\|`compatibility` ; `reference_house` (1-12) pour `derived_houses`, `as_of_date` pour `timing`/`zodiacal_releasing`, `timing_horizon` (`week`\|`month`\|`year`, défaut `year`) pour `timing`, `chart_b_id`+`relationship_mode` pour `compatibility` |
+| POST | `/api/charts/{id}/readings` | Génère une lecture interprétée (LLM). `reading_type` = `global`\|`love`\|`career`\|`family`\|`lots`\|`derived_houses`\|`timing`\|`zodiacal_releasing`\|`compatibility` ; `relation_key` (voir `/api/reference/derived-house-relations`, ou `custom:N1:N2` pour une relation de second ordre composée librement) pour `derived_houses` (repli sur `reference_house` 1-12 si absent), `as_of_date` pour `timing`/`zodiacal_releasing`, `timing_horizon` (`week`\|`month`\|`year`, défaut `year`) pour `timing`, `chart_b_id`+`relationship_mode` pour `compatibility` |
 | GET | `/api/charts/{id}/readings` | Liste les lectures déjà générées pour un thème |
 | GET | `/api/charts/{id}/timing?date=YYYY-MM-DD` | Transits actuels de toutes les planètes + profection annuelle, calculés à la demande (non persisté) |
 | GET | `/api/charts/{id}/timing/forecast?date=...&months=12` | Transits à venir sur la période, toutes planètes (pics d'orbe, fenêtres actives, intensité 1-4) |
+| GET | `/api/reference/derived-house-relations` | Liste des relations disponibles pour les maisons dérivées (premier ordre + presets de second ordre), avec les indications de priorité d'analyse utilisées par le prompt LLM |
 | GET | `/api/charts/{id}/zodiacal-releasing?date=YYYY-MM-DD&lookahead_years=5` | Phases L1/sous-phases L2 en cours pour les 14 lots, calculées à la demande (non persisté) |
 | GET | `/api/charts/{id}/compatibility?chart_b_id=...&mode=romantic\|friendship\|professional` | Inter-aspects pondérés, chevauchement de maisons et thème composite entre deux thèmes, calculés à la demande (non persisté) |
 | GET | `/api/reference/config` | Options de configuration (systèmes de maisons, dispositeurs, points optionnels) |
