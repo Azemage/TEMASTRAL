@@ -36,6 +36,7 @@ async def create_reading(
         request_payload=result["request_payload"],
         reading_text=result["reading_text"],
         compatibility_ratings=result.get("compatibility_ratings"),
+        timing_ratings=result.get("timing_ratings"),
         model_used=result["model_used"],
         tokens_used=result["tokens_used"],
     )

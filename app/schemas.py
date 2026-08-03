@@ -398,9 +398,10 @@ class ReadingRequest(BaseModel):
     zr_mode: str = "current"  # 'current' | 'predictive' (10 ans) ; utilisé par 'zodiacal_releasing'
     chart_b_id: str | None = None  # utilisé par 'compatibility' : identifiant du second thème
     relationship_mode: str | None = None  # 'romantic' | 'friendship' | 'professional' ; utilisé par 'compatibility'
+    timing_horizon: str = "year"  # 'week' | 'month' | 'year' ; utilisé par 'timing'
 
 
-class CompatibilityRatingEntry(BaseModel):
+class RatingEntry(BaseModel):
     score: int = Field(ge=1, le=10)
     justification: str
 
@@ -411,7 +412,8 @@ class ReadingResponse(BaseModel):
     reading_type: str
     focus_areas: list[str]
     reading_text: str
-    compatibility_ratings: dict[str, CompatibilityRatingEntry] | None = None
+    compatibility_ratings: dict[str, RatingEntry] | None = None
+    timing_ratings: dict[str, RatingEntry] | None = None
     model_used: str | None
     tokens_used: int | None
     created_at: datetime

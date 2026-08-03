@@ -875,6 +875,18 @@ function renderTimingDataPanel(timing, forecast) {
       <button type="button" id="timing-refresh-btn">Recalculer</button>
     </div>
 
+    <h3>Transits à venir (12 prochains mois)</h3>
+    <div class="form-row timing-controls">
+      <label for="timing-intensity-filter">Intensité minimale</label>
+      <select id="timing-intensity-filter">
+        <option value="4">🔥🔥🔥🔥 uniquement</option>
+        <option value="3" selected>🔥🔥🔥 et plus (recommandé)</option>
+        <option value="2">🔥🔥 et plus</option>
+        <option value="1">Tous, y compris les transits mineurs</option>
+      </select>
+    </div>
+    <div id="timing-upcoming-events-container">${renderUpcomingEventsTable(forecast.events, 3)}</div>
+
     <h3>Profection de l'année</h3>
     <p>
       Année profectée en <strong>maison ${prof.profected_house}</strong> (${signLabel(prof.profected_sign)}) —
@@ -893,18 +905,6 @@ function renderTimingDataPanel(timing, forecast) {
       <thead><tr><th>Intensité</th><th>Transit</th><th>Aspect</th><th>Point natal</th><th>Détail</th><th>Tendance</th></tr></thead>
       <tbody>${aspectRows}</tbody>
     </table>
-
-    <h3>Transits à venir (12 prochains mois)</h3>
-    <div class="form-row timing-controls">
-      <label for="timing-intensity-filter">Intensité minimale</label>
-      <select id="timing-intensity-filter">
-        <option value="4">🔥🔥🔥🔥 uniquement</option>
-        <option value="3" selected>🔥🔥🔥 et plus (recommandé)</option>
-        <option value="2">🔥🔥 et plus</option>
-        <option value="1">Tous, y compris les transits mineurs</option>
-      </select>
-    </div>
-    <div id="timing-upcoming-events-container">${renderUpcomingEventsTable(forecast.events, 3)}</div>
   `;
 
   document.getElementById("timing-intensity-filter").addEventListener("change", (event) => {
@@ -1070,27 +1070,44 @@ const COMPAT_RATING_AXES_FR = {
   ],
 };
 
-function renderCompatibilityRatings(ratings, mode) {
+// Composant de jauges de notation (1 à 10) partagé par Compatibilité et Pronostic, pour une
+// identité visuelle cohérente sur tout le site plutôt qu'un système par fonctionnalité.
+function renderRatingGauges(title, axes, ratings) {
   if (!ratings) return "";
-  const axes = COMPAT_RATING_AXES_FR[mode] || [];
   const rows = axes
     .map((axis) => {
       const entry = ratings[axis.key];
       if (!entry) return "";
       const pct = Math.max(0, Math.min(100, Math.round((entry.score / 10) * 100)));
       return `
-        <div class="compat-rating-row">
-          <div class="compat-rating-header">
-            <span class="compat-rating-label">${axis.label}</span>
-            <span class="compat-rating-score">${entry.score}/10</span>
+        <div class="rating-gauge-row">
+          <div class="rating-gauge-header">
+            <span class="rating-gauge-label">${axis.label}</span>
+            <span class="rating-gauge-score">${entry.score}/10</span>
           </div>
-          <div class="compat-rating-track"><div class="compat-rating-fill" style="width:${pct}%"></div></div>
-          <p class="compat-rating-justification">${entry.justification}</p>
+          <div class="rating-gauge-track"><div class="rating-gauge-fill" style="width:${pct}%"></div></div>
+          <p class="rating-gauge-justification">${entry.justification}</p>
         </div>`;
     })
     .join("");
   if (!rows) return "";
-  return `<div class="compat-ratings"><h3>Notes de compatibilité</h3>${rows}</div>`;
+  return `<div class="rating-gauges"><h3>${title}</h3>${rows}</div>`;
+}
+
+function renderCompatibilityRatings(ratings, mode) {
+  return renderRatingGauges("Notes de compatibilité", COMPAT_RATING_AXES_FR[mode] || [], ratings);
+}
+
+const TIMING_RATING_AXES_FR = [
+  { key: "amour", label: "Amour" },
+  { key: "amitie", label: "Amitié" },
+  { key: "professionnel", label: "Professionnel" },
+  { key: "sante", label: "Santé" },
+  { key: "developpement_personnel", label: "Développement personnel" },
+];
+
+function renderTimingRatings(ratings) {
+  return renderRatingGauges("Notes du pronostic", TIMING_RATING_AXES_FR, ratings);
 }
 
 function compatWeightSlug(label) {
@@ -1495,7 +1512,7 @@ document.getElementById("generate-reading-btn").addEventListener("click", async 
 // ---------------------------------------------------------------------
 // Lectures spécialisées (Lots / Maisons dérivées / Timing)
 // ---------------------------------------------------------------------
-async function generateSpecializedReading({ btnId, errorId, outputId, defaultLabel, requestBody }) {
+async function generateSpecializedReading({ btnId, errorId, outputId, defaultLabel, requestBody, renderExtra }) {
   const errorEl = document.getElementById(errorId);
   const outputEl = document.getElementById(outputId);
   const btn = document.getElementById(btnId);
@@ -1520,12 +1537,13 @@ async function generateSpecializedReading({ btnId, errorId, outputId, defaultLab
       throw new Error(detail.detail || `Erreur ${res.status}`);
     }
     const reading = await res.json();
-    outputEl.innerHTML = tinyMarkdownToHtml(reading.reading_text);
+    const extraHtml = renderExtra ? renderExtra(reading) : "";
+    outputEl.innerHTML = extraHtml + tinyMarkdownToHtml(reading.reading_text);
   } catch (err) {
     errorEl.textContent = err.message;
   } finally {
     btn.disabled = false;
-    btn.textContent = defaultLabel;
+    btn.innerHTML = defaultLabel;
   }
 }
 
@@ -1581,13 +1599,21 @@ document.getElementById("generate-derived-reading-btn").addEventListener("click"
   });
 });
 
-document.getElementById("generate-timing-reading-btn").addEventListener("click", () => {
-  const dateInput = document.getElementById("timing-date");
-  generateSpecializedReading({
-    btnId: "generate-timing-reading-btn",
-    errorId: "timing-reading-error",
-    outputId: "timing-reading-output",
-    defaultLabel: "Générer la lecture des 12 prochains mois",
-    requestBody: { reading_type: "timing", as_of_date: dateInput ? dateInput.value : undefined },
+document.querySelectorAll(".timing-horizon-btn").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    const horizon = btn.dataset.horizon;
+    const dateInput = document.getElementById("timing-date");
+    generateSpecializedReading({
+      btnId: btn.id,
+      errorId: "timing-reading-error",
+      outputId: "timing-reading-output",
+      defaultLabel: btn.innerHTML,
+      requestBody: {
+        reading_type: "timing",
+        timing_horizon: horizon,
+        as_of_date: dateInput ? dateInput.value : undefined,
+      },
+      renderExtra: (reading) => renderTimingRatings(reading.timing_ratings),
+    });
   });
 });

@@ -88,12 +88,81 @@ def test_timing_reading_payload_includes_profection_transits_and_forecast():
     request = schemas.ReadingRequest(reading_type="timing", as_of_date=date(2026, 8, 2))
     payload = interpretation_service._build_user_payload(chart, request)
 
+    assert payload["horizon"] == "year"  # défaut
     assert payload["profection"]["as_of_date"] == "2026-08-02"
     assert "aspects" in payload["current_transits"]
     assert isinstance(payload["upcoming_events"], list)
     # Filtré aux événements significatifs, pas les centaines d'événements bruts (Lune incluse).
     assert 0 < len(payload["upcoming_events"]) <= 20
     assert all("intensity" in e for e in payload["upcoming_events"])
+
+
+def test_timing_reading_payload_honors_horizon():
+    chart = _make_chart()
+    for horizon in ("week", "month", "year"):
+        request = schemas.ReadingRequest(reading_type="timing", as_of_date=date(2026, 8, 2), timing_horizon=horizon)
+        payload = interpretation_service._build_user_payload(chart, request)
+        assert payload["horizon"] == horizon
+        for event in payload["upcoming_events"]:
+            assert event["window_start"] <= "2027-08-02"
+            assert event["window_end"] >= "2026-08-02"
+
+
+def test_select_events_for_horizon_week_keeps_low_intensity_events():
+    events = [
+        {"intensity": 1, "peak_orb": 0.1, "peak_date": "2026-08-04", "window_start": "2026-08-03", "window_end": "2026-08-05"},
+        {"intensity": 4, "peak_orb": 0.1, "peak_date": "2026-09-15", "window_start": "2026-09-14", "window_end": "2026-09-16"},
+    ]
+    selected = interpretation_service._select_events_for_horizon(events, "week", date(2026, 8, 2))
+    assert len(selected) == 1
+    assert selected[0]["intensity"] == 1  # l'événement mineur mais dans la fenêtre est gardé
+
+
+def test_select_events_for_horizon_year_filters_to_significant_events():
+    events = [
+        {"intensity": 1, "peak_orb": 0.1, "peak_date": "2026-08-04", "window_start": "2026-08-03", "window_end": "2026-08-05"},
+        {"intensity": 4, "peak_orb": 0.1, "peak_date": "2026-09-15", "window_start": "2026-09-14", "window_end": "2026-09-16"},
+        {"intensity": 4, "peak_orb": 0.1, "peak_date": "2026-10-15", "window_start": "2026-10-14", "window_end": "2026-10-16"},
+        {"intensity": 4, "peak_orb": 0.1, "peak_date": "2026-11-15", "window_start": "2026-11-14", "window_end": "2026-11-16"},
+        {"intensity": 4, "peak_orb": 0.1, "peak_date": "2026-12-15", "window_start": "2026-12-14", "window_end": "2026-12-16"},
+        {"intensity": 4, "peak_orb": 0.1, "peak_date": "2027-01-15", "window_start": "2027-01-14", "window_end": "2027-01-16"},
+    ]
+    selected = interpretation_service._select_events_for_horizon(events, "year", date(2026, 8, 2))
+    assert all(e["intensity"] == 4 for e in selected)  # le minime (intensité 1) est écarté au profit des majeurs
+
+
+def test_select_events_for_horizon_excludes_events_outside_the_window():
+    events = [
+        {"intensity": 4, "peak_orb": 0.1, "peak_date": "2027-06-01", "window_start": "2027-05-30", "window_end": "2027-06-03"},
+    ]
+    selected = interpretation_service._select_events_for_horizon(events, "week", date(2026, 8, 2))
+    assert selected == []
+
+
+def test_timing_prompt_varies_by_horizon():
+    week_prompt = interpretation_service._build_system_prompt(
+        schemas.ReadingRequest(reading_type="timing", timing_horizon="week")
+    )
+    year_prompt = interpretation_service._build_system_prompt(
+        schemas.ReadingRequest(reading_type="timing", timing_horizon="year")
+    )
+    assert week_prompt != year_prompt
+    assert "PONCTUEL" in week_prompt
+    assert "GRANDS ARCS" in year_prompt
+
+
+def test_timing_prompt_lists_timing_rating_axes():
+    prompt = interpretation_service._build_system_prompt(schemas.ReadingRequest(reading_type="timing"))
+    assert "timing_ratings" in prompt
+    assert "developpement_personnel" in prompt
+    assert "sante" in prompt
+
+
+def test_timing_max_tokens_scale_by_horizon():
+    week_tokens = interpretation_service._timing_max_tokens(schemas.ReadingRequest(reading_type="timing", timing_horizon="week"))
+    month_tokens = interpretation_service._timing_max_tokens(schemas.ReadingRequest(reading_type="timing", timing_horizon="month"))
+    year_tokens = interpretation_service._timing_max_tokens(schemas.ReadingRequest(reading_type="timing", timing_horizon="year"))
+    assert week_tokens < month_tokens < year_tokens
 
 
 def test_select_significant_events_prefers_high_intensity_and_falls_back_when_scarce():
@@ -190,7 +259,7 @@ def test_specialized_system_prompts_are_distinct_per_reading_type():
     assert len(set(prompts.values())) == 6  # les 6 prompts doivent différer
     assert "LOTS" in prompts["lots"]
     assert "MAISONS DÉRIVÉES" in prompts["derived_houses"]
-    assert "DOUZE PROCHAINS MOIS" in prompts["timing"]
+    assert "PRONOSTIC" in prompts["timing"]
     assert "RÉPARTITION ZODIACALE" in prompts["zodiacal_releasing"]
     assert "COMPATIBILITÉ" in prompts["compatibility"]
 
@@ -432,6 +501,33 @@ def test_generate_reading_compatibility_ratings_none_for_other_reading_types(mon
 
     result = asyncio.run(interpretation_service.generate_reading(chart, request))
     assert result["compatibility_ratings"] is None
+    assert result["timing_ratings"] is None
+
+
+def test_generate_reading_extracts_timing_ratings_and_strips_json_block(monkeypatch):
+    chart = _make_chart()
+    request = schemas.ReadingRequest(reading_type="timing", timing_horizon="week")
+
+    reading_body = "## Tendance de la semaine\nUne semaine plutôt active."
+    json_block = (
+        '```json\n{"timing_ratings": {'
+        '"amour": {"score": 7, "justification": "Vénus en trigone avec le Soleil natal."}, '
+        '"sante": {"score": 5, "justification": "Aucun transit marquant sur ce plan."}'
+        "}}\n```"
+    )
+    fake_client = _FakeAnthropicClient([_FakeResponse(f"{reading_body}\n\n{json_block}", stop_reason="end_turn")])
+    monkeypatch.setattr(interpretation_service, "get_settings", _settings_with_key)
+    monkeypatch.setattr(interpretation_service, "AsyncAnthropic", lambda api_key: fake_client)
+
+    result = asyncio.run(interpretation_service.generate_reading(chart, request))
+
+    assert "```json" not in result["reading_text"]
+    assert "Une semaine plutôt active" in result["reading_text"]
+    assert result["compatibility_ratings"] is None
+    assert result["timing_ratings"] == {
+        "amour": {"score": 7, "justification": "Vénus en trigone avec le Soleil natal."},
+        "sante": {"score": 5, "justification": "Aucun transit marquant sur ce plan."},
+    }
 
 
 def test_basic_reading_types_include_focus_zone_section():

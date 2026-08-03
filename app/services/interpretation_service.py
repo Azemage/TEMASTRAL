@@ -15,6 +15,8 @@ from __future__ import annotations
 
 import json
 import re
+from datetime import date as date_type
+from datetime import timedelta
 
 from anthropic import AsyncAnthropic
 
@@ -42,7 +44,6 @@ READING_TYPE_MAX_TOKENS = {
     "family": 2200,
     "lots": 3000,
     "derived_houses": 2400,
-    "timing": 3500,
     "compatibility": 4500,
 }
 
@@ -113,7 +114,7 @@ COMPATIBILITY_RATING_AXES = {
     ],
 }
 
-_COMPATIBILITY_JSON_BLOCK_RE = re.compile(r"```json\s*(\{.*?\})\s*```", re.DOTALL)
+_RATINGS_JSON_BLOCK_RE = re.compile(r"```json\s*(\{.*?\})\s*```", re.DOTALL)
 
 
 def _compatibility_ratings_prompt_section(mode: str) -> str:
@@ -139,9 +140,92 @@ pas, mais assume-les pleinement plutôt que de les noyer sous des réserves."""
 
 
 def _sanitize_compatibility_ratings(raw_ratings: dict | None, mode: str) -> dict | None:
+    expected_keys = {axis["key"] for axis in COMPATIBILITY_RATING_AXES.get(mode, [])}
+    return _sanitize_ratings(raw_ratings, expected_keys)
+
+
+def _extract_ratings_block(reading_text: str, block_key: str) -> tuple[str, dict | None]:
+    """Isole le dernier bloc ```json final du texte de la lecture (voir
+    `_compatibility_ratings_prompt_section`/`_timing_ratings_prompt_section`) : renvoie le
+    texte nettoyé de ce bloc (pour l'affichage en prose) et les notes brutes parsées sous
+    `block_key` (ou None si absent/invalide)."""
+    matches = list(_RATINGS_JSON_BLOCK_RE.finditer(reading_text))
+    if not matches:
+        return reading_text, None
+
+    last_match = matches[-1]
+    try:
+        parsed = json.loads(last_match.group(1))
+    except json.JSONDecodeError:
+        return reading_text, None
+
+    ratings = parsed.get(block_key) if isinstance(parsed, dict) else None
+    if not isinstance(ratings, dict):
+        return reading_text, None
+
+    cleaned_text = (reading_text[: last_match.start()] + reading_text[last_match.end() :]).rstrip()
+    return cleaned_text, ratings
+
+
+def _extract_compatibility_ratings(reading_text: str) -> tuple[str, dict | None]:
+    return _extract_ratings_block(reading_text, "compatibility_ratings")
+
+
+# Axes de notation (1 à 10) communs aux trois horizons du PRONOSTIC (semaine/mois/année) :
+# des sphères de vie basiques plutôt que des significateurs par horizon, pour rester lisibles
+# et comparables d'une lecture à l'autre. Notation générée par le modèle (même mécanisme que
+# COMPATIBILITY_RATING_AXES) : cohérence d'identité visuelle sur tout le site plutôt qu'un
+# système d'étoiles séparé.
+TIMING_RATING_AXES = [
+    {"key": "amour", "label": "Amour", "hint": "vie affective et sentimentale"},
+    {"key": "amitie", "label": "Amitié", "hint": "relations sociales et amicales"},
+    {"key": "professionnel", "label": "Professionnel", "hint": "travail, carrière, projets"},
+    {
+        "key": "sante",
+        "label": "Santé",
+        "hint": "tendance d'énergie physique générale — jamais de diagnostic ni de prédiction médicale",
+    },
+    {
+        "key": "developpement_personnel",
+        "label": "Développement personnel",
+        "hint": "croissance intérieure, apprentissage, introspection",
+    },
+]
+
+TIMING_HORIZON_LABELS_FR = {
+    "week": "la semaine à venir",
+    "month": "le mois à venir",
+    "year": "les douze prochains mois",
+}
+
+
+def _timing_ratings_prompt_section() -> str:
+    axes_desc = "\n".join(f'- "{axis["key"]}" ({axis["label"]}) : {axis["hint"]}' for axis in TIMING_RATING_AXES)
+    keys_example = ", ".join(f'"{axis["key"]}": {{"score": <1-10>, "justification": "..."}}' for axis in TIMING_RATING_AXES)
+
+    return f"""Termine IMPÉRATIVEMENT ta réponse par un bloc de notation chiffrée, dans ce \
+format exact et rien d'autre après ce bloc :
+
+```json
+{{"timing_ratings": {{{keys_example}}}}}
+```
+
+Les axes à noter, un score ENTIER de 1 (période calme/difficile sur cet axe) à 10 (période \
+très active/favorable sur cet axe) pour chacun, en te basant sur la profection et les transits \
+déjà fournis :
+{axes_desc}
+
+Chaque `justification` est une phrase courte (15-25 mots) qui s'appuie sur un signal précis \
+des données (un transit, la profection...), pas une généralité ni un simple rappel du score. \
+Pour l'axe santé, reste impérativement sur une tendance d'énergie générale, jamais un \
+diagnostic ou une prédiction médicale. Ces notes sont une impression interprétative de \
+synthèse, pas un calcul scientifique : assume-les pleinement plutôt que de les noyer sous des \
+réserves."""
+
+
+def _sanitize_ratings(raw_ratings: dict | None, expected_keys: set[str]) -> dict | None:
     if not raw_ratings:
         return None
-    expected_keys = {axis["key"] for axis in COMPATIBILITY_RATING_AXES.get(mode, [])}
     sanitized = {}
     for key, value in raw_ratings.items():
         if key not in expected_keys or not isinstance(value, dict):
@@ -154,31 +238,24 @@ def _sanitize_compatibility_ratings(raw_ratings: dict | None, mode: str) -> dict
     return sanitized or None
 
 
-def _extract_compatibility_ratings(reading_text: str) -> tuple[str, dict | None]:
-    """Isole le bloc ```json final de notation chiffrée du texte de la lecture (voir
-    `_compatibility_ratings_prompt_section`) : renvoie le texte nettoyé de ce bloc (pour
-    l'affichage en prose) et les notes brutes parsées (ou None si absent/invalide)."""
-    matches = list(_COMPATIBILITY_JSON_BLOCK_RE.finditer(reading_text))
-    if not matches:
-        return reading_text, None
+def _extract_timing_ratings(reading_text: str) -> tuple[str, dict | None]:
+    return _extract_ratings_block(reading_text, "timing_ratings")
 
-    last_match = matches[-1]
-    try:
-        parsed = json.loads(last_match.group(1))
-    except json.JSONDecodeError:
-        return reading_text, None
 
-    ratings = parsed.get("compatibility_ratings") if isinstance(parsed, dict) else None
-    if not isinstance(ratings, dict):
-        return reading_text, None
-
-    cleaned_text = (reading_text[: last_match.start()] + reading_text[last_match.end() :]).rstrip()
-    return cleaned_text, ratings
+def _sanitize_timing_ratings(raw_ratings: dict | None) -> dict | None:
+    return _sanitize_ratings(raw_ratings, {axis["key"] for axis in TIMING_RATING_AXES})
 
 # Nombre d'appels de relance autorisés quand une réponse s'arrête faute de budget de tokens
 # (stop_reason == "max_tokens"), pour ne jamais renvoyer une lecture coupée en plein milieu
 # d'une phrase à l'utilisateur.
 MAX_CONTINUATION_ROUNDS = 2
+
+
+_TIMING_MAX_TOKENS_BY_HORIZON = {"week": 2200, "month": 2800, "year": 3500}
+
+
+def _timing_max_tokens(request: schemas.ReadingRequest) -> int:
+    return _TIMING_MAX_TOKENS_BY_HORIZON.get(request.timing_horizon or "year", 3500)
 
 
 def _zodiacal_releasing_max_tokens(request: schemas.ReadingRequest) -> int:
@@ -212,23 +289,60 @@ les maisons dérivées les plus occupées, du point de vue de CETTE personne (pa
 consultant). N'invente jamais qui est cette personne au-delà de ce que la maison de \
 référence suggère usuellement (ex. maison 7 = partenaire) ; si ce n'est pas fourni, reste \
 générique ('la personne représentée par cette maison').""",
-    "timing": """Cette lecture porte spécifiquement sur LES DOUZE PROCHAINS MOIS : la période \
-actuelle et les mois à venir. Tu reçois trois éléments : (1) `profection`, la profection \
-annuelle en cours (maison et planète maîtresse de l'année) ; (2) `current_transits`, les \
-transits actuels de TOUTES les planètes (Lune, Mercure, Vénus, Soleil, Mars compris, pas \
-seulement les lentes) vers le thème natal ; (3) `upcoming_events`, une sélection déjà filtrée \
-des événements de transit les plus significatifs à venir sur les douze prochains mois \
-(les transits mineurs ou trop fréquents, notamment lunaires, ont été écartés en amont), \
-chacun avec une date de pic (`peak_date`) et une fenêtre active (`window_start`/`window_end`). \
-Chaque aspect porte aussi un champ `intensity` (1 à 4) qui reflète déjà son poids (planète, \
-type d'aspect, précision de l'orbe) : appuie-toi dessus pour doser l'espace que tu accordes à \
-chacun, mais ne cite jamais ce chiffre brut dans le texte — traduis-le en mots. Structure la \
-lecture ainsi : d'abord le thème de l'année (profection), puis la tendance actuelle (transits \
-en cours, en insistant sur les plus intenses), puis un aperçu chronologique des périodes à \
-venir les plus marquantes en citant leurs fenêtres de dates (pas seulement le jour du pic). Ne \
-fais JAMAIS de prédiction fermée ('il vous arrivera X') : formule toujours en dynamique ou \
-thème disponible ('cette période favorise...', 'une tension pourrait émerger autour de...').""",
 }
+
+
+def _timing_prompt_block(request: schemas.ReadingRequest) -> str:
+    horizon = request.timing_horizon or "year"
+    horizon_label = TIMING_HORIZON_LABELS_FR.get(horizon, horizon)
+
+    intro = f"""Cette lecture porte sur LE PRONOSTIC pour {horizon_label} : la période \
+actuelle et son évolution sur cet horizon précis. Tu reçois trois éléments : (1) \
+`profection`, la profection annuelle en cours (maison et planète maîtresse de l'année) ; (2) \
+`current_transits`, les transits actuels de TOUTES les planètes (Lune, Mercure, Vénus, \
+Soleil, Mars compris, pas seulement les lentes) vers le thème natal ; (3) `upcoming_events`, \
+les événements de transit pertinents sur cet horizon, chacun avec une date de pic \
+(`peak_date`) et une fenêtre active (`window_start`/`window_end`). Chaque aspect porte aussi \
+un champ `intensity` (1 à 4) qui reflète déjà son poids (planète, type d'aspect, précision de \
+l'orbe) : appuie-toi dessus pour doser l'espace que tu accordes à chacun, mais ne cite jamais \
+ce chiffre brut dans le texte — traduis-le en mots."""
+
+    if horizon == "week":
+        scope_guidance = """Vise le CONCRET et le PONCTUEL : à cette échelle de temps, les \
+transits rapides (notamment lunaires) sont les plus parlants et `upcoming_events` en contient \
+volontairement même les mineurs — ne les écarte pas comme négligeables, ce sont eux qui \
+donnent la texture quotidienne de la semaine. Structure la lecture par jour ou par petites \
+fenêtres plutôt que par grands thèmes abstraits, et ancre chaque point dans une situation \
+concrète possible (une conversation, une décision, un imprévu) plutôt qu'une tendance floue."""
+    elif horizon == "month":
+        scope_guidance = """Vise un équilibre entre grandes tendances et moments concrets : \
+identifie 2-3 dynamiques de fond qui traversent le mois, puis situe dedans les moments les \
+plus marquants (`upcoming_events`) avec leurs fenêtres de dates. Ni un survol trop abstrait, \
+ni un déroulé jour par jour."""
+    else:
+        scope_guidance = """Vise les GRANDS ARCS qui traversent les douze prochains mois \
+plutôt que le détail quotidien : structure la lecture autour des périodes les plus marquantes \
+de l'année (fenêtres de plusieurs semaines à plusieurs mois), pas des transits lunaires \
+isolés. Le thème de l'année (profection) doit chapeauter cette lecture d'ensemble."""
+
+    structure_note = "un déroulé chronologique des jours/moments clés" if horizon == "week" else (
+        "un aperçu chronologique des moments à venir les plus marquants"
+    )
+    structure = f"""Structure la lecture ainsi : d'abord le thème de la période (profection), \
+puis la tendance actuelle (transits en cours, en insistant sur les plus intenses), puis \
+{structure_note} en citant leurs fenêtres de dates (pas seulement le jour du pic). Ne fais \
+JAMAIS de prédiction fermée ('il vous arrivera X') : formule toujours en dynamique ou thème \
+disponible ('cette période favorise...', 'une tension pourrait émerger autour de...')."""
+
+    ratings_section = _timing_ratings_prompt_section()
+
+    return f"""{intro}
+
+{scope_guidance}
+
+{structure}
+
+{ratings_section}"""
 
 
 def _select_significant_events(events: list[dict], min_count: int = 5, max_count: int = 20) -> list[dict]:
@@ -243,6 +357,28 @@ def _select_significant_events(events: list[dict], min_count: int = 5, max_count
             break
     candidates = sorted(candidates, key=lambda e: (-e["intensity"], e["peak_orb"]))[:max_count]
     return sorted(candidates, key=lambda e: e["peak_date"])
+
+
+_TIMING_HORIZON_DAYS = {"week": 7, "month": 30, "year": 365}
+
+
+def _select_events_for_horizon(events: list[dict], horizon: str, as_of_date: date_type, max_count: int = 20) -> list[dict]:
+    """Filtre les événements dont la fenêtre active recoupe l'horizon demandé, avec une
+    sélection adaptée à l'échelle de temps : sur un an, on privilégie les signaux les plus
+    intenses (grands arcs) comme `_select_significant_events` ; sur une semaine, on garde tout
+    (y compris les transits lunaires mineurs, qui sont justement ce qui donne la texture
+    concrète à cette échelle) ; le mois est un compromis entre les deux."""
+    window_end = (as_of_date + timedelta(days=_TIMING_HORIZON_DAYS.get(horizon, 365))).isoformat()
+    as_of_iso = as_of_date.isoformat()
+    in_window = [e for e in events if e["window_start"] <= window_end and e["window_end"] >= as_of_iso]
+
+    if horizon == "week":
+        return sorted(in_window, key=lambda e: e["peak_date"])[:max_count]
+    if horizon == "month":
+        candidates = [e for e in in_window if e["intensity"] >= 2] or in_window
+        candidates = sorted(candidates, key=lambda e: (-e["intensity"], e["peak_orb"]))[:max_count]
+        return sorted(candidates, key=lambda e: e["peak_date"])
+    return _select_significant_events(in_window, max_count=max_count)
 
 
 def _zodiacal_releasing_prompt_block(request: schemas.ReadingRequest) -> str:
@@ -478,6 +614,8 @@ Termine toujours par un court paragraphe de synthèse bienveillant et encouragea
         specialized_block = _zodiacal_releasing_prompt_block(request)
     elif request.reading_type == "compatibility":
         specialized_block = _compatibility_prompt_block(request)
+    elif request.reading_type == "timing":
+        specialized_block = _timing_prompt_block(request)
     else:
         specialized_block = _SPECIALIZED_PROMPT_BLOCKS[request.reading_type]
     return f"""{base}
@@ -527,12 +665,15 @@ def _build_user_payload(
         payload["reference_house"] = reference_house
         payload["derived_house_mapping"] = mapping
     elif request.reading_type == "timing":
+        horizon = request.timing_horizon or "year"
+        as_of = request.as_of_date or date_type.today()
         timing = timing_service.compute_timing(chart, request.as_of_date)
         forecast = timing_service.compute_forecast(chart, request.as_of_date)
         payload["identity"] = _identity_context(chart_data)
+        payload["horizon"] = horizon
         payload["profection"] = timing["profection"]
         payload["current_transits"] = {"date": timing["date"].isoformat(), "aspects": timing["aspects"]}
-        payload["upcoming_events"] = _select_significant_events(forecast["events"])
+        payload["upcoming_events"] = _select_events_for_horizon(forecast["events"], horizon, as_of)
     elif request.reading_type == "zodiacal_releasing":
         selected_lots = request.zr_selected_lots or [FORTUNE_LOT_NAME, SPIRIT_LOT_NAME]
         lookahead_years = 10 if request.zr_mode == "predictive" else 5
@@ -596,6 +737,8 @@ async def generate_reading(
     payload = _build_user_payload(chart, request, chart_b=chart_b)
     if request.reading_type == "zodiacal_releasing":
         max_tokens = _zodiacal_releasing_max_tokens(request)
+    elif request.reading_type == "timing":
+        max_tokens = _timing_max_tokens(request)
     else:
         max_tokens = READING_TYPE_MAX_TOKENS.get(request.reading_type, 2000)
 
@@ -627,9 +770,13 @@ async def generate_reading(
             messages.append({"role": "assistant", "content": chunk})
 
     compatibility_ratings = None
+    timing_ratings = None
     if request.reading_type == "compatibility":
         reading_text, raw_ratings = _extract_compatibility_ratings(reading_text)
         compatibility_ratings = _sanitize_compatibility_ratings(raw_ratings, request.relationship_mode or "romantic")
+    elif request.reading_type == "timing":
+        reading_text, raw_ratings = _extract_timing_ratings(reading_text)
+        timing_ratings = _sanitize_timing_ratings(raw_ratings)
 
     return {
         "reading_text": reading_text,
@@ -637,4 +784,5 @@ async def generate_reading(
         "tokens_used": tokens_used,
         "request_payload": payload,
         "compatibility_ratings": compatibility_ratings,
+        "timing_ratings": timing_ratings,
     }

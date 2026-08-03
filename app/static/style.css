@@ -259,6 +259,24 @@ button:disabled { opacity: 0.6; cursor: wait; }
   border-color: var(--accent);
 }
 
+.timing-horizon-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin: 1rem 0;
+}
+
+.timing-horizon-btn {
+  flex: 1 1 200px;
+}
+
+.timing-horizon-hint {
+  display: block;
+  font-weight: 400;
+  font-size: 0.78rem;
+  opacity: 0.85;
+}
+
 .compat-weight-badge {
   display: inline-block;
   padding: 0.15rem 0.6rem;
@@ -292,7 +310,9 @@ button:disabled { opacity: 0.6; cursor: wait; }
   }
 }
 
-.compat-ratings {
+/* Jauges de notation (1 à 10) : composant partagé par les lectures Compatibilité et
+   Pronostic, pour une identité visuelle cohérente sur tout le site. */
+.rating-gauges {
   border: 1px solid var(--border);
   border-radius: 8px;
   padding: 1rem 1.2rem;
@@ -300,44 +320,44 @@ button:disabled { opacity: 0.6; cursor: wait; }
   background: rgba(255, 255, 255, 0.03);
 }
 
-.compat-rating-row {
+.rating-gauge-row {
   margin-bottom: 1rem;
 }
 
-.compat-rating-row:last-child {
+.rating-gauge-row:last-child {
   margin-bottom: 0;
 }
 
-.compat-rating-header {
+.rating-gauge-header {
   display: flex;
   justify-content: space-between;
   align-items: baseline;
   margin-bottom: 0.3rem;
 }
 
-.compat-rating-label {
+.rating-gauge-label {
   font-weight: 600;
 }
 
-.compat-rating-score {
+.rating-gauge-score {
   color: var(--accent-2);
   font-weight: 700;
 }
 
-.compat-rating-track {
+.rating-gauge-track {
   background: rgba(255, 255, 255, 0.08);
   border-radius: 999px;
   height: 8px;
   overflow: hidden;
 }
 
-.compat-rating-fill {
+.rating-gauge-fill {
   height: 100%;
   background: linear-gradient(90deg, var(--accent), var(--accent-2));
   border-radius: 999px;
 }
 
-.compat-rating-justification {
+.rating-gauge-justification {
   margin: 0.4rem 0 0;
   color: var(--muted);
   font-size: 0.88rem;

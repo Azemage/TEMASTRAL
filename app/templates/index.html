@@ -132,7 +132,7 @@
         <button class="reading-tab-btn active" data-reading-tab="global">Générale</button>
         <button class="reading-tab-btn" data-reading-tab="lots">Lots</button>
         <button class="reading-tab-btn" data-reading-tab="derived">Maisons dérivées</button>
-        <button class="reading-tab-btn" data-reading-tab="timing">Les 12 prochains mois</button>
+        <button class="reading-tab-btn" data-reading-tab="timing">Pronostic</button>
         <button class="reading-tab-btn" data-reading-tab="compatibility">Compatibilité</button>
       </div>
 
@@ -190,7 +190,17 @@
           rapides restent pertinents à afficher.
         </p>
         <div id="timing-data-panel"></div>
-        <button id="generate-timing-reading-btn">Générer la lecture des 12 prochains mois</button>
+        <div class="timing-horizon-buttons">
+          <button type="button" id="generate-timing-week-btn" class="timing-horizon-btn" data-horizon="week">
+            Lecture de la semaine <span class="timing-horizon-hint">(plus précise)</span>
+          </button>
+          <button type="button" id="generate-timing-month-btn" class="timing-horizon-btn" data-horizon="month">
+            Lecture du mois
+          </button>
+          <button type="button" id="generate-timing-year-btn" class="timing-horizon-btn" data-horizon="year">
+            Lecture des 12 prochains mois <span class="timing-horizon-hint">(plus globale)</span>
+          </button>
+        </div>
         <p id="timing-reading-error" class="error"></p>
         <div id="timing-reading-output" class="reading-output"></div>
       </div>
