@@ -38,6 +38,44 @@ body {
   margin: 0.25rem 0 0;
 }
 
+.app-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  position: relative;
+}
+
+.lang-switcher {
+  display: flex;
+  gap: 0.4rem;
+  position: absolute;
+  right: 0;
+}
+
+.lang-btn {
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  font-size: 1.3rem;
+  line-height: 1;
+  padding: 0.3rem 0.4rem;
+  cursor: pointer;
+  opacity: 0.55;
+  filter: grayscale(60%);
+}
+
+.lang-btn:hover {
+  opacity: 0.85;
+}
+
+.lang-btn.active {
+  opacity: 1;
+  filter: none;
+  border-color: var(--accent);
+  background: rgba(255, 255, 255, 0.06);
+}
+
 main {
   max-width: 900px;
   margin: 0 auto;

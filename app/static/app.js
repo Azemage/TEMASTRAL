@@ -1,30 +1,5 @@
-const SIGN_SYMBOLS = {
-  Aries: "♈", Taurus: "♉", Gemini: "♊", Cancer: "♋", Leo: "♌", Virgo: "♍",
-  Libra: "♎", Scorpio: "♏", Sagittarius: "♐", Capricorn: "♑", Aquarius: "♒", Pisces: "♓",
-};
-
-const SIGN_LABELS_FR = {
-  Aries: "Bélier", Taurus: "Taureau", Gemini: "Gémeaux", Cancer: "Cancer", Leo: "Lion", Virgo: "Vierge",
-  Libra: "Balance", Scorpio: "Scorpion", Sagittarius: "Sagittaire", Capricorn: "Capricorne",
-  Aquarius: "Verseau", Pisces: "Poissons",
-};
-
-function signLabel(sign) {
-  return `${SIGN_SYMBOLS[sign] || ""} ${SIGN_LABELS_FR[sign] || sign}`;
-}
-
-const PLANET_LABELS_FR = {
-  Sun: "Soleil", Moon: "Lune", Mercury: "Mercure", Venus: "Vénus", Mars: "Mars",
-  Jupiter: "Jupiter", Saturn: "Saturne", Uranus: "Uranus", Neptune: "Neptune", Pluto: "Pluton",
-  north_node: "Nœud Nord", south_node: "Nœud Sud", chiron: "Chiron", lilith_mean: "Lilith",
-  ascendant: "Ascendant", midheaven: "Milieu du Ciel", descendant: "Descendant", imum_coeli: "Fond du Ciel",
-};
-
-const PLANET_SYMBOLS = {
-  Sun: "☉", Moon: "☽", Mercury: "☿", Venus: "♀", Mars: "♂",
-  Jupiter: "♃", Saturn: "♄", Uranus: "⛢", Neptune: "♆", Pluto: "♇",
-  north_node: "☊", south_node: "☋", chiron: "⚷", lilith_mean: "⚸",
-};
+// Signes/planètes/aspects : symboles et libellés traduits fournis par i18n.js
+// (SIGN_SYMBOLS, PLANET_SYMBOLS, signLabel, planetLabel, aspectTypeLabel, t, tf, pick...).
 
 const ZODIAC_SIGNS_ORDER = [
   "Aries", "Taurus", "Gemini", "Cancer", "Leo", "Virgo",
@@ -64,10 +39,6 @@ const MAJOR_ASPECTS = new Set(["conjunction", "sextile", "square", "trine", "opp
 let currentChart = null;
 let showMinorAspectsInWheel = false;
 
-function planetLabel(name) {
-  return PLANET_LABELS_FR[name] || name;
-}
-
 function el(html) {
   const template = document.createElement("template");
   template.innerHTML = html.trim();
@@ -76,6 +47,31 @@ function el(html) {
 
 function escapeHtml(str) {
   return String(str).replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+// ---------------------------------------------------------------------
+// Langue : applique les traductions statiques au chargement et à chaque
+// changement, et re-rend les panneaux dynamiques actuellement visibles.
+// ---------------------------------------------------------------------
+applyStaticTranslations();
+
+document.querySelectorAll(".lang-btn").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    setLanguage(btn.dataset.lang);
+    applyStaticTranslations();
+    rerenderAfterLanguageChange();
+  });
+});
+
+function rerenderAfterLanguageChange() {
+  if (!currentChart) return;
+  const data = currentChart.computed_chart_data;
+  renderChart(currentChart);
+  if (timingLoadedForChartId === currentChart.id) loadTimingDataPanel(document.getElementById("timing-date")?.value);
+  if (zrLoadedForChartId === currentChart.id) {
+    document.getElementById("zr-axis-panel").dataset.loaded = "";
+    loadZrDataPanel(document.getElementById("zr-date")?.value);
+  }
 }
 
 // ---------------------------------------------------------------------
@@ -111,12 +107,12 @@ document.getElementById("search-city-btn").addEventListener("click", async () =>
   try {
     const res = await fetch(`/api/geocode?query=${encodeURIComponent(query)}`);
     if (!res.ok) {
-      resultsDiv.innerHTML = `<p class="error">Recherche indisponible — saisissez les coordonnées manuellement.</p>`;
+      resultsDiv.innerHTML = `<p class="error">${t("search_unavailable")}</p>`;
       return;
     }
     const locations = await res.json();
     if (locations.length === 0) {
-      resultsDiv.innerHTML = `<p>Aucun résultat. Saisissez les coordonnées manuellement.</p>`;
+      resultsDiv.innerHTML = `<p>${t("no_results")}</p>`;
       return;
     }
     locations.forEach((loc) => {
@@ -131,7 +127,7 @@ document.getElementById("search-city-btn").addEventListener("click", async () =>
       resultsDiv.appendChild(item);
     });
   } catch (err) {
-    resultsDiv.innerHTML = `<p class="error">Recherche indisponible — saisissez les coordonnées manuellement.</p>`;
+    resultsDiv.innerHTML = `<p class="error">${t("search_unavailable")}</p>`;
   }
 });
 
@@ -173,7 +169,7 @@ document.getElementById("birth-form").addEventListener("submit", async (e) => {
   };
 
   submitBtn.disabled = true;
-  submitBtn.textContent = "Calcul en cours...";
+  submitBtn.textContent = t("status_calculating");
   try {
     const res = await fetch("/api/charts", {
       method: "POST",
@@ -182,7 +178,7 @@ document.getElementById("birth-form").addEventListener("submit", async (e) => {
     });
     if (!res.ok) {
       const detail = await res.json().catch(() => ({}));
-      throw new Error(detail.detail || `Erreur ${res.status}`);
+      throw new Error(detail.detail || `${t("error_prefix")} ${res.status}`);
     }
     currentChart = await res.json();
     renderChart(currentChart);
@@ -193,17 +189,9 @@ document.getElementById("birth-form").addEventListener("submit", async (e) => {
     errorEl.textContent = err.message;
   } finally {
     submitBtn.disabled = false;
-    submitBtn.textContent = "Calculer le thème natal";
+    submitBtn.textContent = t("btn_calculate_chart");
   }
 });
-
-const TRAIT_ORIGIN_LABELS_FR = {
-  ascendant: "Ascendant", sun: "Soleil", moon: "Lune", mercury: "Mercure", venus: "Vénus", mars: "Mars",
-  jupiter: "Jupiter", saturn: "Saturne", dominant_element: "Élément dominant", dominant_modality: "Modalité dominante",
-};
-
-const ELEMENT_LABELS_FR = { fire: "🔥 Feu", earth: "🌍 Terre", air: "💨 Air", water: "💧 Eau" };
-const MODALITY_LABELS_FR = { cardinal: "Cardinal", fixed: "Fixe", mutable: "Mutable" };
 
 function renderTraitTags(characterTraits) {
   if (!characterTraits || !characterTraits.keywords || characterTraits.keywords.length === 0) return "";
@@ -214,29 +202,29 @@ function renderTraitTags(characterTraits) {
 
   const sourceRows = (characterTraits.sources || [])
     .map((s) => {
-      const originLabel = TRAIT_ORIGIN_LABELS_FR[s.origin] || s.origin;
+      const originLabel = pick(TRAIT_ORIGIN_LABELS[s.origin]) || s.origin;
       const isSignBased = !s.origin.startsWith("dominant_");
-      const labelText = s.origin === "dominant_element" ? ELEMENT_LABELS_FR[s.label] || s.label
-        : s.origin === "dominant_modality" ? MODALITY_LABELS_FR[s.label] || s.label
+      const labelText = s.origin === "dominant_element" ? pick(ELEMENT_LABELS[s.label]) || s.label
+        : s.origin === "dominant_modality" ? pick(MODALITY_LABELS[s.label]) || s.label
         : signLabel(s.label);
-      const heading = isSignBased ? `${originLabel} en ${labelText}` : `${originLabel} : ${labelText}`;
-      const houseInfo = s.house ? ` (maison ${s.house}${s.house_context ? " — " + s.house_context : ""})` : "";
+      const heading = isSignBased ? `${originLabel} ${t("in_sign")} ${labelText}` : `${originLabel} : ${labelText}`;
+      const houseInfo = s.house ? ` (${t("house_prefix").toLowerCase()} ${s.house}${s.house_context ? " — " + s.house_context : ""})` : "";
       return `<li><strong>${heading}</strong>${houseInfo} : ${s.traits.join(", ")}</li>`;
     })
     .join("");
 
   const generational = (characterTraits.generational_placements || [])
-    .map((p) => `<li><strong>${planetLabel(p.planet)}</strong> en ${signLabel(p.sign)}, maison ${p.house} : ${p.note}</li>`)
+    .map((p) => `<li><strong>${planetLabel(p.planet)}</strong> ${t("in_sign")} ${signLabel(p.sign)}, ${t("house_prefix").toLowerCase()} ${p.house} : ${p.note}</li>`)
     .join("");
 
   return `
     <div class="trait-tags">${tags}</div>
     <details class="traits-detail">
-      <summary>Détail par planète</summary>
+      <summary>${t("detail_by_planet")}</summary>
       <ul>${sourceRows}</ul>
       ${
         generational
-          ? `<p class="reading-section-intro">Planètes générationnelles (le signe est partagé par toute une tranche d'âge — c'est ici la maison occupée qui individualise) :</p><ul>${generational}</ul>`
+          ? `<p class="reading-section-intro">${t("generational_planets_note")}</p><ul>${generational}</ul>`
           : ""
       }
     </details>
@@ -349,7 +337,7 @@ function buildWheelSVG(data, { showMinorAspects }) {
     planetPoints[planet.name] = polarToXY(cx, cy, rAspectCircle, trueAngle);
 
     const planetTooltip = escapeHtml(
-      `${planetLabel(planet.name)} — ${signLabel(planet.sign)} ${planet.degree}° — Maison ${planet.house ?? "—"}${planet.retrograde ? " · rétrograde" : ""}`
+      `${planetLabel(planet.name)} — ${signLabel(planet.sign)} ${planet.degree}° — ${t("house_prefix")} ${planet.house ?? "—"}${planet.retrograde ? " · " + t("retrograde") : ""}`
     );
 
     planetsSvg += `<line x1="${tickInner.x.toFixed(2)}" y1="${tickInner.y.toFixed(2)}" x2="${tickOuter.x.toFixed(2)}" y2="${tickOuter.y.toFixed(2)}" stroke="#4a4d6c" stroke-width="0.75" stroke-dasharray="2,2" />`;
@@ -370,7 +358,7 @@ function buildWheelSVG(data, { showMinorAspects }) {
     const color = ASPECT_COLORS[aspect.type] || "#888";
     const isMajor = MAJOR_ASPECTS.has(aspect.type);
     const aspectTooltip = escapeHtml(
-      `${planetLabel(aspect.planet1)} ${aspect.type_fr} ${planetLabel(aspect.planet2)} — orbe ${aspect.orb}° (${aspect.applying ? "applicatif" : "séparatif"})`
+      `${planetLabel(aspect.planet1)} ${aspectTypeLabel(aspect.type)} ${planetLabel(aspect.planet2)} — ${t("orb_prefix")} ${aspect.orb}° (${aspect.applying ? t("applying") : t("separating")})`
     );
     aspectsSvg += `<g class="wheel-hoverable" data-tooltip="${aspectTooltip}">`;
     aspectsSvg += `<line x1="${p1.x.toFixed(2)}" y1="${p1.y.toFixed(2)}" x2="${p2.x.toFixed(2)}" y2="${p2.y.toFixed(2)}" stroke="transparent" stroke-width="10" pointer-events="all" />`;
@@ -392,16 +380,10 @@ function buildWheelSVG(data, { showMinorAspects }) {
 }
 
 function renderAspectLegend() {
-  const items = [
-    ["conjunction", "Conjonction"], ["sextile", "Sextile"], ["square", "Carré"],
-    ["trine", "Trigone"], ["opposition", "Opposition"],
-  ];
-  const minorItems = [
-    ["semi_sextile", "Semi-sextile"], ["semi_square", "Semi-carré"], ["sesquiquadrate", "Sesqui-carré"],
-    ["quincunx", "Quinconce"], ["quintile", "Quintile"],
-  ];
-  const swatch = ([key, label]) =>
-    `<span class="legend-item"><span class="legend-swatch" style="background:${ASPECT_COLORS[key]}"></span>${label}</span>`;
+  const items = ["conjunction", "sextile", "square", "trine", "opposition"];
+  const minorItems = ["semi_sextile", "semi_square", "sesquiquadrate", "quincunx", "quintile"];
+  const swatch = (key) =>
+    `<span class="legend-item"><span class="legend-swatch" style="background:${ASPECT_COLORS[key]}"></span>${aspectTypeLabel(key)}</span>`;
 
   return `
     <div class="wheel-legend">
@@ -457,9 +439,9 @@ function renderWheelTab(data) {
     <div class="wheel-controls">
       <label class="checkbox-label wheel-toggle">
         <input type="checkbox" id="toggle-minor-aspects" ${showMinorAspectsInWheel ? "checked" : ""} />
-        Afficher les aspects mineurs
+        ${t("show_minor_aspects")}
       </label>
-      <button type="button" id="wheel-fullscreen-btn" class="wheel-fullscreen-btn">🔍 Plein écran</button>
+      <button type="button" id="wheel-fullscreen-btn" class="wheel-fullscreen-btn">${t("fullscreen")}</button>
     </div>
     <div id="wheel-fullscreen-target" class="wheel-fullscreen-target">
       <div class="wheel-wrapper">${buildWheelSVG(data, { showMinorAspects: showMinorAspectsInWheel })}</div>
@@ -493,7 +475,7 @@ function updateWheelFullscreenState() {
   const target = document.getElementById("wheel-fullscreen-target");
   if (!btn || !target) return;
   const active = isFullscreenActive();
-  btn.textContent = active ? "✕ Quitter le plein écran" : "🔍 Plein écran";
+  btn.textContent = active ? t("exit_fullscreen") : t("fullscreen");
   target.classList.toggle("is-fullscreen", active);
 }
 
@@ -517,18 +499,18 @@ function renderChart(chart) {
 
   document.getElementById("chart-summary").innerHTML = `
     <p>
-      <strong>${chart.subject_name || "Thème"}</strong> —
-      né${chart.subject_name ? "(e)" : ""} le ${chart.birth_date}
-      ${chart.birth_time_known ? "à " + (chart.birth_time || "") : "(heure inconnue)"}
-      à ${chart.birth_city || ""}
+      <strong>${chart.subject_name || t("chart_default_name")}</strong> —
+      ${t("born_prefix")} ${t("on_date")} ${chart.birth_date}
+      ${chart.birth_time_known ? t("at_time") + " " + (chart.birth_time || "") : t("unknown_time_paren")}
+      ${t("in_city")} ${chart.birth_city || ""}
     </p>
     <p>
-      ☉ Soleil en ${SIGN_SYMBOLS[sun.sign]} ${sun.sign_fr} ${sun.degree}°
-      &nbsp;|&nbsp; ☽ Lune en ${SIGN_SYMBOLS[moon.sign]} ${moon.sign_fr} ${moon.degree}°
-      &nbsp;|&nbsp; Ascendant ${SIGN_SYMBOLS[asc.sign]} ${asc.sign_fr} ${asc.degree}°
-      &nbsp;|&nbsp; Thème de ${data.is_day_chart ? "jour" : "nuit"}
+      ☉ ${planetLabel("Sun")} ${t("in_sign")} ${signLabel(sun.sign)} ${sun.degree}°
+      &nbsp;|&nbsp; ☽ ${planetLabel("Moon")} ${t("in_sign")} ${signLabel(moon.sign)} ${moon.degree}°
+      &nbsp;|&nbsp; ${planetLabel("ascendant")} ${signLabel(asc.sign)} ${asc.degree}°
+      &nbsp;|&nbsp; ${data.is_day_chart ? t("day_chart_label") : t("night_chart_label")}
     </p>
-    ${!data.time_known ? '<p class="error">Heure de naissance inconnue : maisons et angles sont approximatifs (calculés à midi).</p>' : ""}
+    ${!data.time_known ? `<p class="error">${t("unknown_birth_time_warning")}</p>` : ""}
     ${renderTraitTags(data.character_traits)}
   `;
 
@@ -552,10 +534,10 @@ function renderPlanetsTab(data) {
       (p) => `
       <tr>
         <td>${planetLabel(p.name)}</td>
-        <td>${SIGN_SYMBOLS[p.sign]} ${p.sign_fr}</td>
+        <td>${signLabel(p.sign)}</td>
         <td>${p.degree}°</td>
-        <td>Maison ${p.house ?? "—"}</td>
-        <td>${p.retrograde ? '<span class="retro">Rétrograde</span>' : "—"}</td>
+        <td>${t("house_prefix")} ${p.house ?? "—"}</td>
+        <td>${p.retrograde ? `<span class="retro">${t("retrograde")}</span>` : "—"}</td>
       </tr>`
     )
     .join("");
@@ -563,14 +545,13 @@ function renderPlanetsTab(data) {
   const angleRows = ["ascendant", "midheaven", "descendant", "imum_coeli"]
     .map((key) => {
       const a = data.angles[key];
-      const labels = { ascendant: "Ascendant", midheaven: "Milieu du Ciel", descendant: "Descendant", imum_coeli: "Fond du Ciel" };
-      return `<tr><td>${labels[key]}</td><td>${SIGN_SYMBOLS[a.sign]} ${a.sign_fr}</td><td>${a.degree}°</td><td>—</td><td>—</td></tr>`;
+      return `<tr><td>${planetLabel(key)}</td><td>${signLabel(a.sign)}</td><td>${a.degree}°</td><td>—</td><td>—</td></tr>`;
     })
     .join("");
 
   document.getElementById("tab-planets").innerHTML = `
     <table>
-      <thead><tr><th>Corps</th><th>Signe</th><th>Degré</th><th>Maison</th><th>Mouvement</th></tr></thead>
+      <thead><tr><th>${t("th_body")}</th><th>${t("th_sign")}</th><th>${t("th_degree")}</th><th>${t("house_prefix")}</th><th>${t("th_movement")}</th></tr></thead>
       <tbody>${rows}${angleRows}</tbody>
     </table>
   `;
@@ -578,11 +559,11 @@ function renderPlanetsTab(data) {
 
 function renderHousesTab(data) {
   const rows = data.houses
-    .map((h) => `<tr><td>Maison ${h.number}</td><td>${SIGN_SYMBOLS[h.sign]} ${h.sign_fr}</td><td>${h.degree}°</td></tr>`)
+    .map((h) => `<tr><td>${t("house_prefix")} ${h.number}</td><td>${signLabel(h.sign)}</td><td>${h.degree}°</td></tr>`)
     .join("");
   document.getElementById("tab-houses").innerHTML = `
     <table>
-      <thead><tr><th>Maison</th><th>Signe</th><th>Degré</th></tr></thead>
+      <thead><tr><th>${t("house_prefix")}</th><th>${t("th_sign")}</th><th>${t("th_degree")}</th></tr></thead>
       <tbody>${rows}</tbody>
     </table>
   `;
@@ -590,7 +571,7 @@ function renderHousesTab(data) {
 
 function renderAspectsTab(data) {
   if (data.aspects.length === 0) {
-    document.getElementById("tab-aspects").innerHTML = "<p>Aucun aspect détecté avec les orbes actuels.</p>";
+    document.getElementById("tab-aspects").innerHTML = `<p>${t("no_aspect_detected")}</p>`;
     return;
   }
   const rows = data.aspects
@@ -598,16 +579,16 @@ function renderAspectsTab(data) {
       (a) => `
       <tr>
         <td>${planetLabel(a.planet1)}</td>
-        <td>${a.type_fr}</td>
+        <td>${aspectTypeLabel(a.type)}</td>
         <td>${planetLabel(a.planet2)}</td>
-        <td>orbe ${a.orb}°</td>
-        <td>${a.applying ? "applicatif" : "séparatif"}</td>
+        <td>${t("orb_prefix")} ${a.orb}°</td>
+        <td>${a.applying ? t("applying") : t("separating")}</td>
       </tr>`
     )
     .join("");
   document.getElementById("tab-aspects").innerHTML = `
     <table>
-      <thead><tr><th>Corps 1</th><th>Aspect</th><th>Corps 2</th><th>Orbe</th><th>Direction</th></tr></thead>
+      <thead><tr><th>${t("th_body")} 1</th><th>${t("th_aspect")}</th><th>${t("th_body")} 2</th><th>${t("th_orb")}</th><th>${t("th_direction")}</th></tr></thead>
       <tbody>${rows}</tbody>
     </table>
   `;
@@ -629,29 +610,29 @@ function renderBalanceTab(data) {
   const maxE = Math.max(...Object.values(e), 1);
   const maxM = Math.max(...Object.values(m), 1);
   document.getElementById("tab-balance").innerHTML = `
-    <h3>Éléments</h3>
-    ${balanceBar("🔥 Feu", e.fire, maxE)}
-    ${balanceBar("🌍 Terre", e.earth, maxE)}
-    ${balanceBar("💨 Air", e.air, maxE)}
-    ${balanceBar("💧 Eau", e.water, maxE)}
-    <h3>Modalités</h3>
-    ${balanceBar("Cardinal", m.cardinal, maxM)}
-    ${balanceBar("Fixe", m.fixed, maxM)}
-    ${balanceBar("Mutable", m.mutable, maxM)}
+    <h3>${t("tab_balance")}</h3>
+    ${balanceBar(pick(ELEMENT_LABELS.fire), e.fire, maxE)}
+    ${balanceBar(pick(ELEMENT_LABELS.earth), e.earth, maxE)}
+    ${balanceBar(pick(ELEMENT_LABELS.air), e.air, maxE)}
+    ${balanceBar(pick(ELEMENT_LABELS.water), e.water, maxE)}
+    <h3>${t("modalities_title")}</h3>
+    ${balanceBar(pick(MODALITY_LABELS.cardinal), m.cardinal, maxM)}
+    ${balanceBar(pick(MODALITY_LABELS.fixed), m.fixed, maxM)}
+    ${balanceBar(pick(MODALITY_LABELS.mutable), m.mutable, maxM)}
   `;
 }
 
 function renderConvergenceSummary(convergence) {
   if (!convergence || !convergence.dominant_dispositor) {
-    return "<p>Aucune convergence claire : les chaînes de dispositeurs se répartissent entre plusieurs planètes finales.</p>";
+    return `<p>${t("no_clear_convergence")}</p>`;
   }
   const { dominant_dispositor, dominant_count, total_chains, level } = convergence;
   const label = planetLabel(dominant_dispositor);
-  const summary = `<p class="convergence-summary">🔑 <strong>Dispositeur final du thème : ${label}</strong> (${dominant_count} planète${dominant_count > 1 ? "s" : ""} sur ${total_chains} convergent vers lui)</p>`;
+  const summary = `<p class="convergence-summary">🔑 <strong>${t("final_dispositor_of_chart")} ${label}</strong> (${dominant_count}/${total_chains})</p>`;
 
   if (level === "forte" || level === "notable") {
-    const badge = level === "forte" ? "Convergence forte — planète clé de voûte" : "Convergence notable";
-    return `${summary}<div class="convergence-alert convergence-${level}">⚡ ${badge} : la majorité des chaînes de maîtrise du thème se referment sur ${label}. C'est un pattern peu fréquent statistiquement — cette planète mérite d'être lue comme un axe central du thème, pas seulement comme une planète parmi d'autres.</div>`;
+    const badge = level === "forte" ? t("strong_convergence") : t("notable_convergence");
+    return `${summary}<div class="convergence-alert convergence-${level}">⚡ ${badge} : ${label}</div>`;
   }
   return summary;
 }
@@ -665,40 +646,40 @@ function renderDispositorsSection(analysis, title) {
         <td>${planetLabel(d.planet)}</td>
         <td>${signLabel(d.sign_occupied)}</td>
         <td>${planetLabel(d.rulers.traditional)} / ${planetLabel(d.rulers.modern)}</td>
-        <td>${d.self_disposed ? "Oui (maître de son propre signe)" : "—"}</td>
+        <td>${d.self_disposed ? t("yes_self_ruled") : "—"}</td>
       </tr>`
     )
     .join("");
 
   const chains = analysis.dispositor_chains
-    .map((c) => `<li>${c.chain.map(planetLabel).join(" → ")} ${c.type === "loop" ? "(boucle)" : c.final_dispositor ? `— dispositeur final : ${planetLabel(c.final_dispositor)}` : ""}</li>`)
+    .map((c) => `<li>${c.chain.map(planetLabel).join(" → ")} ${c.type === "loop" ? t("loop_suffix") : c.final_dispositor ? `— ${t("final_dispositor_prefix")} ${planetLabel(c.final_dispositor)}` : ""}</li>`)
     .join("");
 
   const mutual =
     analysis.mutual_receptions.length > 0
       ? `<ul>${analysis.mutual_receptions.map((r) => `<li>${r.planets.map(planetLabel).join(" ↔ ")} (${r.signs.map(signLabel).join(" / ")})</li>`).join("")}</ul>`
-      : "<p>Aucune réception mutuelle détectée.</p>";
+      : `<p>${t("no_mutual_reception")}</p>`;
 
   return `
     <h3>${title}</h3>
     ${renderConvergenceSummary(analysis.convergence)}
     <table>
-      <thead><tr><th>Planète</th><th>Signe occupé</th><th>Maître trad. / moderne</th><th>Auto-disposée</th></tr></thead>
+      <thead><tr><th>${t("th_planet_generic")}</th><th>${t("th_sign_occupied")}</th><th>${t("th_ruler_trad_modern")}</th><th>${t("th_self_disposed")}</th></tr></thead>
       <tbody>${dispositorRows}</tbody>
     </table>
     <details class="chains-detail">
-      <summary>Voir le détail des chaînes de dispositeurs (${analysis.dispositor_chains.length})</summary>
+      <summary>${t("see_dispositor_chains_detail")} (${analysis.dispositor_chains.length})</summary>
       <ul>${chains}</ul>
     </details>
-    <h4>Réceptions mutuelles</h4>
+    <h4>${t("mutual_receptions_title")}</h4>
     ${mutual}
   `;
 }
 
 function renderDispositorsTab(data) {
   document.getElementById("tab-dispositors").innerHTML =
-    renderDispositorsSection(data.dispositors_traditional, "Système traditionnel") +
-    renderDispositorsSection(data.dispositors_modern, "Système moderne");
+    renderDispositorsSection(data.dispositors_traditional, t("traditional_system")) +
+    renderDispositorsSection(data.dispositors_modern, t("modern_system"));
 }
 
 // ---------------------------------------------------------------------
@@ -707,35 +688,35 @@ function renderDispositorsTab(data) {
 function renderLotsDataPanel(data) {
   const container = document.getElementById("lots-data-panel");
   if (!data.lots || data.lots.length === 0) {
-    container.innerHTML = "<p>Aucun lot calculé.</p>";
+    container.innerHTML = `<p>${t("no_lot_calculated")}</p>`;
     return;
   }
   const rows = data.lots
     .map((lot) => {
       const aspects = lot.aspects_to_natal.length
-        ? lot.aspects_to_natal.map((a) => `${planetLabel(a.planet)} ${a.type_fr} (${a.orb}°)`).join(", ")
+        ? lot.aspects_to_natal.map((a) => `${planetLabel(a.planet)} ${aspectTypeLabel(a.type)} (${a.orb}°)`).join(", ")
         : "—";
       let reliabilityBadge = "";
       if (lot.category === "moderne_non_canonique") {
-        reliabilityBadge = `<span class="lot-badge lot-badge-modern" title="${lot.construction_logic || ""}">non-canonique</span>`;
+        reliabilityBadge = `<span class="lot-badge lot-badge-modern" title="${escapeHtml(lot.construction_logic || "")}">${t("badge_non_canonical")}</span>`;
       } else if (lot.certainty && lot.certainty.toLowerCase().startsWith("moyenne")) {
-        reliabilityBadge = `<span class="lot-badge lot-badge-disputed" title="${lot.certainty}">attribution disputée</span>`;
+        reliabilityBadge = `<span class="lot-badge lot-badge-disputed" title="${escapeHtml(lot.certainty)}">${t("badge_disputed_attribution")}</span>`;
       }
       return `
       <tr>
-        <td>${lot.name} ${reliabilityBadge}</td>
-        <td>${lot.signification}</td>
+        <td>${lotLabel(lot.name)} ${reliabilityBadge}</td>
+        <td>${lotSignification(lot.name)}</td>
         <td>${signLabel(lot.sign)} ${lot.degree}°</td>
-        <td>Maison ${lot.house}</td>
+        <td>${t("house_prefix")} ${lot.house}</td>
         <td>${aspects}</td>
       </tr>`;
     })
     .join("");
 
   container.innerHTML = `
-    <p>Un thème de ${data.is_day_chart ? "jour" : "nuit"} utilise les formules diurnes/nocturnes appropriées pour chaque lot. 10 lots classiques (tradition hellénistique) et 7 lots modernes non-canoniques (construits par analogie, voir badge) : survolez un badge pour le détail.</p>
+    <p>${tf("lots_day_night_note", { dayNight: data.is_day_chart ? t("day_chart") : t("night_chart") })}</p>
     <table>
-      <thead><tr><th>Lot</th><th>Signification</th><th>Position</th><th>Maison</th><th>Aspects natals</th></tr></thead>
+      <thead><tr><th>${t("th_lot")}</th><th>${t("th_meaning")}</th><th>${t("th_position")}</th><th>${t("house_prefix")}</th><th>${t("th_natal_aspects")}</th></tr></thead>
       <tbody>${rows}</tbody>
     </table>
   `;
@@ -773,43 +754,38 @@ function referenceHouseForRelationKey(relationKey, config) {
 async function renderDerivedHousesDataPanel(data) {
   const container = document.getElementById("derived-data-panel");
   if (!data.derived_houses || data.derived_houses.length === 0) {
-    container.innerHTML = "<p>Maisons dérivées non disponibles.</p>";
+    container.innerHTML = `<p>${t("derived_houses_unavailable")}</p>`;
     return;
   }
 
   const config = await loadDerivedHouseRelationsConfig();
 
-  const firstOrderOptions = config.first_order
-    .map(
-      (r) => `<option value="${r.key}" ${r.key === selectedDerivedRelationKey ? "selected" : ""}>${r.label}</option>`
-    )
-    .join("");
-  const secondOrderOptions = config.second_order
-    .map(
-      (r) => `<option value="${r.key}" ${r.key === selectedDerivedRelationKey ? "selected" : ""}>${r.label}</option>`
-    )
-    .join("");
+  const optionsFor = (list) =>
+    list
+      .map(
+        (r) => `<option value="${r.key}" ${r.key === selectedDerivedRelationKey ? "selected" : ""}>${derivedRelationLabel(r.key, r.label)}</option>`
+      )
+      .join("");
+  const firstOrderOptions = optionsFor(config.first_order);
+  const secondOrderOptions = optionsFor(config.second_order);
   const customSelected = selectedDerivedRelationKey.startsWith("custom:") ? "selected" : "";
 
   container.innerHTML = `
     <div class="form-row">
-      <label for="derived-house-select">Relation à analyser</label>
+      <label for="derived-house-select">${t("label_relation_to_analyze")}</label>
       <select id="derived-house-select">
-        <optgroup label="Relations directes">${firstOrderOptions}</optgroup>
-        <optgroup label="Relations de second ordre">${secondOrderOptions}</optgroup>
-        <option value="__custom__" ${customSelected}>Autre (avancé : composer une relation)…</option>
+        <optgroup label="${t("zr_relations_group_direct")}">${firstOrderOptions}</optgroup>
+        <optgroup label="${t("zr_relations_group_second_order")}">${secondOrderOptions}</optgroup>
+        <option value="__custom__" ${customSelected}>${t("option_custom_relation")}</option>
       </select>
     </div>
     <div id="derived-custom-selectors" class="form-row hidden">
-      <label for="derived-custom-n1">À partir de qui</label>
+      <label for="derived-custom-n1">${t("label_from_whom")}</label>
       <select id="derived-custom-n1">${firstOrderOptions}</select>
-      <label for="derived-custom-n2">Quelle relation de cette personne</label>
+      <label for="derived-custom-n2">${t("label_which_relation")}</label>
       <select id="derived-custom-n2">${firstOrderOptions}</select>
     </div>
-    <p class="derived-house-explainer">
-      La maison de référence elle-même est la maison 1 (identité) de la personne représentée ;
-      la maison suivante est sa maison 2 (ressources), etc.
-    </p>
+    <p class="derived-house-explainer">${t("derived_house_explainer")}</p>
     <div id="derived-house-table"></div>
   `;
 
@@ -825,15 +801,15 @@ async function renderDerivedHousesDataPanel(data) {
       .map(
         (m) => `
       <tr>
-        <td>Maison ${m.derived_house_number}</td>
-        <td>Sa maison ${m.represents_house} — ${m.keyword}</td>
+        <td>${t("house_prefix")} ${m.derived_house_number}</td>
+        <td>${t("their_house")} ${m.represents_house} — ${pick(HOUSE_KEYWORDS[m.represents_house]) || m.keyword}</td>
         <td>${m.planets.length ? m.planets.map(planetLabel).join(", ") : "—"}</td>
       </tr>`
       )
       .join("");
     document.getElementById("derived-house-table").innerHTML = `
       <table>
-        <thead><tr><th>Ma maison natale</th><th>Représente, pour elle</th><th>Planètes natales concernées</th></tr></thead>
+        <thead><tr><th>${t("th_my_natal_house")}</th><th>${t("th_represents_for_them")}</th><th>${t("th_relevant_natal_planets")}</th></tr></thead>
         <tbody>${rows}</tbody>
       </table>
     `;
@@ -871,19 +847,14 @@ async function renderDerivedHousesDataPanel(data) {
 let timingLoadedForChartId = null;
 let currentForecastEvents = [];
 
-const FAVORABILITY_LABELS_FR = {
-  favorable: "Favorable", a_nuancer: "À nuancer", exigeant: "Exigeant",
-  instable: "Instable", intense: "Intense", neutre: "Neutre",
-};
-
 function flameBadge(intensity) {
-  return `<span class="intensity-flames" title="Intensité ${intensity}/4">${"🔥".repeat(intensity)}</span>`;
+  return `<span class="intensity-flames" title="${t("th_intensity")} ${intensity}/4">${"🔥".repeat(intensity)}</span>`;
 }
 
 function renderUpcomingEventsTable(events, minIntensity) {
   const filtered = events.filter((e) => e.intensity >= minIntensity);
   if (filtered.length === 0) {
-    return "<p>Aucun transit à ce niveau d'intensité sur les 12 prochains mois.</p>";
+    return `<p>${t("no_transit_at_intensity")}</p>`;
   }
   const rows = filtered
     .map(
@@ -891,17 +862,17 @@ function renderUpcomingEventsTable(events, minIntensity) {
       <tr>
         <td>${flameBadge(e.intensity)}</td>
         <td>${planetLabel(e.transiting_planet)}</td>
-        <td>${e.type_fr}</td>
+        <td>${aspectTypeLabel(e.type)}</td>
         <td>${planetLabel(e.natal_point)}</td>
         <td>${e.window_start} → ${e.window_end}</td>
-        <td><span class="favorability-badge favorability-${e.favorability}">${FAVORABILITY_LABELS_FR[e.favorability] || e.favorability}</span></td>
+        <td><span class="favorability-badge favorability-${e.favorability}">${pick(FAVORABILITY_LABELS[e.favorability]) || e.favorability}</span></td>
       </tr>`
     )
     .join("");
   return `
-    <p class="reading-section-intro">${filtered.length} transit${filtered.length > 1 ? "s" : ""} affiché${filtered.length > 1 ? "s" : ""} sur ${events.length} au total.</p>
+    <p class="reading-section-intro">${filtered.length}/${events.length}</p>
     <table>
-      <thead><tr><th>Intensité</th><th>Transit</th><th>Aspect</th><th>Point natal</th><th>Fenêtre active</th><th>Tendance</th></tr></thead>
+      <thead><tr><th>${t("th_intensity")}</th><th>${t("th_transit")}</th><th>${t("th_aspect")}</th><th>${t("th_natal_point")}</th><th>${t("th_active_window")}</th><th>${t("th_trend")}</th></tr></thead>
       <tbody>${rows}</tbody>
     </table>
   `;
@@ -914,7 +885,7 @@ function renderTimingDataPanel(timing, forecast) {
       <tr>
         <td>${planetLabel(p.name)}</td>
         <td>${signLabel(p.sign)} ${p.degree}°</td>
-        <td>${p.retrograde ? '<span class="retro">Rétrograde</span>' : "—"}</td>
+        <td>${p.retrograde ? `<span class="retro">${t("retrograde")}</span>` : "—"}</td>
       </tr>`
     )
     .join("");
@@ -926,53 +897,53 @@ function renderTimingDataPanel(timing, forecast) {
       <tr>
         <td>${flameBadge(a.intensity)}</td>
         <td>${planetLabel(a.transiting_planet)}</td>
-        <td>${a.type_fr}</td>
+        <td>${aspectTypeLabel(a.type)}</td>
         <td>${planetLabel(a.natal_point)}</td>
-        <td>orbe ${a.orb}° · ${a.applying ? "applicatif" : "séparatif"}</td>
-        <td><span class="favorability-badge favorability-${a.favorability}">${FAVORABILITY_LABELS_FR[a.favorability] || a.favorability}</span></td>
+        <td>${t("orb_prefix")} ${a.orb}° · ${a.applying ? t("applying") : t("separating")}</td>
+        <td><span class="favorability-badge favorability-${a.favorability}">${pick(FAVORABILITY_LABELS[a.favorability]) || a.favorability}</span></td>
       </tr>`
         )
         .join("")
-    : `<tr><td colspan="6">Aucun aspect actif avec l'orbe utilisé (3°).</td></tr>`;
+    : `<tr><td colspan="6">${t("no_active_aspect")}</td></tr>`;
 
   const prof = timing.profection;
   currentForecastEvents = forecast.events;
 
   document.getElementById("timing-data-panel").innerHTML = `
     <div class="form-row timing-controls">
-      <label for="timing-date">Date</label>
+      <label for="timing-date">${t("label_date")}</label>
       <input type="date" id="timing-date" value="${timing.date}" />
-      <button type="button" id="timing-refresh-btn">Recalculer</button>
+      <button type="button" id="timing-refresh-btn">${t("btn_recalculate")}</button>
     </div>
 
-    <h3>Transits à venir (12 prochains mois)</h3>
+    <h3>${t("timing_upcoming_events_title")}</h3>
     <div class="form-row timing-controls">
-      <label for="timing-intensity-filter">Intensité minimale</label>
+      <label for="timing-intensity-filter">${t("label_min_intensity")}</label>
       <select id="timing-intensity-filter">
-        <option value="4">🔥🔥🔥🔥 uniquement</option>
-        <option value="3" selected>🔥🔥🔥 et plus (recommandé)</option>
-        <option value="2">🔥🔥 et plus</option>
-        <option value="1">Tous, y compris les transits mineurs</option>
+        <option value="4">${t("intensity_4_only")}</option>
+        <option value="3" selected>${t("intensity_3_plus")}</option>
+        <option value="2">${t("intensity_2_plus")}</option>
+        <option value="1">${t("intensity_all")}</option>
       </select>
     </div>
     <div id="timing-upcoming-events-container">${renderUpcomingEventsTable(forecast.events, 3)}</div>
 
-    <h3>Profection de l'année</h3>
+    <h3>${t("timing_profection_title")}</h3>
     <p>
-      Année profectée en <strong>maison ${prof.profected_house}</strong> (${signLabel(prof.profected_sign)}) —
-      planète maîtresse de l'année : <strong>${planetLabel(prof.year_ruler)}</strong>.
-      Période du ${prof.profected_year_start} au ${prof.profected_year_end} (${prof.age} ans révolus).
+      ${t("house_prefix")} <strong>${prof.profected_house}</strong> (${signLabel(prof.profected_sign)}) —
+      <strong>${planetLabel(prof.year_ruler)}</strong>.
+      ${prof.profected_year_start} → ${prof.profected_year_end} (${prof.age})
     </p>
 
-    <h3>Planètes en transit (${timing.date})</h3>
+    <h3>${t("timing_transiting_planets_title")} (${timing.date})</h3>
     <table>
-      <thead><tr><th>Planète</th><th>Position</th><th>Mouvement</th></tr></thead>
+      <thead><tr><th>${t("th_planet")}</th><th>${t("th_position")}</th><th>${t("th_movement")}</th></tr></thead>
       <tbody>${transitRows}</tbody>
     </table>
 
-    <h3>Aspects actifs vers le thème natal</h3>
+    <h3>${t("timing_active_aspects_title")}</h3>
     <table>
-      <thead><tr><th>Intensité</th><th>Transit</th><th>Aspect</th><th>Point natal</th><th>Détail</th><th>Tendance</th></tr></thead>
+      <thead><tr><th>${t("th_intensity")}</th><th>${t("th_transit")}</th><th>${t("th_aspect")}</th><th>${t("th_natal_point")}</th><th>${t("th_detail")}</th><th>${t("th_trend")}</th></tr></thead>
       <tbody>${aspectRows}</tbody>
     </table>
   `;
@@ -992,21 +963,21 @@ function renderTimingDataPanel(timing, forecast) {
 async function loadTimingDataPanel(date) {
   if (!currentChart) return;
   const container = document.getElementById("timing-data-panel");
-  container.innerHTML = "<p>Calcul en cours (transits + prévisions sur l'année)...</p>";
+  container.innerHTML = `<p>${t("status_computing_timing")}</p>`;
   try {
     const dateParam = date ? `?date=${date}` : "";
     const [timingRes, forecastRes] = await Promise.all([
       fetch(`/api/charts/${currentChart.id}/timing${dateParam}`),
       fetch(`/api/charts/${currentChart.id}/timing/forecast${dateParam}`),
     ]);
-    if (!timingRes.ok) throw new Error(`Erreur ${timingRes.status} (transits)`);
-    if (!forecastRes.ok) throw new Error(`Erreur ${forecastRes.status} (prévisions)`);
+    if (!timingRes.ok) throw new Error(`${t("error_prefix")} ${timingRes.status}`);
+    if (!forecastRes.ok) throw new Error(`${t("error_prefix")} ${forecastRes.status}`);
     const timing = await timingRes.json();
     const forecast = await forecastRes.json();
     renderTimingDataPanel(timing, forecast);
     timingLoadedForChartId = currentChart.id;
   } catch (err) {
-    container.innerHTML = `<p class="error">Impossible de charger le timing : ${err.message}</p>`;
+    container.innerHTML = `<p class="error">${t("error_loading_timing")} ${err.message}</p>`;
   }
 }
 
@@ -1016,16 +987,16 @@ async function loadTimingDataPanel(date) {
 let zrLoadedForChartId = null;
 
 function renderZrPeriodCard(period, title) {
-  if (!period) return `<p>${title} : aucune période disponible.</p>`;
+  if (!period) return `<p>${title} : ${t("zr_no_period_available")}</p>`;
   const badges = `
-    ${period.is_peak_period ? '<span class="zr-badge zr-badge-peak">Période de pointe</span>' : ""}
-    ${period.is_loosing_of_the_bond ? '<span class="zr-badge zr-badge-loosing">Déliement du lien</span>' : ""}
+    ${period.is_peak_period ? `<span class="zr-badge zr-badge-peak">${t("zr_peak_period")}</span>` : ""}
+    ${period.is_loosing_of_the_bond ? `<span class="zr-badge zr-badge-loosing">${t("zr_loosing_of_bond")}</span>` : ""}
   `;
   return `
     <div class="zr-phase-card">
       <h4>${title} : ${signLabel(period.sign)} ${badges}</h4>
-      <p>Du ${period.start_date} au ${period.end_date} (${period.duration_years} an${period.duration_years > 1 ? "s" : ""}) —
-      maître : ${planetLabel(period.ruling_planet)}</p>
+      <p>${period.start_date} → ${period.end_date} (${period.duration_years}) —
+      ${t("zr_master")} : ${planetLabel(period.ruling_planet)}</p>
     </div>`;
 }
 
@@ -1036,7 +1007,7 @@ let axesThematiquesLotsConfig = null;
 function renderZrLotCard(lotName, lotResult, checked) {
   const l2Rows = lotResult.current_l1_l2_periods
     .map((p) => {
-      const badges = `${p.is_peak_period ? '<span class="zr-badge zr-badge-peak">Pointe</span>' : ""}${p.is_loosing_of_the_bond ? '<span class="zr-badge zr-badge-loosing">Déliement</span>' : ""}`;
+      const badges = `${p.is_peak_period ? `<span class="zr-badge zr-badge-peak">${t("zr_peak")}</span>` : ""}${p.is_loosing_of_the_bond ? `<span class="zr-badge zr-badge-loosing">${t("zr_loosing")}</span>` : ""}`;
       const isCurrent = lotResult.current_l2 && p.start_date === lotResult.current_l2.start_date && p.sign === lotResult.current_l2.sign;
       return `<tr class="${isCurrent ? "zr-current-row" : ""}"><td>${signLabel(p.sign)}</td><td>${p.start_date} → ${p.end_date}</td><td>${badges || "—"}</td></tr>`;
     })
@@ -1047,18 +1018,18 @@ function renderZrLotCard(lotName, lotResult, checked) {
       <div class="zr-lot-header">
         <label class="zr-lot-checkbox-label">
           <input type="checkbox" class="zr-lot-checkbox" value="${lotName}" ${checked ? "checked" : ""} />
-          <strong>${lotName}</strong>
+          <strong>${lotLabel(lotName)}</strong>
         </label>
         <span class="zr-lot-current-sign">${signLabel(lotResult.lot_sign)}</span>
       </div>
       <details ${checked ? "open" : ""}>
-        <summary>Voir les phases</summary>
-        ${renderZrPeriodCard(lotResult.current_l1, "Phase L1 en cours")}
-        ${renderZrPeriodCard(lotResult.current_l2, "Sous-phase L2 en cours")}
+        <summary>${t("zr_view_phases")}</summary>
+        ${renderZrPeriodCard(lotResult.current_l1, t("zr_l1_current"))}
+        ${renderZrPeriodCard(lotResult.current_l2, t("zr_l2_current"))}
         <details>
-          <summary>Détail des sous-phases L2 de la phase L1 en cours (${lotResult.current_l1_l2_periods.length})</summary>
+          <summary>${t("zr_l2_detail")} (${lotResult.current_l1_l2_periods.length})</summary>
           <table>
-            <thead><tr><th>Signe</th><th>Période</th><th></th></tr></thead>
+            <thead><tr><th>${t("th_sign")}</th><th>${t("th_period")}</th><th></th></tr></thead>
             <tbody>${l2Rows}</tbody>
           </table>
         </details>
@@ -1078,12 +1049,12 @@ function renderZrDataPanel(zr, previouslyChecked) {
 
   container.innerHTML = `
     <div class="form-row timing-controls">
-      <label for="zr-date">Date</label>
+      <label for="zr-date">${t("label_date")}</label>
       <input type="date" id="zr-date" value="${zr.as_of_date}" />
-      <button type="button" id="zr-refresh-btn">Recalculer</button>
+      <button type="button" id="zr-refresh-btn">${t("btn_recalculate")}</button>
     </div>
-    ${zr.edge_case_same_sign_applied ? '<p class="error">Fortune et Esprit dans le même signe : le calcul du lot Esprit a été décalé d\'un signe, selon la convention documentée.</p>' : ""}
-    <p class="reading-section-intro">Cochez un ou plusieurs lots ci-dessous pour la lecture (par défaut : Fortune + Esprit), ou utilisez un axe thématique ci-dessus comme raccourci de sélection. Un seul lot coché donne une lecture approfondie ; plusieurs lots ajoutent une lecture croisée entre eux.</p>
+    ${zr.edge_case_same_sign_applied ? `<p class="error">${t("zr_error_same_sign")}</p>` : ""}
+    <p class="reading-section-intro">${t("zr_hint_check_lots")}</p>
     ${lotCards}
   `;
 
@@ -1109,10 +1080,10 @@ async function renderZrAxisPanel() {
   if (!container || container.dataset.loaded === "true") return;
   const config = await loadAxesThematiquesLotsConfig();
   const axisButtons = config.axes_thematiques.axes
-    .map((axis) => `<button type="button" class="zr-axis-btn" data-axis-code="${axis.code}">${axis.nom}</button>`)
+    .map((axis) => `<button type="button" class="zr-axis-btn" data-axis-code="${axis.code}">${axisLabel(axis.code, axis.nom)}</button>`)
     .join("");
   container.innerHTML = `
-    <p class="reading-section-intro">Axes thématiques (raccourcis de sélection, projection 10 ans) :</p>
+    <p class="reading-section-intro">${t("zr_axis_intro")}</p>
     <div class="zr-axis-buttons">${axisButtons}</div>
   `;
   container.dataset.loaded = "true";
@@ -1143,16 +1114,16 @@ async function loadZrDataPanel(date) {
   const previouslyChecked = new Set(
     Array.from(container.querySelectorAll(".zr-lot-checkbox:checked")).map((el) => el.value)
   );
-  container.innerHTML = "<p>Calcul en cours (phases et sous-phases)...</p>";
+  container.innerHTML = `<p>${t("status_computing_phases")}</p>`;
   try {
     const dateParam = date ? `?date=${date}` : "";
     const res = await fetch(`/api/charts/${currentChart.id}/zodiacal-releasing${dateParam}`);
-    if (!res.ok) throw new Error(`Erreur ${res.status}`);
+    if (!res.ok) throw new Error(`${t("error_prefix")} ${res.status}`);
     const zr = await res.json();
     renderZrDataPanel(zr, previouslyChecked);
     zrLoadedForChartId = currentChart.id;
   } catch (err) {
-    container.innerHTML = `<p class="error">Impossible de charger les phases : ${err.message}</p>`;
+    container.innerHTML = `<p class="error">${t("error_loading_phases")} ${err.message}</p>`;
   }
 }
 
@@ -1162,30 +1133,6 @@ async function loadZrDataPanel(date) {
 let selectedCompatMode = "romantic";
 let compatChartBId = null;
 let compatChartsLoadedForChartId = null;
-
-const COMPAT_MODE_LABELS_FR = { romantic: "amoureuse", friendship: "amicale", professional: "professionnelle" };
-
-// Doit rester synchronisé avec COMPATIBILITY_RATING_AXES dans app/services/interpretation_service.py.
-const COMPAT_RATING_AXES_FR = {
-  romantic: [
-    { key: "passion_alchimie", label: "Passion & alchimie" },
-    { key: "complicite_emotionnelle", label: "Complicité émotionnelle" },
-    { key: "engagement_duree", label: "Engagement & durabilité" },
-    { key: "valeurs_partagees", label: "Valeurs partagées" },
-  ],
-  friendship: [
-    { key: "complicite_humour", label: "Complicité & humour" },
-    { key: "confort_relationnel", label: "Confort relationnel" },
-    { key: "plaisir_partage", label: "Plaisir partagé" },
-    { key: "stimulation_intellectuelle", label: "Stimulation intellectuelle" },
-  ],
-  professional: [
-    { key: "communication_pro", label: "Communication professionnelle" },
-    { key: "rigueur_fiabilite", label: "Rigueur & fiabilité partagées" },
-    { key: "rythme_travail", label: "Rythme de travail" },
-    { key: "reconnaissance_croissance", label: "Reconnaissance & croissance mutuelle" },
-  ],
-};
 
 // Composant de jauges de notation (1 à 10) partagé par Compatibilité et Pronostic, pour une
 // identité visuelle cohérente sur tout le site plutôt qu'un système par fonctionnalité.
@@ -1212,19 +1159,11 @@ function renderRatingGauges(title, axes, ratings) {
 }
 
 function renderCompatibilityRatings(ratings, mode) {
-  return renderRatingGauges("Notes de compatibilité", COMPAT_RATING_AXES_FR[mode] || [], ratings);
+  return renderRatingGauges(t("compat_ratings_title"), compatRatingAxes(mode), ratings);
 }
 
-const TIMING_RATING_AXES_FR = [
-  { key: "amour", label: "Amour" },
-  { key: "amitie", label: "Amitié" },
-  { key: "professionnel", label: "Professionnel" },
-  { key: "sante", label: "Santé" },
-  { key: "developpement_personnel", label: "Développement personnel" },
-];
-
 function renderTimingRatings(ratings) {
-  return renderRatingGauges("Notes du pronostic", TIMING_RATING_AXES_FR, ratings);
+  return renderRatingGauges(t("timing_ratings_title"), timingRatingAxes(), ratings);
 }
 
 function compatWeightSlug(label) {
@@ -1239,35 +1178,35 @@ async function loadCompatChartOptions() {
   const select = document.getElementById("compat-chart-b-select");
   try {
     const res = await fetch("/api/charts");
-    if (!res.ok) throw new Error(`Erreur ${res.status}`);
+    if (!res.ok) throw new Error(`${t("error_prefix")} ${res.status}`);
     const charts = await res.json();
     const others = charts.filter((c) => c.id !== currentChart.id);
-    const placeholder = `<option value="">— Sélectionner une carte existante —</option>`;
+    const placeholder = `<option value="">${t("option_select_existing_chart")}</option>`;
     select.innerHTML =
       placeholder +
-      others.map((c) => `<option value="${c.id}">${c.subject_name || "Sans nom"} (${c.birth_date})</option>`).join("");
+      others.map((c) => `<option value="${c.id}">${c.subject_name || "—"} (${c.birth_date})</option>`).join("");
     if (compatChartBId) select.value = compatChartBId;
     compatChartsLoadedForChartId = currentChart.id;
   } catch (err) {
-    select.innerHTML = `<option value="">Impossible de charger les cartes existantes</option>`;
+    select.innerHTML = `<option value="">${t("error_charts_unavailable")}</option>`;
   }
 }
 
 async function loadCompatibilityData() {
   if (!currentChart || !compatChartBId) return;
   const panel = document.getElementById("compat-data-panel");
-  panel.innerHTML = "<p>Calcul de la compatibilité en cours...</p>";
+  panel.innerHTML = `<p>${t("status_computing_compat")}</p>`;
   try {
     const res = await fetch(
       `/api/charts/${currentChart.id}/compatibility?chart_b_id=${compatChartBId}&mode=${selectedCompatMode}`
     );
     if (!res.ok) {
       const detail = await res.json().catch(() => ({}));
-      throw new Error(detail.detail || `Erreur ${res.status}`);
+      throw new Error(detail.detail || `${t("error_prefix")} ${res.status}`);
     }
     renderCompatibilityData(await res.json());
   } catch (err) {
-    panel.innerHTML = `<p class="error">Impossible de calculer la compatibilité : ${err.message}</p>`;
+    panel.innerHTML = `<p class="error">${t("error_computing_compat")} ${err.message}</p>`;
   }
 }
 
@@ -1275,17 +1214,17 @@ function renderCompatibilityData(data) {
   const panel = document.getElementById("compat-data-panel");
 
   const missingTimeFor = [];
-  if (!data.charts_time_known.chart_a) missingTimeFor.push("le premier thème");
-  if (!data.charts_time_known.chart_b) missingTimeFor.push("le second thème");
+  if (!data.charts_time_known.chart_a) missingTimeFor.push(t("compat_time_unknown_first"));
+  if (!data.charts_time_known.chart_b) missingTimeFor.push(t("compat_time_unknown_second"));
   const timeWarning = missingTimeFor.length
-    ? `<p class="error">Heure de naissance inconnue pour ${missingTimeFor.join(" et ")} : le chevauchement de maisons et l'Ascendant composite sont approximatifs. Les aspects croisés restent fiables (ils ne dépendent pas de l'heure).</p>`
+    ? `<p class="error">${tf("compat_time_warning", { names: missingTimeFor.join(` ${t("compat_time_unknown_and")} `) })}</p>`
     : "";
 
   const aspectRows = data.inter_aspects
     .map((a) => {
       const bestMatch = a.significator_matches[0];
       const weightBadge = bestMatch
-        ? `<span class="compat-weight-badge compat-weight-${compatWeightSlug(bestMatch.weight)}">${bestMatch.weight}</span>`
+        ? `<span class="compat-weight-badge compat-weight-${compatWeightSlug(bestMatch.weight)}">${significatorWeightLabel(bestMatch.weight)}</span>`
         : "—";
       const meaningRow = bestMatch
         ? `<tr class="compat-meaning-row"><td colspan="5">${bestMatch.meaning}</td></tr>`
@@ -1293,9 +1232,9 @@ function renderCompatibilityData(data) {
       return `
       <tr>
         <td>${planetLabel(a.planet_a)}</td>
-        <td>${a.type_fr}</td>
+        <td>${aspectTypeLabel(a.type)}</td>
         <td>${planetLabel(a.planet_b)}</td>
-        <td>orbe ${a.orb}°</td>
+        <td>${t("orb_prefix")} ${a.orb}°</td>
         <td>${weightBadge}</td>
       </tr>
       ${meaningRow}`;
@@ -1306,7 +1245,7 @@ function renderCompatibilityData(data) {
     entries
       .map(
         (e) =>
-          `<tr><td>${planetLabel(e.planet)}</td><td>Maison ${e.house}</td><td>${e.key_meaning || "—"}</td></tr>`
+          `<tr><td>${planetLabel(e.planet)}</td><td>${t("house_prefix")} ${e.house}</td><td>${e.key_meaning || "—"}</td></tr>`
       )
       .join("");
 
@@ -1316,36 +1255,36 @@ function renderCompatibilityData(data) {
 
   panel.innerHTML = `
     ${timeWarning}
-    <h3>Aspects croisés (${data.inter_aspects.length})</h3>
-    <p class="reading-section-intro">Triés par importance pour une relation ${COMPAT_MODE_LABELS_FR[data.relationship_mode] || data.relationship_mode} : les plus significatifs apparaissent en premier.</p>
+    <h3>${t("compat_cross_aspects_title")} (${data.inter_aspects.length})</h3>
+    <p class="reading-section-intro">${tf("compat_sorted_by_importance", { mode: pick(COMPAT_MODE_LABELS[data.relationship_mode]) || data.relationship_mode })}</p>
     <table>
-      <thead><tr><th>Planète (vous)</th><th>Aspect</th><th>Planète (l'autre)</th><th>Orbe</th><th>Poids</th></tr></thead>
+      <thead><tr><th>${t("th_planet_you")}</th><th>${t("th_aspect")}</th><th>${t("th_planet_other")}</th><th>${t("th_orb")}</th><th>${t("th_weight")}</th></tr></thead>
       <tbody>${aspectRows}</tbody>
     </table>
 
-    <h3>Chevauchement de maisons</h3>
+    <h3>${t("compat_house_overlay_title")}</h3>
     <div class="compat-overlay-columns">
       <div>
-        <h4>Vos planètes dans les maisons de l'autre</h4>
+        <h4>${t("compat_your_planets_in_their_houses")}</h4>
         <table>
-          <thead><tr><th>Planète</th><th>Maison</th><th>Signification</th></tr></thead>
+          <thead><tr><th>${t("th_planet_generic")}</th><th>${t("th_house")}</th><th>${t("th_meaning")}</th></tr></thead>
           <tbody>${overlayRows(data.house_overlay.a_planets_in_b_houses)}</tbody>
         </table>
       </div>
       <div>
-        <h4>Les planètes de l'autre dans vos maisons</h4>
+        <h4>${t("compat_their_planets_in_your_houses")}</h4>
         <table>
-          <thead><tr><th>Planète</th><th>Maison</th><th>Signification</th></tr></thead>
+          <thead><tr><th>${t("th_planet_generic")}</th><th>${t("th_house")}</th><th>${t("th_meaning")}</th></tr></thead>
           <tbody>${overlayRows(data.house_overlay.b_planets_in_a_houses)}</tbody>
         </table>
       </div>
     </div>
 
-    <h3>Thème composite (la relation comme entité)</h3>
+    <h3>${t("compat_composite_title")}</h3>
     <table>
-      <thead><tr><th>Point</th><th>Position</th></tr></thead>
+      <thead><tr><th>${t("th_point")}</th><th>${t("th_position")}</th></tr></thead>
       <tbody>
-        <tr><td>Ascendant composite</td><td>${signLabel(data.composite_chart.ascendant.sign)} ${data.composite_chart.ascendant.degree}°</td></tr>
+        <tr><td>${t("composite_ascendant")}</td><td>${signLabel(data.composite_chart.ascendant.sign)} ${data.composite_chart.ascendant.degree}°</td></tr>
         ${compositeRows}
       </tbody>
     </table>
@@ -1388,12 +1327,12 @@ document.getElementById("b-search-city-btn").addEventListener("click", async () 
   try {
     const res = await fetch(`/api/geocode?query=${encodeURIComponent(query)}`);
     if (!res.ok) {
-      resultsDiv.innerHTML = `<p class="error">Recherche indisponible — saisissez les coordonnées manuellement.</p>`;
+      resultsDiv.innerHTML = `<p class="error">${t("search_unavailable")}</p>`;
       return;
     }
     const locations = await res.json();
     if (locations.length === 0) {
-      resultsDiv.innerHTML = `<p>Aucun résultat. Saisissez les coordonnées manuellement.</p>`;
+      resultsDiv.innerHTML = `<p>${t("no_results")}</p>`;
       return;
     }
     locations.forEach((loc) => {
@@ -1408,7 +1347,7 @@ document.getElementById("b-search-city-btn").addEventListener("click", async () 
       resultsDiv.appendChild(item);
     });
   } catch (err) {
-    resultsDiv.innerHTML = `<p class="error">Recherche indisponible — saisissez les coordonnées manuellement.</p>`;
+    resultsDiv.innerHTML = `<p class="error">${t("search_unavailable")}</p>`;
   }
 });
 
@@ -1427,7 +1366,7 @@ document.getElementById("compat-create-chart-b-btn").addEventListener("click", a
   const birthDate = document.getElementById("b_birth_date").value;
 
   if (!birthDate || Number.isNaN(latitude) || Number.isNaN(longitude)) {
-    errorEl.textContent = "Complétez au moins la date de naissance et les coordonnées.";
+    errorEl.textContent = t("error_fill_birth_date_coords");
     return;
   }
 
@@ -1448,7 +1387,7 @@ document.getElementById("compat-create-chart-b-btn").addEventListener("click", a
   };
 
   btn.disabled = true;
-  btn.textContent = "Calcul en cours...";
+  btn.textContent = t("status_calculating");
   try {
     const res = await fetch("/api/charts", {
       method: "POST",
@@ -1457,7 +1396,7 @@ document.getElementById("compat-create-chart-b-btn").addEventListener("click", a
     });
     if (!res.ok) {
       const detail = await res.json().catch(() => ({}));
-      throw new Error(detail.detail || `Erreur ${res.status}`);
+      throw new Error(detail.detail || `${t("error_prefix")} ${res.status}`);
     }
     const newChart = await res.json();
     compatChartBId = newChart.id;
@@ -1469,7 +1408,7 @@ document.getElementById("compat-create-chart-b-btn").addEventListener("click", a
     errorEl.textContent = err.message;
   } finally {
     btn.disabled = false;
-    btn.textContent = "Calculer ce thème";
+    btn.textContent = t("btn_calculate_this_chart");
   }
 });
 
@@ -1477,21 +1416,21 @@ document.getElementById("generate-compat-reading-btn").addEventListener("click",
   const errorEl = document.getElementById("compat-reading-error");
   const outputEl = document.getElementById("compat-reading-output");
   const btn = document.getElementById("generate-compat-reading-btn");
-  const defaultLabel = "Générer la lecture de compatibilité";
+  const defaultLabel = t("btn_generate_compat_reading");
   errorEl.textContent = "";
   outputEl.innerHTML = "";
 
   if (!currentChart) {
-    errorEl.textContent = "Calculez d'abord un thème natal.";
+    errorEl.textContent = t("error_calculate_chart_first");
     return;
   }
   if (!compatChartBId) {
-    errorEl.textContent = "Sélectionnez ou créez d'abord le thème de la deuxième personne.";
+    errorEl.textContent = t("error_select_second_chart");
     return;
   }
 
   btn.disabled = true;
-  btn.textContent = "Génération en cours...";
+  btn.textContent = t("status_generating");
   try {
     const res = await fetch(`/api/charts/${currentChart.id}/readings`, {
       method: "POST",
@@ -1500,11 +1439,12 @@ document.getElementById("generate-compat-reading-btn").addEventListener("click",
         reading_type: "compatibility",
         chart_b_id: compatChartBId,
         relationship_mode: selectedCompatMode,
+        language: getLanguage(),
       }),
     });
     if (!res.ok) {
       const detail = await res.json().catch(() => ({}));
-      throw new Error(detail.detail || `Erreur ${res.status}`);
+      throw new Error(detail.detail || `${t("error_prefix")} ${res.status}`);
     }
     const reading = await res.json();
     outputEl.innerHTML =
@@ -1594,27 +1534,27 @@ document.getElementById("generate-reading-btn").addEventListener("click", async 
   outputEl.innerHTML = "";
 
   if (!currentChart) {
-    errorEl.textContent = "Calculez d'abord un thème natal.";
+    errorEl.textContent = t("error_calculate_chart_first");
     return;
   }
 
   const focusAreas = Array.from(document.querySelectorAll('input[name="focus"]:checked')).map((c) => c.value);
   if (focusAreas.length === 0) {
-    errorEl.textContent = "Sélectionnez au moins une zone.";
+    errorEl.textContent = t("error_select_focus_area");
     return;
   }
 
   btn.disabled = true;
-  btn.textContent = "Génération en cours...";
+  btn.textContent = t("status_generating");
   try {
     const res = await fetch(`/api/charts/${currentChart.id}/readings`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ reading_type: "global", focus_areas: focusAreas }),
+      body: JSON.stringify({ reading_type: "global", focus_areas: focusAreas, language: getLanguage() }),
     });
     if (!res.ok) {
       const detail = await res.json().catch(() => ({}));
-      throw new Error(detail.detail || `Erreur ${res.status}`);
+      throw new Error(detail.detail || `${t("error_prefix")} ${res.status}`);
     }
     const reading = await res.json();
     outputEl.innerHTML = tinyMarkdownToHtml(reading.reading_text);
@@ -1622,7 +1562,7 @@ document.getElementById("generate-reading-btn").addEventListener("click", async 
     errorEl.textContent = err.message;
   } finally {
     btn.disabled = false;
-    btn.textContent = "Générer la lecture";
+    btn.textContent = t("btn_generate_reading");
   }
 });
 
@@ -1637,21 +1577,21 @@ async function generateSpecializedReading({ btnId, errorId, outputId, defaultLab
   outputEl.innerHTML = "";
 
   if (!currentChart) {
-    errorEl.textContent = "Calculez d'abord un thème natal.";
+    errorEl.textContent = t("error_calculate_chart_first");
     return;
   }
 
   btn.disabled = true;
-  btn.textContent = "Génération en cours...";
+  btn.textContent = t("status_generating");
   try {
     const res = await fetch(`/api/charts/${currentChart.id}/readings`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(requestBody),
+      body: JSON.stringify({ ...requestBody, language: getLanguage() }),
     });
     if (!res.ok) {
       const detail = await res.json().catch(() => ({}));
-      throw new Error(detail.detail || `Erreur ${res.status}`);
+      throw new Error(detail.detail || `${t("error_prefix")} ${res.status}`);
     }
     const reading = await res.json();
     const extraHtml = renderExtra ? renderExtra(reading) : "";
@@ -1669,7 +1609,7 @@ document.getElementById("generate-lots-reading-btn").addEventListener("click", (
     btnId: "generate-lots-reading-btn",
     errorId: "lots-reading-error",
     outputId: "lots-reading-output",
-    defaultLabel: "Générer la lecture des lots",
+    defaultLabel: t("btn_generate_lots_reading"),
     requestBody: { reading_type: "lots" },
   });
 });
@@ -1691,7 +1631,7 @@ document.getElementById("generate-zr-reading-btn").addEventListener("click", () 
   const errorEl = document.getElementById("zr-reading-error");
   const selectedLots = Array.from(document.querySelectorAll(".zr-lot-checkbox:checked")).map((el) => el.value);
   if (selectedLots.length === 0) {
-    errorEl.textContent = "Cochez au moins un lot pour générer une lecture.";
+    errorEl.textContent = t("zr_error_no_lot_selected");
     return;
   }
   errorEl.textContent = "";
@@ -1700,7 +1640,7 @@ document.getElementById("generate-zr-reading-btn").addEventListener("click", () 
     btnId: "generate-zr-reading-btn",
     errorId: "zr-reading-error",
     outputId: "zr-reading-output",
-    defaultLabel: "Générer la lecture des phases",
+    defaultLabel: t("btn_generate_zr_reading"),
     requestBody: {
       reading_type: "zodiacal_releasing",
       as_of_date: dateInput ? dateInput.value : undefined,
@@ -1716,7 +1656,7 @@ document.getElementById("generate-derived-reading-btn").addEventListener("click"
     btnId: "generate-derived-reading-btn",
     errorId: "derived-reading-error",
     outputId: "derived-reading-output",
-    defaultLabel: "Générer la lecture des maisons dérivées",
+    defaultLabel: t("btn_generate_derived_reading"),
     requestBody: { reading_type: "derived_houses", relation_key: selectedDerivedRelationKey },
   });
 });

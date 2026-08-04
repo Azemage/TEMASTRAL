@@ -10,6 +10,18 @@ Application de calcul et de lecture de thème natal :
 Stack : Python / FastAPI, SQLite (via SQLAlchemy), frontend web minimal servi par le
 backend (Jinja2 + JS vanilla), usage anonyme par session (pas de comptes au MVP).
 
+## Langues
+
+Trois langues via les drapeaux en haut de page (🇫🇷/🇬🇧/🇪🇸), persistées en local
+(`localStorage`) : l'interface (boutons, libellés, en-têtes, messages) et le vocabulaire de
+référence fermé (signes, planètes, aspects, maisons, lots, relations dérivées, axes
+thématiques) sont traduits côté client (`app/static/i18n.js`), sans toucher au calcul
+déterministe. Les lectures générées par le LLM sont paramétrées côté serveur par
+`ReadingRequest.language` (envoyé automatiquement dans la langue choisie à chaque requête de
+lecture) : le modèle rédige intégralement sa réponse dans cette langue. Reste en français pour
+l'instant : les textes narratifs longs des données de référence (ex. `meaning`/`key_meaning`
+de la synastrie, notes libres des dispositeurs) qui n'ont pas de version traduite côté serveur.
+
 ## Périmètre de ce MVP
 
 Implémenté :

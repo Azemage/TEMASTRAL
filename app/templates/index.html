@@ -8,108 +8,115 @@
 </head>
 <body>
   <header class="app-header">
-    <h1>✨ Temastral</h1>
-    <p>Calcul de thème natal (Swiss Ephemeris) &amp; lecture interprétée par IA</p>
+    <div class="app-header-row">
+      <h1 data-i18n="app_title">✨ Temastral</h1>
+      <div class="lang-switcher">
+        <button type="button" class="lang-btn" data-lang="fr" title="Français" aria-label="Français">🇫🇷</button>
+        <button type="button" class="lang-btn" data-lang="en" title="English" aria-label="English">🇬🇧</button>
+        <button type="button" class="lang-btn" data-lang="es" title="Español" aria-label="Español">🇪🇸</button>
+      </div>
+    </div>
+    <p data-i18n="app_subtitle" data-i18n-html>Calcul de thème natal (Swiss Ephemeris) &amp; lecture interprétée par IA</p>
   </header>
 
   <main>
     <section id="form-section" class="card">
-      <h2>1. Données de naissance</h2>
+      <h2 data-i18n="section1_title">1. Données de naissance</h2>
       <form id="birth-form">
         <div class="form-row">
-          <label for="subject_name">Nom (optionnel)</label>
-          <input type="text" id="subject_name" placeholder="Ex. Benoît" />
+          <label for="subject_name" data-i18n="label_name">Nom (optionnel)</label>
+          <input type="text" id="subject_name" data-i18n-placeholder="placeholder_name" placeholder="Ex. Benoît" />
         </div>
 
         <div class="form-row">
-          <label for="birth_date">Date de naissance</label>
+          <label for="birth_date" data-i18n="label_birth_date">Date de naissance</label>
           <input type="date" id="birth_date" required />
         </div>
 
         <div class="form-row">
-          <label for="birth_time">Heure de naissance</label>
+          <label for="birth_time" data-i18n="label_birth_time">Heure de naissance</label>
           <input type="time" id="birth_time" step="1" value="12:00:00" />
           <label class="checkbox-label">
             <input type="checkbox" id="time_unknown" />
-            Heure inconnue (maisons/angles approximatifs)
+            <span data-i18n="label_time_unknown">Heure inconnue (maisons/angles approximatifs)</span>
           </label>
         </div>
 
         <div class="form-row">
-          <label for="city_search">Ville de naissance</label>
+          <label for="city_search" data-i18n="label_birth_city">Ville de naissance</label>
           <div class="search-row">
-            <input type="text" id="city_search" placeholder="Ex. Lyon, France" />
-            <button type="button" id="search-city-btn">Rechercher</button>
+            <input type="text" id="city_search" data-i18n-placeholder="placeholder_city" placeholder="Ex. Lyon, France" />
+            <button type="button" id="search-city-btn" data-i18n="btn_search">Rechercher</button>
           </div>
           <div id="city-results" class="city-results"></div>
         </div>
 
         <div class="form-row triple">
           <div>
-            <label for="latitude">Latitude</label>
+            <label for="latitude" data-i18n="label_latitude">Latitude</label>
             <input type="number" step="0.0001" id="latitude" required />
           </div>
           <div>
-            <label for="longitude">Longitude</label>
+            <label for="longitude" data-i18n="label_longitude">Longitude</label>
             <input type="number" step="0.0001" id="longitude" required />
           </div>
           <div>
-            <label for="timezone">Fuseau horaire</label>
+            <label for="timezone" data-i18n="label_timezone">Fuseau horaire</label>
             <select id="timezone" required>
-              <option value="">Chargement...</option>
+              <option value="" data-i18n="loading">Chargement...</option>
             </select>
           </div>
         </div>
 
         <details>
-          <summary>Options avancées</summary>
+          <summary data-i18n="advanced_options">Options avancées</summary>
           <div class="form-row triple">
             <div>
-              <label for="house_system">Système de maisons</label>
+              <label for="house_system" data-i18n="label_house_system">Système de maisons</label>
               <select id="house_system">
-                <option value="placidus" selected>Placidus</option>
-                <option value="whole_sign">Signes intégraux</option>
-                <option value="koch">Koch</option>
-                <option value="equal">Maisons égales</option>
-                <option value="regiomontanus">Regiomontanus</option>
+                <option value="placidus" selected data-i18n="house_system_placidus">Placidus</option>
+                <option value="whole_sign" data-i18n="house_system_whole_sign">Signes intégraux</option>
+                <option value="koch" data-i18n="house_system_koch">Koch</option>
+                <option value="equal" data-i18n="house_system_equal">Maisons égales</option>
+                <option value="regiomontanus" data-i18n="house_system_regiomontanus">Regiomontanus</option>
               </select>
             </div>
             <div>
-              <label for="rulership_system">Dispositeurs</label>
+              <label for="rulership_system" data-i18n="label_rulership_system">Dispositeurs</label>
               <select id="rulership_system">
-                <option value="both" selected>Traditionnel + moderne</option>
-                <option value="traditional">Traditionnel</option>
-                <option value="modern">Moderne</option>
+                <option value="both" selected data-i18n="rulership_both">Traditionnel + moderne</option>
+                <option value="traditional" data-i18n="rulership_traditional">Traditionnel</option>
+                <option value="modern" data-i18n="rulership_modern">Moderne</option>
               </select>
             </div>
             <div>
-              <label for="optional_points">Points additionnels</label>
+              <label for="optional_points" data-i18n="label_optional_points">Points additionnels</label>
               <select id="optional_points" multiple size="4">
-                <option value="north_node" selected>Nœud Nord</option>
-                <option value="south_node" selected>Nœud Sud</option>
-                <option value="chiron">Chiron</option>
-                <option value="lilith_mean">Lilith moyenne</option>
+                <option value="north_node" selected data-i18n="point_north_node">Nœud Nord</option>
+                <option value="south_node" selected data-i18n="point_south_node">Nœud Sud</option>
+                <option value="chiron" data-i18n="point_chiron">Chiron</option>
+                <option value="lilith_mean" data-i18n="point_lilith">Lilith moyenne</option>
               </select>
             </div>
           </div>
         </details>
 
-        <button type="submit" id="submit-btn">Calculer le thème natal</button>
+        <button type="submit" id="submit-btn" data-i18n="btn_calculate_chart">Calculer le thème natal</button>
       </form>
       <p id="form-error" class="error"></p>
     </section>
 
     <section id="results-section" class="card hidden">
-      <h2>2. Thème natal</h2>
+      <h2 data-i18n="section2_title">2. Thème natal</h2>
       <div id="chart-summary"></div>
 
       <div class="tabs">
-        <button class="tab-btn active" data-tab="wheel">Roue</button>
-        <button class="tab-btn" data-tab="planets">Planètes</button>
-        <button class="tab-btn" data-tab="houses">Maisons</button>
-        <button class="tab-btn" data-tab="aspects">Aspects</button>
-        <button class="tab-btn" data-tab="balance">Éléments</button>
-        <button class="tab-btn" data-tab="dispositors">Dispositeurs</button>
+        <button class="tab-btn active" data-tab="wheel" data-i18n="tab_wheel">Roue</button>
+        <button class="tab-btn" data-tab="planets" data-i18n="tab_planets">Planètes</button>
+        <button class="tab-btn" data-tab="houses" data-i18n="tab_houses">Maisons</button>
+        <button class="tab-btn" data-tab="aspects" data-i18n="tab_aspects">Aspects</button>
+        <button class="tab-btn" data-tab="balance" data-i18n="tab_balance">Éléments</button>
+        <button class="tab-btn" data-tab="dispositors" data-i18n="tab_dispositors">Dispositeurs</button>
       </div>
 
       <div id="tab-wheel" class="tab-panel"></div>
@@ -121,45 +128,45 @@
     </section>
 
     <section id="reading-section" class="card hidden">
-      <h2>3. Lecture interprétée</h2>
-      <p class="reading-section-intro">
+      <h2 data-i18n="section3_title">3. Lecture interprétée</h2>
+      <p class="reading-section-intro" data-i18n="reading_section_intro">
         Chaque catégorie ci-dessous a son propre prompt d'interprétation, focalisé sur sa
         technique : la lecture générale ne voit que le thème de base (planètes, maisons,
         aspects, dispositeurs), pas les lots ni les maisons dérivées.
       </p>
 
       <div class="tabs reading-type-tabs">
-        <button class="reading-tab-btn active" data-reading-tab="global">Générale</button>
-        <button class="reading-tab-btn" data-reading-tab="lots">Lots</button>
-        <button class="reading-tab-btn" data-reading-tab="derived">Maisons dérivées</button>
-        <button class="reading-tab-btn" data-reading-tab="timing">Pronostic</button>
-        <button class="reading-tab-btn" data-reading-tab="compatibility">Compatibilité</button>
+        <button class="reading-tab-btn active" data-reading-tab="global" data-i18n="reading_tab_global">Générale</button>
+        <button class="reading-tab-btn" data-reading-tab="lots" data-i18n="reading_tab_lots">Lots</button>
+        <button class="reading-tab-btn" data-reading-tab="derived" data-i18n="reading_tab_derived">Maisons dérivées</button>
+        <button class="reading-tab-btn" data-reading-tab="timing" data-i18n="reading_tab_timing">Pronostic</button>
+        <button class="reading-tab-btn" data-reading-tab="compatibility" data-i18n="reading_tab_compatibility">Compatibilité</button>
       </div>
 
       <div id="reading-tab-global" class="reading-tab-panel">
         <div class="form-row">
-          <label>Zones à couvrir</label>
+          <label data-i18n="label_focus_areas">Zones à couvrir</label>
           <div class="focus-checkboxes">
-            <label><input type="checkbox" name="focus" value="general" checked /> Vue d'ensemble</label>
-            <label><input type="checkbox" name="focus" value="love" /> Amour</label>
-            <label><input type="checkbox" name="focus" value="career" /> Carrière</label>
-            <label><input type="checkbox" name="focus" value="family" /> Famille</label>
+            <label><input type="checkbox" name="focus" value="general" checked /> <span data-i18n="focus_general">Vue d'ensemble</span></label>
+            <label><input type="checkbox" name="focus" value="love" /> <span data-i18n="focus_love">Amour</span></label>
+            <label><input type="checkbox" name="focus" value="career" /> <span data-i18n="focus_career">Carrière</span></label>
+            <label><input type="checkbox" name="focus" value="family" /> <span data-i18n="focus_family">Famille</span></label>
           </div>
         </div>
-        <button id="generate-reading-btn">Générer la lecture</button>
+        <button id="generate-reading-btn" data-i18n="btn_generate_reading">Générer la lecture</button>
         <p id="reading-error" class="error"></p>
         <div id="reading-output" class="reading-output"></div>
       </div>
 
       <div id="reading-tab-lots" class="reading-tab-panel hidden">
         <div id="lots-data-panel"></div>
-        <button id="generate-lots-reading-btn">Générer la lecture des lots</button>
+        <button id="generate-lots-reading-btn" data-i18n="btn_generate_lots_reading">Générer la lecture des lots</button>
         <p id="lots-reading-error" class="error"></p>
         <div id="lots-reading-output" class="reading-output"></div>
 
         <hr class="reading-subsection-divider" />
-        <h3>Phases de vie (Libération zodiacale)</h3>
-        <p class="reading-section-intro">
+        <h3 data-i18n="zr_section_title">Phases de vie (Libération zodiacale)</h3>
+        <p class="reading-section-intro" data-i18n="zr_section_intro">
           Technique de timing hellénistique distincte des lots ci-dessus : elle découpe la vie
           en grandes périodes (L1) et sous-périodes (L2), calculées ici pour chacun des 17 lots.
           Formellement définie pour le lot Fortune et le lot Esprit ; son application aux
@@ -169,23 +176,23 @@
         <div id="zr-axis-panel"></div>
         <div id="zr-data-panel"></div>
         <div class="tabs zr-mode-tabs">
-          <button type="button" class="zr-mode-btn active" data-zr-mode="current">Vue actuelle</button>
-          <button type="button" class="zr-mode-btn" data-zr-mode="predictive">Prévisionnelle (10 ans)</button>
+          <button type="button" class="zr-mode-btn active" data-zr-mode="current" data-i18n="zr_mode_current">Vue actuelle</button>
+          <button type="button" class="zr-mode-btn" data-zr-mode="predictive" data-i18n="zr_mode_predictive">Prévisionnelle (10 ans)</button>
         </div>
-        <button id="generate-zr-reading-btn">Générer la lecture des phases</button>
+        <button id="generate-zr-reading-btn" data-i18n="btn_generate_zr_reading">Générer la lecture des phases</button>
         <p id="zr-reading-error" class="error"></p>
         <div id="zr-reading-output" class="reading-output"></div>
       </div>
 
       <div id="reading-tab-derived" class="reading-tab-panel hidden">
         <div id="derived-data-panel"></div>
-        <button id="generate-derived-reading-btn">Générer la lecture des maisons dérivées</button>
+        <button id="generate-derived-reading-btn" data-i18n="btn_generate_derived_reading">Générer la lecture des maisons dérivées</button>
         <p id="derived-reading-error" class="error"></p>
         <div id="derived-reading-output" class="reading-output"></div>
       </div>
 
       <div id="reading-tab-timing" class="reading-tab-panel hidden">
-        <p class="reading-section-intro">
+        <p class="reading-section-intro" data-i18n="timing_section_intro">
           Toutes les planètes (Lune, Mercure, Vénus, Soleil et Mars compris) sont prises en
           compte : l'horizon reste borné aux douze prochains mois, donc même les transits
           rapides restent pertinents à afficher.
@@ -193,13 +200,13 @@
         <div id="timing-data-panel"></div>
         <div class="timing-horizon-buttons">
           <button type="button" id="generate-timing-week-btn" class="timing-horizon-btn" data-horizon="week">
-            Lecture de la semaine <span class="timing-horizon-hint">(plus précise)</span>
+            <span data-i18n="timing_btn_week">Lecture de la semaine</span> <span class="timing-horizon-hint" data-i18n="timing_hint_week">(plus précise)</span>
           </button>
           <button type="button" id="generate-timing-month-btn" class="timing-horizon-btn" data-horizon="month">
-            Lecture du mois
+            <span data-i18n="timing_btn_month">Lecture du mois</span>
           </button>
           <button type="button" id="generate-timing-year-btn" class="timing-horizon-btn" data-horizon="year">
-            Lecture des 12 prochains mois <span class="timing-horizon-hint">(plus globale)</span>
+            <span data-i18n="timing_btn_year">Lecture des 12 prochains mois</span> <span class="timing-horizon-hint" data-i18n="timing_hint_year">(plus globale)</span>
           </button>
         </div>
         <p id="timing-reading-error" class="error"></p>
@@ -207,7 +214,7 @@
       </div>
 
       <div id="reading-tab-compatibility" class="reading-tab-panel hidden">
-        <p class="reading-section-intro">
+        <p class="reading-section-intro" data-i18n="compat_section_intro">
           Calcule la compatibilité entre le thème ci-dessus et celui d'une deuxième personne, à
           partir de trois techniques : aspects croisés entre les deux thèmes, chevauchement de
           maisons, et thème composite (la relation vue comme une entité à part entière). Choisissez
@@ -216,72 +223,72 @@
         </p>
 
         <div class="form-row">
-          <label>Type de relation</label>
+          <label data-i18n="label_relation_type">Type de relation</label>
           <div class="tabs compat-mode-tabs">
-            <button type="button" class="compat-mode-btn active" data-compat-mode="romantic">Amoureuse</button>
-            <button type="button" class="compat-mode-btn" data-compat-mode="friendship">Amitié</button>
-            <button type="button" class="compat-mode-btn" data-compat-mode="professional">Professionnelle</button>
+            <button type="button" class="compat-mode-btn active" data-compat-mode="romantic" data-i18n="compat_mode_romantic">Amoureuse</button>
+            <button type="button" class="compat-mode-btn" data-compat-mode="friendship" data-i18n="compat_mode_friendship">Amitié</button>
+            <button type="button" class="compat-mode-btn" data-compat-mode="professional" data-i18n="compat_mode_professional">Professionnelle</button>
           </div>
         </div>
 
         <div class="form-row">
-          <label for="compat-chart-b-select">Deuxième personne</label>
+          <label for="compat-chart-b-select" data-i18n="label_second_person">Deuxième personne</label>
           <div class="search-row">
             <select id="compat-chart-b-select">
-              <option value="">— Sélectionner une carte existante —</option>
+              <option value="" data-i18n="option_select_existing_chart">— Sélectionner une carte existante —</option>
             </select>
-            <button type="button" id="compat-new-chart-b-btn">+ Créer une nouvelle carte</button>
+            <button type="button" id="compat-new-chart-b-btn" data-i18n="btn_create_new_chart">+ Créer une nouvelle carte</button>
           </div>
         </div>
 
         <div id="compat-chart-b-form" class="hidden">
-          <h3>Données de naissance — deuxième personne</h3>
+          <h3 data-i18n="compat_second_person_title">Données de naissance — deuxième personne</h3>
           <div class="form-row">
-            <label for="b_subject_name">Nom (optionnel)</label>
-            <input type="text" id="b_subject_name" placeholder="Ex. Camille" />
+            <label for="b_subject_name" data-i18n="label_name">Nom (optionnel)</label>
+            <input type="text" id="b_subject_name" data-i18n-placeholder="placeholder_name_b" placeholder="Ex. Camille" />
           </div>
           <div class="form-row">
-            <label for="b_birth_date">Date de naissance</label>
+            <label for="b_birth_date" data-i18n="label_birth_date">Date de naissance</label>
             <input type="date" id="b_birth_date" required />
           </div>
           <div class="form-row">
-            <label for="b_birth_time">Heure de naissance</label>
+            <label for="b_birth_time" data-i18n="label_birth_time">Heure de naissance</label>
             <input type="time" id="b_birth_time" step="1" value="12:00:00" />
             <label class="checkbox-label">
               <input type="checkbox" id="b_time_unknown" />
-              Heure inconnue (maisons/angles approximatifs)
+              <span data-i18n="label_time_unknown">Heure inconnue (maisons/angles approximatifs)</span>
             </label>
           </div>
           <div class="form-row">
-            <label for="b_city_search">Ville de naissance</label>
+            <label for="b_city_search" data-i18n="label_birth_city">Ville de naissance</label>
             <div class="search-row">
-              <input type="text" id="b_city_search" placeholder="Ex. Lyon, France" />
-              <button type="button" id="b-search-city-btn">Rechercher</button>
+              <input type="text" id="b_city_search" data-i18n-placeholder="placeholder_city" placeholder="Ex. Lyon, France" />
+              <button type="button" id="b-search-city-btn" data-i18n="btn_search">Rechercher</button>
             </div>
             <div id="b-city-results" class="city-results"></div>
           </div>
           <div class="form-row triple">
             <div>
-              <label for="b_latitude">Latitude</label>
+              <label for="b_latitude" data-i18n="label_latitude">Latitude</label>
               <input type="number" step="0.0001" id="b_latitude" required />
             </div>
             <div>
-              <label for="b_longitude">Longitude</label>
+              <label for="b_longitude" data-i18n="label_longitude">Longitude</label>
               <input type="number" step="0.0001" id="b_longitude" required />
             </div>
             <div>
-              <label for="b_timezone">Fuseau horaire</label>
+              <label for="b_timezone" data-i18n="label_timezone">Fuseau horaire</label>
               <select id="b_timezone" required>
-                <option value="">Chargement...</option>
+                <option value="" data-i18n="loading">Chargement...</option>
               </select>
             </div>
           </div>
-          <button type="button" id="compat-create-chart-b-btn">Calculer ce thème</button>
+          <button type="button" id="compat-create-chart-b-btn" data-i18n="btn_calculate_this_chart">Calculer ce thème</button>
           <p id="compat-chart-b-error" class="error"></p>
         </div>
 
         <div id="compat-data-panel"></div>
-        <button id="generate-compat-reading-btn">Générer la lecture de compatibilité</button>
+        <button id="generate-compat-reading-btn" data-i18n="btn_generate_compat_reading">Générer la lecture de compatibilité</button>
         <p id="compat-reading-error" class="error"></p>
         <div id="compat-reading-output" class="reading-output"></div>
       </div>
@@ -289,9 +296,10 @@
   </main>
 
   <footer>
-    <p>Calculs déterministes (Swiss Ephemeris) — l'interprétation est générée par un modèle de langage et doit être lue comme un éclairage, pas une prédiction absolue.</p>
+    <p data-i18n="footer_note">Calculs déterministes (Swiss Ephemeris) — l'interprétation est générée par un modèle de langage et doit être lue comme un éclairage, pas une prédiction absolue.</p>
   </footer>
 
+  <script src="/static/i18n.js"></script>
   <script src="/static/app.js"></script>
 </body>
 </html>

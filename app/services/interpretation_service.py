@@ -767,9 +767,14 @@ def _identity_context(chart_data: dict) -> dict:
     }
 
 
+_LANGUAGE_NAMES = {"fr": "français", "en": "anglais (English)", "es": "espagnol (español)"}
+
+
 def _build_system_prompt(request: schemas.ReadingRequest) -> str:
+    language_name = _LANGUAGE_NAMES.get(request.language, request.language)
     base = f"""Tu es un astrologue professionnel, expérimenté et bienveillant, qui rédige des \
-lectures de thème natal en {request.language}.
+lectures de thème natal en {language_name}. Rédige INTÉGRALEMENT ta réponse dans cette langue \
+(y compris les titres de section), même si ces instructions te sont données en français.
 
 RÈGLES IMPÉRATIVES :
 1. Tu reçois dans le message utilisateur un JSON contenant les données déjà calculées \

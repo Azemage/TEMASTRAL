@@ -339,6 +339,15 @@ def test_specialized_system_prompts_are_distinct_per_reading_type():
     assert "COMPATIBILITÉ" in prompts["compatibility"]
 
 
+def test_system_prompt_maps_language_code_to_full_name():
+    fr_prompt = interpretation_service._build_system_prompt(schemas.ReadingRequest(reading_type="global", language="fr"))
+    en_prompt = interpretation_service._build_system_prompt(schemas.ReadingRequest(reading_type="global", language="en"))
+    es_prompt = interpretation_service._build_system_prompt(schemas.ReadingRequest(reading_type="global", language="es"))
+    assert "en français" in fr_prompt
+    assert "en anglais (English)" in en_prompt
+    assert "en espagnol (español)" in es_prompt
+
+
 def test_compatibility_reading_payload_includes_both_persons_and_synastry_data():
     chart_a = _make_chart()
     chart_b = _make_chart_b()
