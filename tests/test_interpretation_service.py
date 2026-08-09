@@ -1,5 +1,6 @@
 import asyncio
-from datetime import date
+import json
+from datetime import date, time
 
 from app import schemas
 from app.config import Settings
@@ -10,6 +11,8 @@ from app.services import interpretation_service
 class _FakeChart:
     relationship_to_user = "self"
     birth_time_known = True
+    birth_time = time(14, 32, 0)
+    birth_timezone = "Europe/Paris"
     birth_country = "France"
     house_system = "placidus"
     zodiac_type = "tropical"
@@ -696,3 +699,47 @@ def test_select_significant_forecast_windows_keeps_closest_and_sorts_chronologic
     selected = interpretation_service._select_significant_forecast_windows(windows, max_count=2)
     assert [w["planet"] for w in selected] == ["Venus", "Mars"]  # les 2 plus proches
     assert [w["start_date"] for w in selected] == sorted(w["start_date"] for w in selected)
+
+
+def test_all_reading_type_payloads_are_strictly_json_serializable():
+    """request_payload est stocké dans une colonne JSON (SavedReading, SQLAlchemy/SQLite) avec le
+    sérialiseur JSON par défaut (pas de `default=str`) : tout objet non nativement sérialisable
+    (ex. `datetime.date`) glissé dans le payload par une branche de _build_user_payload ferait
+    échouer db.commit() APRÈS l'appel LLM déjà payé, au lieu d'une erreur propre en amont — c'est
+    exactement le bug qui affectait 'astrocartography_forecast' (dates non converties en ISO).
+    Ce test couvre tous les types de lecture avec des dates fournies là où c'est pertinent, pour
+    empêcher toute régression de ce genre à l'avenir."""
+    chart = _make_chart()
+    chart_b = _make_chart_b()
+    requests_by_type = [
+        (schemas.ReadingRequest(reading_type="global", focus_areas=["general"]), None),
+        (schemas.ReadingRequest(reading_type="lots"), None),
+        (schemas.ReadingRequest(reading_type="derived_houses"), None),
+        (schemas.ReadingRequest(reading_type="timing", as_of_date=date(2026, 1, 1)), None),
+        (schemas.ReadingRequest(reading_type="zodiacal_releasing", as_of_date=date(2026, 1, 1)), None),
+        (
+            schemas.ReadingRequest(reading_type="compatibility", chart_b_id=chart_b.id, relationship_mode="romantic"),
+            chart_b,
+        ),
+        (schemas.ReadingRequest(reading_type="astrocartography", astro_map_mode="natal"), None),
+        (
+            schemas.ReadingRequest(reading_type="astrocartography", astro_map_mode="transit", as_of_date=date(2026, 1, 1)),
+            None,
+        ),
+        (
+            schemas.ReadingRequest(
+                reading_type="astrocartography_forecast",
+                astro_focus_latitude=48.8566,
+                astro_focus_longitude=2.3522,
+                forecast_start_date=date(2024, 1, 1),
+                forecast_years=5,
+            ),
+            None,
+        ),
+    ]
+    for request, cb in requests_by_type:
+        payload = interpretation_service._build_user_payload(chart, request, chart_b=cb)
+        try:
+            json.dumps(payload)  # pas de default=str : mêmes contraintes qu'une colonne JSON SQLAlchemy
+        except TypeError as exc:
+            raise AssertionError(f"payload non JSON-sérialisable pour reading_type={request.reading_type!r} : {exc}")

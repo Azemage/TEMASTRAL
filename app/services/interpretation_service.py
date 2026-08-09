@@ -1097,10 +1097,17 @@ def _build_user_payload(
         payload["identity"] = _identity_context(chart_data)
         payload["focus_location"] = {"label": focus_label, "latitude": focus_lat, "longitude": focus_lon}
         payload["forecast_period"] = {
-            "start_date": start_date, "end_date": end_date, "years": years, "threshold_km": threshold_km
+            "start_date": start_date.isoformat(), "end_date": end_date.isoformat(), "years": years, "threshold_km": threshold_km
         }
+        # request_payload est ensuite stocké tel quel dans une colonne JSON (SavedReading) : les
+        # dates doivent être des chaînes ISO, pas des objets `date` (non sérialisables par le
+        # json.dumps par défaut de SQLAlchemy, ce qui ferait échouer le commit après coup, une
+        # fois l'appel LLM déjà payé).
         payload["forecast_windows"] = [
-            {**window, "meaning": significations.get(window["planet"], {}).get(window["line_type"], "")}
+            {
+                **{k: (v.isoformat() if isinstance(v, date_type) else v) for k, v in window.items()},
+                "meaning": significations.get(window["planet"], {}).get(window["line_type"], ""),
+            }
             for window in significant_windows
         ]
         payload["total_windows_found"] = len(windows)
