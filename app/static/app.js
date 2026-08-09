@@ -302,8 +302,11 @@ function buildWheelSVG(data, { showMinorAspects }) {
     const angle = longitudeToWheelAngle(house.absolute_longitude, ascendant);
     const inner = polarToXY(cx, cy, 0, angle);
     const outer = polarToXY(cx, cy, rZodiacInner, angle);
+    // Traits nettement plus marqués que les pointillés fins de position des planètes
+    // (`stroke-dasharray="2,2"`, couleur `#4a4d6c` plus bas) : sans ce contraste, les deux se
+    // confondaient facilement à l'œil. Les 4 axes (ASC/DSC/MC/IC) ressortent encore davantage.
     const isAngular = [1, 4, 7, 10].includes(house.number);
-    housesSvg += `<line x1="${inner.x.toFixed(2)}" y1="${inner.y.toFixed(2)}" x2="${outer.x.toFixed(2)}" y2="${outer.y.toFixed(2)}" stroke="${isAngular ? "#9a9cbd" : "#3a3d5c"}" stroke-width="${isAngular ? 1.5 : 1}" />`;
+    housesSvg += `<line x1="${inner.x.toFixed(2)}" y1="${inner.y.toFixed(2)}" x2="${outer.x.toFixed(2)}" y2="${outer.y.toFixed(2)}" stroke="${isAngular ? "#f1f2ff" : "#6d70a8"}" stroke-width="${isAngular ? 2.4 : 1.4}" />`;
 
     const next = data.houses[(i + 1) % 12];
     const nextAngle = angle + forwardOffset(house.absolute_longitude, next.absolute_longitude);
@@ -321,6 +324,20 @@ function buildWheelSVG(data, { showMinorAspects }) {
   const sortedPlanets = [...data.planets].sort(
     (a, b) => longitudeToWheelAngle(a.absolute_longitude, ascendant) - longitudeToWheelAngle(b.absolute_longitude, ascendant)
   );
+  // Carte planète -> aspects la concernant, pour l'afficher dans l'info-bulle au survol
+  // (même filtre showMinorAspects que les traits effectivement dessinés, pour rester cohérent
+  // avec ce que l'utilisateur voit sur la roue).
+  const aspectsByPlanet = {};
+  data.aspects.forEach((aspect) => {
+    if (!showMinorAspects && !MAJOR_ASPECTS.has(aspect.type)) return;
+    const describe = (otherPlanet) => ({
+      orb: aspect.orb,
+      text: `${aspectTypeLabel(aspect.type)} ${planetLabel(otherPlanet)} (${t("orb_prefix")} ${aspect.orb}°)`,
+    });
+    (aspectsByPlanet[aspect.planet1] ||= []).push(describe(aspect.planet2));
+    (aspectsByPlanet[aspect.planet2] ||= []).push(describe(aspect.planet1));
+  });
+
   let lastAngle = null;
   let lane = 0;
   let planetsSvg = "";
@@ -340,8 +357,11 @@ function buildWheelSVG(data, { showMinorAspects }) {
     const tickOuter = polarToXY(cx, cy, rZodiacInner, trueAngle);
     planetPoints[planet.name] = polarToXY(cx, cy, rAspectCircle, trueAngle);
 
+    const planetAspects = (aspectsByPlanet[planet.name] || []).sort((a, b) => a.orb - b.orb);
+    const aspectsLines = planetAspects.length ? "\n" + planetAspects.map((a) => a.text).join("\n") : "";
     const planetTooltip = escapeHtml(
-      `${planetLabel(planet.name)} — ${signLabel(planet.sign)} ${planet.degree}° — ${t("house_prefix")} ${planet.house ?? "—"}${planet.retrograde ? " · " + t("retrograde") : ""}`
+      `${planetLabel(planet.name)} — ${signLabel(planet.sign)} ${planet.degree}° — ${t("house_prefix")} ${planet.house ?? "—"}${planet.retrograde ? " · " + t("retrograde") : ""}` +
+        aspectsLines
     );
 
     planetsSvg += `<line x1="${tickInner.x.toFixed(2)}" y1="${tickInner.y.toFixed(2)}" x2="${tickOuter.x.toFixed(2)}" y2="${tickOuter.y.toFixed(2)}" stroke="#4a4d6c" stroke-width="0.75" stroke-dasharray="2,2" />`;
@@ -425,11 +445,14 @@ function attachWheelTooltip(wrapper) {
     tooltip.textContent = target.getAttribute("data-tooltip");
     tooltip.classList.remove("hidden");
     const rect = wrapper.getBoundingClientRect();
+    const tooltipRect = tooltip.getBoundingClientRect();
     let left = e.clientX - rect.left + 16;
     let top = e.clientY - rect.top + 16;
-    // Évite que l'info-bulle ne déborde du cadre à droite/en bas.
-    if (left + 260 > rect.width) left = e.clientX - rect.left - 270;
-    if (top + 50 > rect.height) top = e.clientY - rect.top - 50;
+    // Évite que l'info-bulle ne déborde du cadre à droite/en bas — hauteur mesurée dynamiquement
+    // (pas une constante fixe) car le survol d'une planète avec plusieurs aspects peut afficher
+    // une info-bulle sur de nombreuses lignes.
+    if (left + tooltipRect.width > rect.width) left = e.clientX - rect.left - tooltipRect.width - 10;
+    if (top + tooltipRect.height > rect.height) top = e.clientY - rect.top - tooltipRect.height - 10;
     tooltip.style.left = `${left}px`;
     tooltip.style.top = `${top}px`;
   });
