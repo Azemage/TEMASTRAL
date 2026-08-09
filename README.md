@@ -90,8 +90,9 @@ Implémenté :
   impression interprétative de synthèse, pas un score scientifique. Le mode personne/entreprise
   n'est pas encore implémenté (nécessite un thème d'entreprise dédié, cf. section V2 de la spec)
 - Astrocartographie & cyclocartographie, dans une partie séparée du thème natal et de la
-  lecture interprétée : projette sur une carte du monde (SVG, projection équirectangulaire)
-  les lignes ASC/DC/MC/IC des 10 planètes classiques — les lieux où chacune est angulaire.
+  lecture interprétée : projette sur une carte du monde (SVG, projection équirectangulaire,
+  contours des terres émergées `app/static/world_land.json`, Natural Earth 110m — domaine
+  public) les lignes ASC/DC/MC/IC des 10 planètes classiques — les lieux où chacune est angulaire.
   Deux variantes : **natale** (lignes fixes calculées à l'instant de naissance, mises en cache
   par thème, jamais recalculées) et **cyclocartographie** (lignes de transit reflétant les
   positions planétaires actuelles, calculées une fois par jour et partagées par tous les

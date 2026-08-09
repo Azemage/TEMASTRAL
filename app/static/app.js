@@ -1721,6 +1721,40 @@ function astroLatToY(lat, height) {
   return ((90 - lat) / 180) * height;
 }
 
+// Contours des terres émergées (Natural Earth 110m, domaine public), pour que les lignes
+// d'astrocartographie s'affichent sur une vraie carte du monde plutôt que sur une simple
+// grille. Chargé une seule fois puis mis en cache — fichier statique auto-hébergé, aucune
+// dépendance externe au moment de l'affichage.
+let worldLandRings = [];
+let worldLandLoaded = false;
+
+async function loadWorldLandData() {
+  if (worldLandLoaded) return worldLandRings;
+  try {
+    const res = await fetch("/static/world_land.json");
+    worldLandRings = await res.json();
+  } catch (err) {
+    worldLandRings = [];
+  }
+  worldLandLoaded = true;
+  return worldLandRings;
+}
+
+function buildWorldLandPathData(width, height) {
+  // Chaque anneau (contour d'une masse continentale ou d'une île) est projeté et fermé
+  // directement, sans découpage à l'antiméridien : aucun contour de ce jeu de données ne le
+  // traverse (l'Antarctique, seul cas concerné, est déjà remplacé par une bande polaire dont
+  // les bords -180/180 sont volontaires, voir le script de génération de world_land.json).
+  return worldLandRings
+    .map(
+      (ring) =>
+        ring
+          .map((p, i) => `${i === 0 ? "M" : "L"} ${astroLonToX(p[0], width).toFixed(1)} ${astroLatToY(p[1], height).toFixed(1)}`)
+          .join(" ") + " Z"
+    )
+    .join(" ");
+}
+
 // Une ligne ASC/DC peut franchir la ligne de changement de date (±180°) : sans ce découpage,
 // le tracé traverserait la carte à l'horizontale au lieu de "sortir" d'un bord et "rentrer"
 // de l'autre.
@@ -1741,14 +1775,15 @@ function splitAstroLineAtDateLine(points) {
 function buildAstroMapSVG(lines, savedLocations) {
   const width = 720;
   const height = 360;
+  const landPath = buildWorldLandPathData(width, height);
   let grid = "";
   for (let lon = -180; lon <= 180; lon += 30) {
     const x = astroLonToX(lon, width);
-    grid += `<line x1="${x.toFixed(1)}" y1="0" x2="${x.toFixed(1)}" y2="${height}" stroke="#2c2f4a" stroke-width="${lon === 0 ? 1 : 0.5}" />`;
+    grid += `<line x1="${x.toFixed(1)}" y1="0" x2="${x.toFixed(1)}" y2="${height}" stroke="#3a3f66" stroke-width="${lon === 0 ? 1 : 0.5}" stroke-opacity="0.5" />`;
   }
   for (let lat = -90; lat <= 90; lat += 30) {
     const y = astroLatToY(lat, height);
-    grid += `<line x1="0" y1="${y.toFixed(1)}" x2="${width}" y2="${y.toFixed(1)}" stroke="#2c2f4a" stroke-width="${lat === 0 ? 1 : 0.5}" />`;
+    grid += `<line x1="0" y1="${y.toFixed(1)}" x2="${width}" y2="${y.toFixed(1)}" stroke="#3a3f66" stroke-width="${lat === 0 ? 1 : 0.5}" stroke-opacity="0.5" />`;
   }
 
   let linesSvg = "";
@@ -1779,7 +1814,8 @@ function buildAstroMapSVG(lines, savedLocations) {
 
   return `
     <svg viewBox="0 0 ${width} ${height}" class="astro-map-svg" xmlns="http://www.w3.org/2000/svg">
-      <rect x="0" y="0" width="${width}" height="${height}" fill="#12152a" />
+      <rect x="0" y="0" width="${width}" height="${height}" fill="#10142a" />
+      <path d="${landPath}" fill="#2a3160" stroke="#454d8a" stroke-width="0.6" fill-rule="evenodd" />
       ${grid}
       ${linesSvg}
       ${markersSvg}
@@ -1844,8 +1880,10 @@ async function loadAstroLines(mode) {
   const panel = document.getElementById("astro-map-panel");
   panel.innerHTML = `<p>${t("status_computing_astro")}</p>`;
   try {
-    const url = mode === "transit" ? "/api/astrocartography/transit" : `/api/charts/${currentChart.id}/astrocartography`;
-    const res = await fetch(url);
+    const [_land, res] = await Promise.all([
+      loadWorldLandData(),
+      fetch(mode === "transit" ? "/api/astrocartography/transit" : `/api/charts/${currentChart.id}/astrocartography`),
+    ]);
     if (!res.ok) throw new Error(`${t("error_prefix")} ${res.status}`);
     const data = await res.json();
     astroLinesCache[mode] = data.lines;
