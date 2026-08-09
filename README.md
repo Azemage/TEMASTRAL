@@ -114,7 +114,17 @@ Implémenté :
   passe à proximité (`GET /api/astrocartography/location-forecast`), regroupées par
   planète/type de ligne avec date de pic de proximité — la Lune est exclue par défaut (sa ligne
   de MC balaie ~12°/jour, trop de fenêtres courtes sur un horizon pluriannuel pour être
-  pertinente) mais reste sélectionnable explicitement
+  pertinente) mais reste sélectionnable explicitement. **Villes intéressantes suggérées
+  automatiquement** (mode natal) : parmi ~240 grandes villes mondiales (Natural Earth 110m
+  populated places, domaine public), celles proches de plusieurs lignes natales et/ou d'un
+  croisement de deux lignes planétaires distinctes sont détectées et classées par score
+  déterministe, puis affichées à la fois en liste et sous forme de repères losange sur la carte
+  (`GET /api/charts/{id}/astrocartography/interesting-cities`). Un croisement de lignes est ici
+  une approximation cartographique des *parans* traditionnels : le point où deux courbes de
+  planètes différentes se croisent effectivement sur la projection (interpolation linéaire entre
+  échantillons de latitude consécutifs), pas le calcul astronomique classique par latitude
+  d'angularité simultanée — voir `advanced_technique_parans` dans les significations pour la
+  distinction
 - Lecture interprétée par l'API Anthropic avec **prompt dédié par catégorie** : lecture
   générale (thème de base uniquement — planètes/maisons/aspects/dispositeurs, sans les lots
   ni les maisons dérivées), et six lectures spécialisées (Lots, Maisons dérivées, Timing,
@@ -203,6 +213,7 @@ Principe directeur repris du cahier des charges : tout ce qui est dans `app/core
 | POST/GET | `/api/charts/{id}/saved-locations` | Crée/liste les lieux sauvegardés (ville, coordonnées) avec l'analyse déterministe des lignes natales à proximité (distance orthodromique) |
 | DELETE | `/api/saved-locations/{id}` | Supprime un lieu sauvegardé |
 | GET | `/api/astrocartography/location-forecast?latitude=...&longitude=...&start_date=YYYY-MM-DD&years=10&planets=...&line_types=...&threshold_km=300&step_days=3` | Prévision multi-années pour un lieu fixe : fenêtres de temps où une ligne de transit passe à proximité, groupées par planète/type de ligne (`start_date`/`years`/`threshold_km`/`step_days` optionnels ; `planets`/`line_types` listes séparées par des virgules, défaut toutes sauf la Lune / ASC,DC,MC,IC) |
+| GET | `/api/charts/{id}/astrocartography/interesting-cities?threshold_km=300&top_n=12` | Villes suggérées automatiquement (parmi les grandes villes mondiales), classées par score de proximité aux lignes natales et aux croisements de lignes |
 | GET | `/api/reference/astrocartography-significations` | Significations par planète et type de ligne (ASC/DC/MC/IC) utilisées par le prompt LLM |
 | GET | `/api/reference/config` | Options de configuration (systèmes de maisons, dispositeurs, points optionnels) |
 | GET | `/api/reference/timezones` | Liste des ~490 fuseaux horaires IANA canoniques |

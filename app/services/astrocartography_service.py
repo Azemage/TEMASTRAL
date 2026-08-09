@@ -11,15 +11,18 @@ from __future__ import annotations
 from datetime import date as date_type
 from datetime import datetime, timedelta, timezone
 
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app import models
-from app.core import ephemeris
+from app.core import ephemeris, reference_data
 from app.core.astrocartography import (
     ASTROCARTOGRAPHY_PLANETS,
     LINE_TYPES,
     analyze_nearby_lines,
+    compute_all_crossings,
     compute_astrocartography_lines,
+    find_interesting_cities,
     haversine_km,
     line_longitude_at_latitude,
 )
@@ -62,13 +65,40 @@ def get_or_compute_natal_lines(db: Session, chart: models.NatalChart) -> list[mo
         for line in compute_lines_for_jd(jd_ut)
     ]
     db.add_all(rows)
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError:
+        # Une requête concurrente pour ce même thème a gagné la course et inséré les lignes en
+        # premier (contrainte UNIQUE natal_chart_id+planet+line_type) : on abandonne notre
+        # insertion et on relit le cache qu'elle vient de remplir.
+        db.rollback()
+        return (
+            db.query(models.NatalAstrocartographyLine)
+            .filter(models.NatalAstrocartographyLine.natal_chart_id == chart.id)
+            .order_by(models.NatalAstrocartographyLine.planet, models.NatalAstrocartographyLine.line_type)
+            .all()
+        )
     for row in rows:
         db.refresh(row)
     # Même ordre que la branche de lecture en cache ci-dessus (order_by planet, line_type),
     # pour que la réponse ne dépende pas de si c'est le premier ou un appel ultérieur.
     rows.sort(key=lambda r: (r.planet, r.line_type))
     return rows
+
+
+def compute_interesting_cities_for_chart(
+    db: Session, chart: models.NatalChart, threshold_km: float = 300.0, top_n: int = 12
+) -> list[dict]:
+    """Suggère automatiquement, parmi les grandes villes mondiales, celles au profil
+    astrocartographique le plus marqué pour ce thème natal : proches de plusieurs lignes
+    planétaires et/ou d'un croisement de lignes (voir find_interesting_cities)."""
+    natal_lines = get_or_compute_natal_lines(db, chart)
+    lines_as_dicts = [
+        {"planet": line.planet, "line_type": line.line_type, "line_points": line.line_points} for line in natal_lines
+    ]
+    crossings = compute_all_crossings(lines_as_dicts)
+    cities = reference_data.world_cities()
+    return find_interesting_cities(lines_as_dicts, crossings, cities, threshold_km=threshold_km, top_n=top_n)
 
 
 def get_or_compute_transit_lines(db: Session, as_of_date: date_type | None = None) -> list[models.GlobalTransitLinesCache]:
@@ -90,7 +120,18 @@ def get_or_compute_transit_lines(db: Session, as_of_date: date_type | None = Non
         for line in compute_lines_for_jd(jd_ut)
     ]
     db.add_all(rows)
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError:
+        # Cache partagé par tous les utilisateurs : une autre requête concurrente pour la même
+        # date a déjà inséré les lignes en premier. On relit son résultat plutôt que d'échouer.
+        db.rollback()
+        return (
+            db.query(models.GlobalTransitLinesCache)
+            .filter(models.GlobalTransitLinesCache.calculation_date == calc_date)
+            .order_by(models.GlobalTransitLinesCache.planet, models.GlobalTransitLinesCache.line_type)
+            .all()
+        )
     for row in rows:
         db.refresh(row)
     rows.sort(key=lambda r: (r.planet, r.line_type))

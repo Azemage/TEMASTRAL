@@ -833,4 +833,21 @@ const UI_TEXT = {
   astro_forecast_col_period: { fr: "Période", en: "Period", es: "Período" },
   astro_forecast_col_peak: { fr: "Pic de proximité", en: "Closest approach", es: "Máxima proximidad" },
   astro_forecast_col_distance: { fr: "Distance", en: "Distance", es: "Distancia" },
+  astro_interesting_cities_title: {
+    fr: "Villes intéressantes suggérées",
+    en: "Suggested interesting cities",
+    es: "Ciudades interesantes sugeridas",
+  },
+  astro_interesting_cities_intro: {
+    fr: "Parmi les grandes villes mondiales, celles où plusieurs lignes natales passent à proximité ou se croisent — suggestion automatique, visible sur la carte (mode natal).",
+    en: "Among major world cities, the ones where several natal lines pass nearby or cross — automatic suggestion, shown on the map (natal mode).",
+    es: "Entre las principales ciudades del mundo, aquellas donde varias líneas natales pasan cerca o se cruzan — sugerencia automática, visible en el mapa (modo natal).",
+  },
+  astro_no_interesting_cities: {
+    fr: "Aucune ville marquante trouvée avec ce seuil.",
+    en: "No standout city found with this threshold.",
+    es: "No se encontró ninguna ciudad destacada con este umbral.",
+  },
+  astro_score_label: { fr: "Score :", en: "Score:", es: "Puntuación:" },
+  astro_crossings_label: { fr: "Croisements :", en: "Crossings:", es: "Cruces:" },
 };

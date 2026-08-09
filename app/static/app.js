@@ -1704,11 +1704,13 @@ let astroSelectedPlanets = new Set(ASTROCARTOGRAPHY_PLANETS);
 let astroSelectedLineTypes = new Set(["MC", "IC"]);
 let astroSavedLocations = [];
 let astroFocusLocation = null; // {label, latitude, longitude} — null = lieu de naissance (défaut serveur)
+let astroInterestingCities = []; // villes suggérées automatiquement (proches de lignes fortes/croisements), mode natal uniquement
 
 function resetAstrocartographyStateForNewChart() {
   astroLinesCache = { natal: null, transit: null };
   astroSavedLocations = [];
   astroFocusLocation = null;
+  astroInterestingCities = [];
   astroTransitDate = null;
   const dateInput = document.getElementById("astro-transit-date");
   if (dateInput) dateInput.value = "";
@@ -1716,8 +1718,13 @@ function resetAstrocartographyStateForNewChart() {
   if (forecastResults) forecastResults.innerHTML = "";
   const forecastError = document.getElementById("astro-forecast-error");
   if (forecastError) forecastError.textContent = "";
+  const citiesList = document.getElementById("astro-interesting-cities-list");
+  if (citiesList) citiesList.innerHTML = "";
+  const citiesError = document.getElementById("astro-interesting-cities-error");
+  if (citiesError) citiesError.textContent = "";
   loadAstroLines(selectedAstroMode);
   loadAstroSavedLocations();
+  loadAstroInterestingCities();
 }
 
 function astroLonToX(lon, width) {
@@ -1779,7 +1786,11 @@ function splitAstroLineAtDateLine(points) {
   return segments;
 }
 
-function buildAstroMapSVG(lines, savedLocations) {
+function diamondPoints(cx, cy, r) {
+  return `${cx},${(cy - r).toFixed(1)} ${(cx + r).toFixed(1)},${cy} ${cx},${(cy + r).toFixed(1)} ${(cx - r).toFixed(1)},${cy}`;
+}
+
+function buildAstroMapSVG(lines, savedLocations, interestingCities) {
   const width = 720;
   const height = 360;
   const landPath = buildWorldLandPathData(width, height);
@@ -1812,6 +1823,12 @@ function buildAstroMapSVG(lines, savedLocations) {
     });
 
   let markersSvg = "";
+  (interestingCities || []).forEach((c) => {
+    const x = astroLonToX(c.longitude, width);
+    const y = astroLatToY(c.latitude, height);
+    const tooltip = escapeHtml(`${c.name}, ${c.country} — ${t("astro_score_label")} ${c.score}`);
+    markersSvg += `<g class="wheel-hoverable" data-tooltip="${tooltip}"><polygon points="${diamondPoints(x, y, 5)}" fill="#ffd24d" stroke="#12152a" stroke-width="1.2" /></g>`;
+  });
   (savedLocations || []).forEach((loc) => {
     const x = astroLonToX(loc.longitude, width);
     const y = astroLatToY(loc.latitude, height);
@@ -1859,12 +1876,16 @@ function renderAstroMapPanel(lines) {
         ${lineTypeCheckboxes}
       </div>
     </div>
-    <div class="astro-map-wrapper">${buildAstroMapSVG(lines, astroSavedLocations)}</div>
+    <div class="astro-map-wrapper">${buildAstroMapSVG(lines, astroSavedLocations, selectedAstroMode === "natal" ? astroInterestingCities : [])}</div>
   `;
   attachWheelTooltip(panel.querySelector(".astro-map-wrapper"));
 
   const redraw = () => {
-    panel.querySelector(".astro-map-wrapper").innerHTML = buildAstroMapSVG(lines, astroSavedLocations);
+    panel.querySelector(".astro-map-wrapper").innerHTML = buildAstroMapSVG(
+      lines,
+      astroSavedLocations,
+      selectedAstroMode === "natal" ? astroInterestingCities : []
+    );
   };
   panel.querySelectorAll(".astro-planet-checkbox").forEach((cb) => {
     cb.addEventListener("change", () => {
@@ -1977,6 +1998,47 @@ function renderAstroSavedLocationsList() {
       renderAstroSavedLocationsList();
     });
   });
+}
+
+function renderAstroInterestingCitiesList() {
+  const container = document.getElementById("astro-interesting-cities-list");
+  if (!container) return;
+  if (astroInterestingCities.length === 0) {
+    container.innerHTML = `<p>${t("astro_no_interesting_cities")}</p>`;
+    return;
+  }
+  container.innerHTML = astroInterestingCities
+    .map((c) => {
+      const linesText = c.nearby_lines
+        .map((n) => `${planetLabel(n.planet)} ${astroLineTypeLabel(n.line_type)} (${n.distance_km} km)`)
+        .join(", ");
+      const crossingsText = c.nearby_crossings
+        .map((cr) => `${planetLabel(cr.planet_a)} × ${planetLabel(cr.planet_b)} (${cr.distance_km} km)`)
+        .join(", ");
+      return `
+      <div class="astro-location-card">
+        <div class="astro-location-header">
+          <strong>${escapeHtml(c.name)}, ${escapeHtml(c.country)}</strong>
+          <span class="astro-city-score">${t("astro_score_label")} ${c.score}</span>
+        </div>
+        ${linesText ? `<p class="astro-city-detail">${escapeHtml(linesText)}</p>` : ""}
+        ${crossingsText ? `<p class="astro-city-detail astro-city-crossings">${t("astro_crossings_label")} ${escapeHtml(crossingsText)}</p>` : ""}
+      </div>`;
+    })
+    .join("");
+}
+
+async function loadAstroInterestingCities() {
+  if (!currentChart) return;
+  try {
+    const res = await fetch(`/api/charts/${currentChart.id}/astrocartography/interesting-cities`);
+    if (!res.ok) throw new Error(`${t("error_prefix")} ${res.status}`);
+    astroInterestingCities = await res.json();
+    renderAstroInterestingCitiesList();
+    if (selectedAstroMode === "natal" && astroLinesCache.natal) renderAstroMapPanel(astroLinesCache.natal);
+  } catch (err) {
+    document.getElementById("astro-interesting-cities-error").textContent = err.message;
+  }
 }
 
 async function loadAstroSavedLocations() {

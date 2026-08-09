@@ -169,6 +169,137 @@ def _closest_point_on_line(line_points: list[dict], latitude: float, longitude: 
     return distance, target
 
 
+def _constant_longitude(line_points: list[dict]) -> float | None:
+    """Renvoie la longitude constante d'une ligne de MC/IC (segment vertical à 2 points),
+    ou None si `line_points` est une courbe (ASC/DC)."""
+    if len(line_points) == 2 and line_points[0]["lon"] == line_points[1]["lon"]:
+        return line_points[0]["lon"]
+    return None
+
+
+def _crossings_curve_vs_constant(curve: list[dict], const_lon: float) -> list[dict]:
+    points = sorted(curve, key=lambda p: p["lat"])
+    crossings: list[dict] = []
+    for p1, p2 in zip(points, points[1:]):
+        d1 = _normalize_longitude(p1["lon"] - const_lon)
+        d2 = _normalize_longitude(p2["lon"] - const_lon)
+        if d1 == 0:
+            crossings.append({"lat": p1["lat"], "lon": const_lon})
+        elif d1 * d2 < 0 and abs(d1 - d2) < 180:
+            ratio = abs(d1) / (abs(d1) + abs(d2))
+            lat = p1["lat"] + ratio * (p2["lat"] - p1["lat"])
+            crossings.append({"lat": round(lat, 3), "lon": round(const_lon, 3)})
+    return crossings
+
+
+def _crossings_curve_vs_curve(curve_a: list[dict], curve_b: list[dict]) -> list[dict]:
+    lons_a = {p["lat"]: p["lon"] for p in curve_a}
+    lons_b = {p["lat"]: p["lon"] for p in curve_b}
+    common_lats = sorted(set(lons_a) & set(lons_b))
+    crossings: list[dict] = []
+    for lat1, lat2 in zip(common_lats, common_lats[1:]):
+        if lat2 - lat1 > 1.5:
+            # Écart de latitude anormal (barrière circumpolaire d'une des deux courbes) :
+            # pas de continuité fiable entre les deux échantillons, on ignore ce segment.
+            continue
+        d1 = _normalize_longitude(lons_a[lat1] - lons_b[lat1])
+        d2 = _normalize_longitude(lons_a[lat2] - lons_b[lat2])
+        if d1 == 0:
+            crossings.append({"lat": lat1, "lon": round(lons_a[lat1], 3)})
+        elif d1 * d2 < 0 and abs(d1 - d2) < 180:
+            ratio = abs(d1) / (abs(d1) + abs(d2))
+            lat = lat1 + ratio * (lat2 - lat1)
+            lon = lons_a[lat1] + ratio * (lons_a[lat2] - lons_a[lat1])
+            crossings.append({"lat": round(lat, 3), "lon": round(_normalize_longitude(lon), 3)})
+    return crossings
+
+
+def find_line_crossings(line_a_points: list[dict], line_b_points: list[dict]) -> list[dict]:
+    """Points où deux lignes (chacune une liste de points {"lat","lon"}) se croisent sur la
+    carte, par interpolation linéaire entre échantillons consécutifs. Les lignes de MC/IC sont
+    des segments verticaux (longitude constante) ; deux méridiennes distinctes ne se croisent
+    donc jamais à une longitude finie (cas ignoré)."""
+    const_a = _constant_longitude(line_a_points)
+    const_b = _constant_longitude(line_b_points)
+    if const_a is not None and const_b is not None:
+        return []
+    if const_a is not None:
+        return _crossings_curve_vs_constant(line_b_points, const_a)
+    if const_b is not None:
+        return _crossings_curve_vs_constant(line_a_points, const_b)
+    return _crossings_curve_vs_curve(line_a_points, line_b_points)
+
+
+def compute_all_crossings(lines: list[dict]) -> list[dict]:
+    """Croisements entre lignes de planètes DIFFÉRENTES (approximation cartographique des
+    parans — voir `advanced_technique_parans` dans les significations : un croisement entre
+    les lignes de deux planètes distinctes marque un lieu où leurs deux thèmes symboliques se
+    combinent). Les croisements entre lignes d'une même planète (ex. son ASC et son DC) ne sont
+    pas des parans et sont exclus. `lines` : liste de {"planet", "line_type", "line_points"}."""
+    crossings: list[dict] = []
+    for i in range(len(lines)):
+        for j in range(i + 1, len(lines)):
+            line_a, line_b = lines[i], lines[j]
+            if line_a["planet"] == line_b["planet"]:
+                continue
+            for point in find_line_crossings(line_a["line_points"], line_b["line_points"]):
+                crossings.append(
+                    {
+                        "lat": point["lat"],
+                        "lon": point["lon"],
+                        "planet_a": line_a["planet"],
+                        "line_type_a": line_a["line_type"],
+                        "planet_b": line_b["planet"],
+                        "line_type_b": line_b["line_type"],
+                    }
+                )
+    return crossings
+
+
+def find_interesting_cities(
+    lines: list[dict],
+    crossings: list[dict],
+    cities: list[dict],
+    threshold_km: float = 300.0,
+    top_n: int = 12,
+) -> list[dict]:
+    """Classe un ensemble de villes candidates par intérêt astrocartographique : une ville est
+    d'autant plus intéressante qu'elle est proche de plusieurs lignes planétaires et, surtout,
+    proche d'un croisement de lignes (paran approximatif — combinaison de deux thèmes
+    planétaires). Score déterministe et relatif (sert au tri, pas à une lecture absolue) :
+    chaque ligne/croisement à proximité contribue selon sa distance (plus proche = plus de
+    poids), les croisements comptant double par rapport à une simple ligne."""
+    scored: list[dict] = []
+    for city in cities:
+        nearby_lines = analyze_nearby_lines(lines, city["lat"], city["lon"], threshold_km)
+        nearby_crossings = []
+        for crossing in crossings:
+            distance_km = haversine_km(city["lat"], city["lon"], crossing["lat"], crossing["lon"])
+            if distance_km <= threshold_km:
+                nearby_crossings.append({**crossing, "distance_km": round(distance_km, 1)})
+        nearby_crossings.sort(key=lambda c: c["distance_km"])
+
+        if not nearby_lines and not nearby_crossings:
+            continue
+
+        line_score = sum(1 - match["distance_km"] / threshold_km for match in nearby_lines)
+        crossing_score = sum(2 * (1 - c["distance_km"] / threshold_km) for c in nearby_crossings)
+        scored.append(
+            {
+                "name": city["name"],
+                "country": city["country"],
+                "latitude": city["lat"],
+                "longitude": city["lon"],
+                "score": round(line_score + crossing_score, 2),
+                "nearby_lines": nearby_lines,
+                "nearby_crossings": nearby_crossings,
+            }
+        )
+
+    scored.sort(key=lambda c: c["score"], reverse=True)
+    return scored[:top_n]
+
+
 def analyze_nearby_lines(
     lines: list[dict], latitude: float, longitude: float, threshold_km: float = 250.0
 ) -> list[dict]:

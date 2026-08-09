@@ -439,6 +439,26 @@ class NearbyLineMatch(BaseModel):
     distance_km: float
 
 
+class NearbyLineCrossing(BaseModel):
+    lat: float
+    lon: float
+    planet_a: str
+    line_type_a: str
+    planet_b: str
+    line_type_b: str
+    distance_km: float
+
+
+class InterestingCity(BaseModel):
+    name: str
+    country: str
+    latitude: float
+    longitude: float
+    score: float
+    nearby_lines: list[NearbyLineMatch]
+    nearby_crossings: list[NearbyLineCrossing]
+
+
 class SavedLocationCreateRequest(BaseModel):
     label: str | None = None
     city: str | None = None

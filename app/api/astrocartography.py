@@ -88,6 +88,18 @@ def get_location_forecast(
     }
 
 
+@router.get("/api/charts/{chart_id}/astrocartography/interesting-cities", response_model=list[schemas.InterestingCity])
+def get_interesting_cities(
+    chart_id: str,
+    threshold_km: float = Query(300.0, gt=0),
+    top_n: int = Query(12, ge=1, le=50),
+    db: Session = Depends(get_db),
+    session: models.AnonymousSession = Depends(get_session),
+):
+    chart = get_owned_chart(chart_id, db, session)
+    return astrocartography_service.compute_interesting_cities_for_chart(db, chart, threshold_km=threshold_km, top_n=top_n)
+
+
 @router.post(
     "/api/charts/{chart_id}/saved-locations", response_model=schemas.SavedLocationResponse, status_code=201
 )

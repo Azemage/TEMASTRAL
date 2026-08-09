@@ -8,12 +8,17 @@ from app.core.astrocartography import (
     ASTROCARTOGRAPHY_PLANETS,
     LINE_TYPES,
     analyze_nearby_lines,
+    compute_all_crossings,
+    compute_astrocartography_lines,
     compute_horizon_line_points,
     compute_meridian_lines,
+    find_interesting_cities,
+    find_line_crossings,
     line_longitude_at_latitude,
     _normalize_longitude,
 )
 from app.core.ephemeris import PLANET_IDS, calc_planet_equatorial, greenwich_sidereal_time_degrees
+from app.core.reference_data import world_cities
 from app.main import app
 from app.services.astrocartography_service import compute_location_forecast
 
@@ -153,6 +158,42 @@ def test_natal_astrocartography_endpoint_returns_four_lines_per_planet(client):
     assert line_types == {"ASC", "DC", "MC", "IC"}
     mc_line = next(line for line in body["lines"] if line["line_type"] == "MC")
     assert len(mc_line["line_points"]) == 2  # segment vertical : 2 points suffisent
+
+
+def test_get_or_compute_natal_lines_handles_concurrent_cache_miss(client):
+    """Deux requêtes concurrentes sur un thème dont les lignes ne sont pas encore en cache
+    peuvent toutes deux constater un cache vide puis tenter d'insérer les mêmes lignes : la
+    seconde doit voir sa contrainte UNIQUE échouer proprement et relire le résultat de la
+    première, plutôt que de laisser l'IntegrityError remonter en 500 (voir la gestion de ce cas
+    dans get_or_compute_natal_lines). Le monkeypatch de `db.commit` simule la fenêtre de course :
+    une session tout à fait séparée insère et committe les mêmes lignes juste avant que la
+    session sous test ne tente son propre commit, qui doit alors échouer puis se rattraper."""
+    from app.database import SessionLocal
+    from app.models import NatalChart
+    from app.services import astrocartography_service
+
+    chart_id = client.post("/api/charts", json=VALID_CHART_PAYLOAD).json()["id"]
+    db = SessionLocal()
+    other_db = SessionLocal()
+    try:
+        chart = db.query(NatalChart).filter_by(id=chart_id).one()
+        original_commit = db.commit
+
+        def commit_after_concurrent_winner():
+            other_chart = other_db.query(NatalChart).filter_by(id=chart_id).one()
+            astrocartography_service.get_or_compute_natal_lines(other_db, other_chart)
+            return original_commit()
+
+        db.commit = commit_after_concurrent_winner
+
+        result = astrocartography_service.get_or_compute_natal_lines(db, chart)
+        assert len(result) == len(ASTROCARTOGRAPHY_PLANETS) * 4
+        assert {(r.planet, r.line_type) for r in result} == {
+            (planet, lt) for planet in ASTROCARTOGRAPHY_PLANETS for lt in LINE_TYPES
+        }
+    finally:
+        db.close()
+        other_db.close()
 
 
 def test_natal_astrocartography_lines_are_cached_across_requests(client):
@@ -354,3 +395,100 @@ def test_location_forecast_endpoint_rejects_unknown_line_type(client):
 def test_location_forecast_endpoint_rejects_out_of_range_latitude(client):
     res = client.get("/api/astrocartography/location-forecast", params={"latitude": 200, "longitude": 2.3522})
     assert res.status_code == 422
+
+
+# ---------------------------------------------------------------------------
+# Croisements de lignes (approximation cartographique des parans) + villes intéressantes
+# ---------------------------------------------------------------------------
+def test_find_line_crossings_two_meridians_never_cross():
+    mc_line = [{"lat": -85.0, "lon": 10.0}, {"lat": 85.0, "lon": 10.0}]
+    ic_line = [{"lat": -85.0, "lon": -170.0}, {"lat": 85.0, "lon": -170.0}]
+    assert find_line_crossings(mc_line, ic_line) == []
+
+
+def test_find_line_crossings_curve_vs_meridian():
+    mc_line = [{"lat": -85.0, "lon": 0.0}, {"lat": 85.0, "lon": 0.0}]
+    curve = [{"lat": 0.0, "lon": -2.0}, {"lat": 1.0, "lon": 2.0}]
+    crossings = find_line_crossings(mc_line, curve)
+    assert len(crossings) == 1
+    assert crossings[0]["lat"] == pytest.approx(0.5, abs=0.01)
+    assert crossings[0]["lon"] == pytest.approx(0.0, abs=0.01)
+
+
+def test_find_line_crossings_curve_vs_curve():
+    curve_a = [{"lat": 0.0, "lon": -2.0}, {"lat": 1.0, "lon": 2.0}]
+    curve_b = [{"lat": 0.0, "lon": 2.0}, {"lat": 1.0, "lon": -2.0}]
+    crossings = find_line_crossings(curve_a, curve_b)
+    assert len(crossings) == 1
+    assert crossings[0]["lat"] == pytest.approx(0.5, abs=0.01)
+    assert crossings[0]["lon"] == pytest.approx(0.0, abs=0.01)
+
+
+def test_find_line_crossings_parallel_curves_never_cross():
+    curve_a = [{"lat": 0.0, "lon": -2.0}, {"lat": 1.0, "lon": 2.0}]
+    curve_b = [{"lat": 0.0, "lon": -10.0}, {"lat": 1.0, "lon": -6.0}]
+    assert find_line_crossings(curve_a, curve_b) == []
+
+
+def test_compute_all_crossings_excludes_same_planet_pairs():
+    jd_ut = swe.julday(2024, 3, 20, 12.0)
+    equatorial_positions = {
+        name: calc_planet_equatorial(jd_ut, PLANET_IDS[name]) for name in ASTROCARTOGRAPHY_PLANETS
+    }
+    gst_degrees = greenwich_sidereal_time_degrees(jd_ut)
+    lines = [
+        {"planet": line.planet, "line_type": line.line_type, "line_points": line.line_points}
+        for line in compute_astrocartography_lines(equatorial_positions, gst_degrees)
+    ]
+    crossings = compute_all_crossings(lines)
+    assert len(crossings) > 0
+    assert all(c["planet_a"] != c["planet_b"] for c in crossings)
+
+
+def test_find_interesting_cities_ranks_closer_crossing_higher():
+    lines = [
+        {"planet": "Sun", "line_type": "MC", "line_points": [{"lat": -85.0, "lon": 2.0}, {"lat": 85.0, "lon": 2.0}]},
+        {"planet": "Venus", "line_type": "ASC", "line_points": [{"lat": 45.0, "lon": -2.0}, {"lat": 46.0, "lon": 6.0}]},
+    ]
+    crossings = compute_all_crossings(lines)
+    assert len(crossings) == 1
+
+    cities = [
+        {"name": "Near", "country": "X", "lat": 45.5, "lon": 2.0},  # à la latitude du croisement
+        {"name": "Far", "country": "X", "lat": 10.0, "lon": 2.0},  # sur la ligne du Soleil, loin du croisement
+        {"name": "Nowhere", "country": "X", "lat": -40.0, "lon": 100.0},  # hors de portée
+    ]
+    results = find_interesting_cities(lines, crossings, cities, threshold_km=400.0, top_n=10)
+    names = [c["name"] for c in results]
+    assert "Nowhere" not in names
+    assert names.index("Near") < names.index("Far")
+    # Trié du score le plus élevé au plus faible.
+    assert [c["score"] for c in results] == sorted((c["score"] for c in results), reverse=True)
+
+
+def test_find_interesting_cities_respects_top_n():
+    results = find_interesting_cities([], [], world_cities(), threshold_km=300.0, top_n=5)
+    assert results == []  # aucune ligne/croisement fourni : aucune ville ne peut être proche de quoi que ce soit
+
+
+def test_interesting_cities_endpoint_returns_ranked_cities(client):
+    chart_id = client.post("/api/charts", json=VALID_CHART_PAYLOAD).json()["id"]
+    res = client.get(f"/api/charts/{chart_id}/astrocartography/interesting-cities")
+    assert res.status_code == 200
+    body = res.json()
+    assert 0 < len(body) <= 12
+    assert [c["score"] for c in body] == sorted((c["score"] for c in body), reverse=True)
+    for city in body:
+        assert city["nearby_lines"] or city["nearby_crossings"]
+
+
+def test_interesting_cities_endpoint_404_for_unknown_chart(client):
+    res = client.get("/api/charts/does-not-exist/astrocartography/interesting-cities")
+    assert res.status_code == 404
+
+
+def test_interesting_cities_endpoint_respects_top_n_param(client):
+    chart_id = client.post("/api/charts", json=VALID_CHART_PAYLOAD).json()["id"]
+    res = client.get(f"/api/charts/{chart_id}/astrocartography/interesting-cities", params={"top_n": 3})
+    assert res.status_code == 200
+    assert len(res.json()) <= 3

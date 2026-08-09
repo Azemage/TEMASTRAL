@@ -83,6 +83,13 @@ def astrocartography_significations() -> dict:
     return _load("astrocartography_significations.json")
 
 
+def world_cities() -> list[dict]:
+    """Grandes villes mondiales (Natural Earth 110m populated places, domaine public) —
+    capitales et métropoles majeures, utilisées comme bassin de candidats pour la suggestion
+    de villes intéressantes en astrocartographie."""
+    return _load("world_cities.json")
+
+
 @lru_cache
 def ruler_map(system: str) -> dict[str, str]:
     """sign -> planet name, pour system in {'traditional', 'modern'}."""
