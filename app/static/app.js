@@ -72,6 +72,8 @@ function rerenderAfterLanguageChange() {
     document.getElementById("zr-axis-panel").dataset.loaded = "";
     loadZrDataPanel(document.getElementById("zr-date")?.value);
   }
+  if (astroLinesCache[selectedAstroMode]) renderAstroMapPanel(astroLinesCache[selectedAstroMode]);
+  renderAstroSavedLocationsList();
 }
 
 // ---------------------------------------------------------------------
@@ -184,6 +186,8 @@ document.getElementById("birth-form").addEventListener("submit", async (e) => {
     renderChart(currentChart);
     document.getElementById("results-section").classList.remove("hidden");
     document.getElementById("reading-section").classList.remove("hidden");
+    document.getElementById("astro-section").classList.remove("hidden");
+    resetAstrocartographyStateForNewChart();
     document.getElementById("results-section").scrollIntoView({ behavior: "smooth" });
   } catch (err) {
     errorEl.textContent = err.message;
@@ -1677,5 +1681,313 @@ document.querySelectorAll(".timing-horizon-btn").forEach((btn) => {
       },
       renderExtra: (reading) => renderTimingRatings(reading.timing_ratings),
     });
+  });
+});
+
+// ---------------------------------------------------------------------
+// Astrocartographie / Cyclocartographie — partie séparée du thème natal et
+// de la lecture interprétée : projette sur une carte du monde les lieux où
+// chaque planète est angulaire (ASC/DC/MC/IC).
+// ---------------------------------------------------------------------
+const ASTROCARTOGRAPHY_PLANETS = [
+  "Sun", "Moon", "Mercury", "Venus", "Mars", "Jupiter", "Saturn", "Uranus", "Neptune", "Pluto",
+];
+const ASTRO_LINE_TYPES = ["ASC", "DC", "MC", "IC"];
+const ASTRO_LINE_COLORS = {
+  Sun: "#e0b34d", Moon: "#c9c9e8", Mercury: "#5fd4c0", Venus: "#ff8fc9", Mars: "#ff5d5d",
+  Jupiter: "#4da3ff", Saturn: "#a875c9", Uranus: "#5fe0c0", Neptune: "#6c8cff", Pluto: "#c98fff",
+};
+
+let selectedAstroMode = "natal";
+let astroLinesCache = { natal: null, transit: null };
+let astroSelectedPlanets = new Set(ASTROCARTOGRAPHY_PLANETS);
+let astroSelectedLineTypes = new Set(["MC", "IC"]);
+let astroSavedLocations = [];
+let astroFocusLocation = null; // {label, latitude, longitude} — null = lieu de naissance (défaut serveur)
+
+function resetAstrocartographyStateForNewChart() {
+  astroLinesCache = { natal: null, transit: null };
+  astroSavedLocations = [];
+  astroFocusLocation = null;
+  loadAstroLines(selectedAstroMode);
+  loadAstroSavedLocations();
+}
+
+function astroLonToX(lon, width) {
+  return ((lon + 180) / 360) * width;
+}
+
+function astroLatToY(lat, height) {
+  return ((90 - lat) / 180) * height;
+}
+
+// Une ligne ASC/DC peut franchir la ligne de changement de date (±180°) : sans ce découpage,
+// le tracé traverserait la carte à l'horizontale au lieu de "sortir" d'un bord et "rentrer"
+// de l'autre.
+function splitAstroLineAtDateLine(points) {
+  const segments = [];
+  let current = [];
+  for (const point of points) {
+    if (current.length > 0 && Math.abs(point.lon - current[current.length - 1].lon) > 180) {
+      segments.push(current);
+      current = [];
+    }
+    current.push(point);
+  }
+  if (current.length) segments.push(current);
+  return segments;
+}
+
+function buildAstroMapSVG(lines, savedLocations) {
+  const width = 720;
+  const height = 360;
+  let grid = "";
+  for (let lon = -180; lon <= 180; lon += 30) {
+    const x = astroLonToX(lon, width);
+    grid += `<line x1="${x.toFixed(1)}" y1="0" x2="${x.toFixed(1)}" y2="${height}" stroke="#2c2f4a" stroke-width="${lon === 0 ? 1 : 0.5}" />`;
+  }
+  for (let lat = -90; lat <= 90; lat += 30) {
+    const y = astroLatToY(lat, height);
+    grid += `<line x1="0" y1="${y.toFixed(1)}" x2="${width}" y2="${y.toFixed(1)}" stroke="#2c2f4a" stroke-width="${lat === 0 ? 1 : 0.5}" />`;
+  }
+
+  let linesSvg = "";
+  lines
+    .filter((line) => astroSelectedPlanets.has(line.planet) && astroSelectedLineTypes.has(line.line_type))
+    .forEach((line) => {
+      const color = ASTRO_LINE_COLORS[line.planet] || "#888";
+      const tooltip = escapeHtml(`${planetLabel(line.planet)} — ${astroLineTypeLabel(line.line_type)}`);
+      splitAstroLineAtDateLine(line.line_points).forEach((segment) => {
+        if (segment.length < 2) return;
+        const path = segment
+          .map((p, i) => `${i === 0 ? "M" : "L"} ${astroLonToX(p.lon, width).toFixed(1)} ${astroLatToY(p.lat, height).toFixed(1)}`)
+          .join(" ");
+        linesSvg += `<g class="wheel-hoverable" data-tooltip="${tooltip}">`;
+        linesSvg += `<path d="${path}" fill="none" stroke="transparent" stroke-width="10" pointer-events="stroke" />`;
+        linesSvg += `<path d="${path}" fill="none" stroke="${color}" stroke-width="2" stroke-opacity="0.85" pointer-events="none" />`;
+        linesSvg += `</g>`;
+      });
+    });
+
+  let markersSvg = "";
+  (savedLocations || []).forEach((loc) => {
+    const x = astroLonToX(loc.longitude, width);
+    const y = astroLatToY(loc.latitude, height);
+    const tooltip = escapeHtml(loc.city || loc.label || `${loc.latitude.toFixed(1)}, ${loc.longitude.toFixed(1)}`);
+    markersSvg += `<g class="wheel-hoverable" data-tooltip="${tooltip}"><circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="5" fill="#ff5d9e" stroke="#12152a" stroke-width="1.5" /></g>`;
+  });
+
+  return `
+    <svg viewBox="0 0 ${width} ${height}" class="astro-map-svg" xmlns="http://www.w3.org/2000/svg">
+      <rect x="0" y="0" width="${width}" height="${height}" fill="#12152a" />
+      ${grid}
+      ${linesSvg}
+      ${markersSvg}
+    </svg>`;
+}
+
+function renderAstroMapPanel(lines) {
+  const panel = document.getElementById("astro-map-panel");
+  if (!panel) return;
+
+  const planetCheckboxes = ASTROCARTOGRAPHY_PLANETS.map(
+    (p) => `
+    <label class="checkbox-label astro-filter-planet">
+      <input type="checkbox" class="astro-planet-checkbox" value="${p}" ${astroSelectedPlanets.has(p) ? "checked" : ""} />
+      <span style="color:${ASTRO_LINE_COLORS[p]}">●</span> ${planetLabel(p)}
+    </label>`
+  ).join("");
+  const lineTypeCheckboxes = ASTRO_LINE_TYPES.map(
+    (lt) => `
+    <label class="checkbox-label">
+      <input type="checkbox" class="astro-linetype-checkbox" value="${lt}" ${astroSelectedLineTypes.has(lt) ? "checked" : ""} />
+      ${astroLineTypeLabel(lt)}
+    </label>`
+  ).join("");
+
+  panel.innerHTML = `
+    <div class="astro-map-controls">
+      <div class="astro-map-filter-group">
+        <span class="astro-filter-title">${t("astro_planets_filter_title")}</span>
+        ${planetCheckboxes}
+      </div>
+      <div class="astro-map-filter-group">
+        <span class="astro-filter-title">${t("astro_line_types_filter_title")}</span>
+        ${lineTypeCheckboxes}
+      </div>
+    </div>
+    <div class="astro-map-wrapper">${buildAstroMapSVG(lines, astroSavedLocations)}</div>
+  `;
+  attachWheelTooltip(panel.querySelector(".astro-map-wrapper"));
+
+  const redraw = () => {
+    panel.querySelector(".astro-map-wrapper").innerHTML = buildAstroMapSVG(lines, astroSavedLocations);
+  };
+  panel.querySelectorAll(".astro-planet-checkbox").forEach((cb) => {
+    cb.addEventListener("change", () => {
+      if (cb.checked) astroSelectedPlanets.add(cb.value);
+      else astroSelectedPlanets.delete(cb.value);
+      redraw();
+    });
+  });
+  panel.querySelectorAll(".astro-linetype-checkbox").forEach((cb) => {
+    cb.addEventListener("change", () => {
+      if (cb.checked) astroSelectedLineTypes.add(cb.value);
+      else astroSelectedLineTypes.delete(cb.value);
+      redraw();
+    });
+  });
+}
+
+async function loadAstroLines(mode) {
+  if (!currentChart) return;
+  const panel = document.getElementById("astro-map-panel");
+  panel.innerHTML = `<p>${t("status_computing_astro")}</p>`;
+  try {
+    const url = mode === "transit" ? "/api/astrocartography/transit" : `/api/charts/${currentChart.id}/astrocartography`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`${t("error_prefix")} ${res.status}`);
+    const data = await res.json();
+    astroLinesCache[mode] = data.lines;
+    renderAstroMapPanel(data.lines);
+  } catch (err) {
+    panel.innerHTML = `<p class="error">${t("error_loading_astro")} ${err.message}</p>`;
+  }
+}
+
+document.querySelectorAll(".astro-mode-btn").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll(".astro-mode-btn").forEach((b) => b.classList.remove("active"));
+    btn.classList.add("active");
+    selectedAstroMode = btn.dataset.astroMode;
+    if (astroLinesCache[selectedAstroMode]) {
+      renderAstroMapPanel(astroLinesCache[selectedAstroMode]);
+    } else {
+      loadAstroLines(selectedAstroMode);
+    }
+  });
+});
+
+function renderAstroSavedLocationsList() {
+  const container = document.getElementById("astro-saved-locations-list");
+  if (!container) return;
+  if (astroSavedLocations.length === 0) {
+    container.innerHTML = `<p>${t("astro_no_saved_locations")}</p>`;
+    return;
+  }
+  container.innerHTML =
+    `<p class="reading-section-intro">${t("astro_focus_default_note")}</p>` +
+    astroSavedLocations
+      .map((loc) => {
+        const nearby = (loc.nearby_lines_analysis || [])
+          .map((n) => `${planetLabel(n.planet)} ${astroLineTypeLabel(n.line_type)} (${n.distance_km} km)`)
+          .join(", ") || t("astro_no_nearby_lines");
+        const isFocused = astroFocusLocation && astroFocusLocation.latitude === loc.latitude && astroFocusLocation.longitude === loc.longitude;
+        return `
+        <div class="astro-location-card${isFocused ? " astro-location-focused" : ""}" data-location-id="${loc.id}">
+          <div class="astro-location-header">
+            <strong>${loc.city || loc.label || `${loc.latitude.toFixed(2)}, ${loc.longitude.toFixed(2)}`}</strong>
+            <button type="button" class="astro-location-focus-btn" data-location-id="${loc.id}">${t("astro_use_for_reading")}</button>
+            <button type="button" class="astro-location-delete-btn" data-location-id="${loc.id}">${t("btn_delete")}</button>
+          </div>
+          <p class="reading-section-intro">${nearby}</p>
+        </div>`;
+      })
+      .join("");
+
+  container.querySelectorAll(".astro-location-delete-btn").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      await fetch(`/api/saved-locations/${btn.dataset.locationId}`, { method: "DELETE" });
+      if (astroFocusLocation) {
+        const stillExists = astroSavedLocations.find((l) => l.id === btn.dataset.locationId);
+        if (stillExists) astroFocusLocation = null;
+      }
+      loadAstroSavedLocations();
+    });
+  });
+  container.querySelectorAll(".astro-location-focus-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const loc = astroSavedLocations.find((l) => l.id === btn.dataset.locationId);
+      astroFocusLocation = loc ? { label: loc.city || loc.label, latitude: loc.latitude, longitude: loc.longitude } : null;
+      renderAstroSavedLocationsList();
+    });
+  });
+}
+
+async function loadAstroSavedLocations() {
+  if (!currentChart) return;
+  try {
+    const res = await fetch(`/api/charts/${currentChart.id}/saved-locations`);
+    if (!res.ok) throw new Error(`${t("error_prefix")} ${res.status}`);
+    astroSavedLocations = await res.json();
+    renderAstroSavedLocationsList();
+    if (astroLinesCache[selectedAstroMode]) renderAstroMapPanel(astroLinesCache[selectedAstroMode]);
+  } catch (err) {
+    document.getElementById("astro-location-error").textContent = err.message;
+  }
+}
+
+document.getElementById("astro-search-city-btn").addEventListener("click", async () => {
+  const query = document.getElementById("astro_city_search").value.trim();
+  const resultsDiv = document.getElementById("astro-city-results");
+  const errorEl = document.getElementById("astro-location-error");
+  resultsDiv.innerHTML = "";
+  errorEl.textContent = "";
+  if (query.length < 2) return;
+
+  try {
+    const res = await fetch(`/api/geocode?query=${encodeURIComponent(query)}`);
+    if (!res.ok) {
+      resultsDiv.innerHTML = `<p class="error">${t("search_unavailable")}</p>`;
+      return;
+    }
+    const locations = await res.json();
+    if (locations.length === 0) {
+      resultsDiv.innerHTML = `<p>${t("no_results")}</p>`;
+      return;
+    }
+    locations.forEach((loc) => {
+      const item = el(`<div class="city-result-item">${loc.display_name}</div>`);
+      item.addEventListener("click", async () => {
+        resultsDiv.innerHTML = "";
+        if (!currentChart) return;
+        const [city, ...rest] = loc.display_name.split(",");
+        const country = rest.length ? rest[rest.length - 1].trim() : null;
+        try {
+          const res2 = await fetch(`/api/charts/${currentChart.id}/saved-locations`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ city: city.trim(), country, latitude: loc.latitude, longitude: loc.longitude }),
+          });
+          if (!res2.ok) {
+            const detail = await res2.json().catch(() => ({}));
+            throw new Error(detail.detail || `${t("error_prefix")} ${res2.status}`);
+          }
+          document.getElementById("astro_city_search").value = "";
+          await loadAstroSavedLocations();
+        } catch (err) {
+          errorEl.textContent = err.message;
+        }
+      });
+      resultsDiv.appendChild(item);
+    });
+  } catch (err) {
+    resultsDiv.innerHTML = `<p class="error">${t("search_unavailable")}</p>`;
+  }
+});
+
+document.getElementById("generate-astro-reading-btn").addEventListener("click", () => {
+  generateSpecializedReading({
+    btnId: "generate-astro-reading-btn",
+    errorId: "astro-reading-error",
+    outputId: "astro-reading-output",
+    defaultLabel: t("btn_generate_astro_reading"),
+    requestBody: {
+      reading_type: "astrocartography",
+      astro_map_mode: selectedAstroMode,
+      astro_focus_latitude: astroFocusLocation ? astroFocusLocation.latitude : undefined,
+      astro_focus_longitude: astroFocusLocation ? astroFocusLocation.longitude : undefined,
+      astro_focus_label: astroFocusLocation ? astroFocusLocation.label : undefined,
+    },
   });
 });

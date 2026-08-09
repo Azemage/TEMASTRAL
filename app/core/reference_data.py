@@ -79,6 +79,10 @@ def axes_thematiques_lots() -> dict:
     return _load("axes_thematiques_lots.json")
 
 
+def astrocartography_significations() -> dict:
+    return _load("astrocartography_significations.json")
+
+
 @lru_cache
 def ruler_map(system: str) -> dict[str, str]:
     """sign -> planet name, pour system in {'traditional', 'modern'}."""

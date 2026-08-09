@@ -4,6 +4,7 @@ from zoneinfo import available_timezones
 from fastapi import APIRouter
 
 from app.core.reference_data import (
+    astrocartography_significations,
     axes_thematiques_lots,
     config_reference,
     derived_house_relations,
@@ -60,6 +61,11 @@ def get_derived_house_relations():
 @router.get("/axes-thematiques-lots")
 def get_axes_thematiques_lots():
     return axes_thematiques_lots()
+
+
+@router.get("/astrocartography-significations")
+def get_astrocartography_significations():
+    return astrocartography_significations()
 
 
 @router.get("/timezones")

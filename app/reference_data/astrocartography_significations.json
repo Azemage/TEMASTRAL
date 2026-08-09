@@ -1,0 +1,83 @@
+{
+  "description": "Significations par planète et type de ligne pour l'astrocartographie. Les 4 lignes correspondent conceptuellement aux 4 angles du thème (ASC=maison 1, DC=maison 7, MC=maison 10, IC=maison 4) — voir planets_in_houses_full.json pour le raisonnement parallèle déjà établi sur les maisons.",
+
+  "line_types": {
+    "ASC": { "nom_fr": "Ligne d'Ascendant", "signification_generale": "identité, corps, façon de se présenter au monde — vivre sur cette ligne intensifie la présence et l'expression personnelle de la planète" },
+    "DC": { "nom_fr": "Ligne de Descendant", "signification_generale": "relations, partenariats, l'autre — vivre sur cette ligne active les rencontres et dynamiques relationnelles liées à la planète" },
+    "MC": { "nom_fr": "Ligne de Milieu du Ciel", "signification_generale": "carrière, réputation, vocation publique — vivre sur cette ligne met la planète au premier plan de la vie professionnelle/publique" },
+    "IC": { "nom_fr": "Ligne de Fond du Ciel", "signification_generale": "foyer, racines, vie privée — vivre sur cette ligne ancre la planète dans la sphère intime et domestique" }
+  },
+
+  "planet_line_meanings": {
+    "Sun": {
+      "ASC": "vitalité et confiance en soi renforcées, forte visibilité personnelle",
+      "DC": "rencontres avec des partenaires au fort tempérament, relations qui mettent en valeur",
+      "MC": "reconnaissance publique facilitée, opportunités de leadership",
+      "IC": "sentiment de sécurité et d'appartenance profonde au lieu"
+    },
+    "Moon": {
+      "ASC": "grande sensibilité aux ambiances locales, adaptation émotionnelle rapide au lieu",
+      "DC": "relations marquées par le besoin de proximité affective",
+      "MC": "carrière liée au public, au soin, à l'accueil ; forte popularité possible",
+      "IC": "attachement puissant au foyer, sentiment de retour aux racines"
+    },
+    "Mercury": {
+      "ASC": "esprit vif stimulé, facilité de communication et d'apprentissage sur ce lieu",
+      "DC": "relations basées sur l'échange intellectuel, importante activité contractuelle",
+      "MC": "carrière liée à la communication, au commerce, à l'enseignement",
+      "IC": "foyer actif intellectuellement, nombreux échanges dans la sphère privée"
+    },
+    "Venus": {
+      "ASC": "charme et attrait personnel accrus, sentiment de bien-être esthétique",
+      "DC": "rencontres amoureuses facilitées, relations harmonieuses",
+      "MC": "carrière liée à l'art, la beauté, les relations publiques",
+      "IC": "foyer harmonieux et agréable, vie privée orientée plaisir/confort"
+    },
+    "Mars": {
+      "ASC": "énergie et affirmation de soi décuplées, tempérament plus combatif",
+      "DC": "relations passionnées mais potentiellement conflictuelles",
+      "MC": "carrière dynamique et compétitive, ambition renforcée",
+      "IC": "vie domestique plus tendue ou plus dynamique, besoin d'action dans la sphère privée"
+    },
+    "Jupiter": {
+      "ASC": "optimisme et confiance renforcés, sentiment d'expansion personnelle",
+      "DC": "rencontres bénéfiques, partenariats porteurs de croissance",
+      "MC": "ligne classiquement associée à la réussite professionnelle et à la reconnaissance",
+      "IC": "foyer prospère, sentiment d'abondance dans la vie privée"
+    },
+    "Saturn": {
+      "ASC": "sentiment de responsabilité accru, possible réserve ou difficulté d'adaptation initiale",
+      "DC": "relations sérieuses et engageantes, mais qui demandent des efforts",
+      "MC": "carrière construite avec discipline, réussite obtenue par l'effort et la durée",
+      "IC": "vie domestique structurée mais potentiellement pesante, sens du devoir familial"
+    },
+    "Uranus": {
+      "ASC": "besoin d'indépendance et d'originalité renforcé, vie imprévisible sur ce lieu",
+      "DC": "relations non conventionnelles, ruptures ou rencontres soudaines possibles",
+      "MC": "carrière atypique, changements professionnels fréquents ou soudains",
+      "IC": "vie domestique instable ou marquée par des changements de résidence"
+    },
+    "Neptune": {
+      "ASC": "grande sensibilité, identité plus floue ou plus inspirée sur ce lieu",
+      "DC": "relations idéalisées, risque de confusion ou d'illusion dans les partenariats",
+      "MC": "carrière liée à l'art, au spirituel, au soin ; image publique parfois floue",
+      "IC": "foyer empreint de spiritualité ou de flou, sensibilité accrue dans la sphère privée"
+    },
+    "Pluto": {
+      "ASC": "transformation personnelle profonde probable en vivant sur ce lieu",
+      "DC": "relations intenses et transformatrices, enjeux de pouvoir possibles",
+      "MC": "carrière marquée par le pouvoir ou des enjeux publics intenses",
+      "IC": "transformations profondes de la vie familiale et des racines"
+    }
+  },
+
+  "advanced_technique_parans": {
+    "description": "Technique complémentaire (V2+) : les 'parans' (paranatellonta) sont les points où deux lignes planétaires se croisent à une latitude donnée — considérés comme des zones où les deux énergies planétaires se combinent. Plus précis mais plus complexe à calculer et à visualiser qu'une simple ligne. À ne considérer qu'après la version de base (lignes simples) validée."
+  },
+
+  "variantes_a_distinguer": {
+    "natal_fixe": "lignes calculées à partir des positions planétaires de la naissance — ne changent jamais, calcul unique par thème",
+    "cyclocartographie_transit": "lignes calculées à partir des positions planétaires ACTUELLES — changent chaque jour (rapides) à chaque année (lentes), calcul global valable pour tous les utilisateurs à un instant donné (pas propre à un thème)",
+    "espace_local": "technique distincte (azimuts/directions depuis le lieu de naissance, pas des lignes sur la carte du monde) — à ne pas confondre avec les deux précédentes, non couverte par ce fichier"
+  }
+}

@@ -84,6 +84,35 @@ def calc_planet(jd_ut: float, planet_id: int) -> RawPlanetPosition:
 
 
 @dataclass
+class EquatorialPosition:
+    right_ascension: float  # degrés, 0-360
+    declination: float  # degrés, -90 à 90
+
+
+def calc_planet_equatorial(jd_ut: float, planet_id: int) -> EquatorialPosition:
+    """Coordonnées équatoriales (ascension droite, déclinaison), nécessaires au calcul des
+    lignes d'astrocartographie (MC/IC/ASC/DC) — contrairement au reste du thème qui reste en
+    coordonnées écliptiques (longitude/latitude)."""
+    (ra, dec, _dist, _speed_ra, _speed_dec, _speed_dist), _flag = swe.calc_ut(
+        jd_ut, planet_id, CALC_FLAGS | swe.FLG_EQUATORIAL
+    )
+    return EquatorialPosition(right_ascension=ra % 360, declination=dec)
+
+
+def greenwich_sidereal_time_degrees(jd_ut: float) -> float:
+    """Temps sidéral de Greenwich (apparent), en degrés (0-360)."""
+    return swe.sidtime(jd_ut) * 15 % 360
+
+
+def jd_ut_for_date_utc_noon(date_str: str) -> float:
+    """Jour julien UT à midi UTC pour une date donnée (YYYY-MM-DD) — instant représentatif
+    utilisé pour le cache journalier des lignes de transit (cyclocartographie), qui n'a pas
+    vocation à la précision à la minute près (un seul calcul partagé par jour)."""
+    year, month, day = (int(part) for part in date_str.split("-"))
+    return swe.julday(year, month, day, 12.0)
+
+
+@dataclass
 class BodiesResult:
     bodies: dict[str, RawPlanetPosition]
     unavailable_points: list[str]

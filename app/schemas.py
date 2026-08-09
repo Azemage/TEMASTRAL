@@ -389,7 +389,7 @@ class NatalChartResponse(BaseModel):
 # Interprétation LLM (cf. cahier des charges, section 4.7)
 # ---------------------------------------------------------------------------
 class ReadingRequest(BaseModel):
-    reading_type: str = "global"  # 'global' | 'love' | 'career' | 'family' | 'lots' | 'derived_houses' | 'timing' | 'zodiacal_releasing' | 'compatibility'
+    reading_type: str = "global"  # 'global' | 'love' | 'career' | 'family' | 'lots' | 'derived_houses' | 'timing' | 'zodiacal_releasing' | 'compatibility' | 'astrocartography'
     focus_areas: list[str] = Field(default_factory=lambda: ["general"])
     level: str = "débutant"
     tone: str = "accessible et bienveillant"
@@ -403,6 +403,62 @@ class ReadingRequest(BaseModel):
     chart_b_id: str | None = None  # utilisé par 'compatibility' : identifiant du second thème
     relationship_mode: str | None = None  # 'romantic' | 'friendship' | 'professional' ; utilisé par 'compatibility'
     timing_horizon: str = "year"  # 'week' | 'month' | 'year' ; utilisé par 'timing'
+    astro_map_mode: str = "natal"  # 'natal' | 'transit' ; utilisé par 'astrocartography'
+    astro_focus_latitude: float | None = None  # utilisé par 'astrocartography' ; défaut = lieu de naissance du thème
+    astro_focus_longitude: float | None = None
+    astro_focus_label: str | None = None  # nom du lieu analysé, pour la lecture (ex. "Lisbonne")
+
+
+# ---------------------------------------------------------------------------
+# Astrocartographie / Cyclocartographie
+# ---------------------------------------------------------------------------
+class AstrocartographyLinePoint(BaseModel):
+    lat: float
+    lon: float
+
+
+class AstrocartographyLine(BaseModel):
+    planet: str
+    line_type: str  # 'ASC' | 'DC' | 'MC' | 'IC'
+    line_points: list[AstrocartographyLinePoint]
+
+
+class NatalAstrocartographyResponse(BaseModel):
+    natal_chart_id: str
+    lines: list[AstrocartographyLine]
+
+
+class TransitAstrocartographyResponse(BaseModel):
+    calculation_date: date_type
+    lines: list[AstrocartographyLine]
+
+
+class NearbyLineMatch(BaseModel):
+    planet: str
+    line_type: str
+    distance_km: float
+
+
+class SavedLocationCreateRequest(BaseModel):
+    label: str | None = None
+    city: str | None = None
+    country: str | None = None
+    latitude: float
+    longitude: float
+
+
+class SavedLocationResponse(BaseModel):
+    id: str
+    natal_chart_id: str
+    label: str | None
+    city: str | None
+    country: str | None
+    latitude: float
+    longitude: float
+    nearby_lines_analysis: list[NearbyLineMatch] | None
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
 
 
 class RatingEntry(BaseModel):

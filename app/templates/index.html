@@ -293,6 +293,45 @@
         <div id="compat-reading-output" class="reading-output"></div>
       </div>
     </section>
+
+    <section id="astro-section" class="card hidden">
+      <h2 data-i18n="astro_section_title">4. Astrocartographie</h2>
+      <p class="reading-section-intro" data-i18n="astro_section_intro">
+        Projette sur une carte du monde les lieux où chaque planète est angulaire (Ascendant,
+        Descendant, Milieu du Ciel, Fond du Ciel). Deux variantes : l'astrocartographie natale
+        (lignes fixes, calculées une seule fois à la naissance) et la cyclocartographie (lignes
+        de transit, qui reflètent les positions planétaires actuelles).
+      </p>
+
+      <div class="tabs astro-mode-tabs">
+        <button type="button" class="astro-mode-btn active" data-astro-mode="natal" data-i18n="astro_mode_natal">Natale</button>
+        <button type="button" class="astro-mode-btn" data-astro-mode="transit" data-i18n="astro_mode_transit">Cyclocartographie (transit)</button>
+      </div>
+
+      <div id="astro-map-panel"></div>
+
+      <hr class="reading-subsection-divider" />
+      <h3 data-i18n="astro_saved_locations_title">Lieux sauvegardés</h3>
+      <p class="reading-section-intro" data-i18n="astro_saved_locations_intro">
+        Enregistrez un lieu (ex. une destination de déménagement envisagée) pour voir quelles
+        lignes natales en passent à proximité.
+      </p>
+      <div class="form-row">
+        <label for="astro_city_search" data-i18n="label_location_to_analyze">Lieu à analyser</label>
+        <div class="search-row">
+          <input type="text" id="astro_city_search" data-i18n-placeholder="placeholder_city" placeholder="Ex. Lyon, France" />
+          <button type="button" id="astro-search-city-btn" data-i18n="btn_search">Rechercher</button>
+        </div>
+        <div id="astro-city-results" class="city-results"></div>
+      </div>
+      <div id="astro-saved-locations-list"></div>
+      <p id="astro-location-error" class="error"></p>
+
+      <hr class="reading-subsection-divider" />
+      <button id="generate-astro-reading-btn" data-i18n="btn_generate_astro_reading">Générer la lecture d'astrocartographie</button>
+      <p id="astro-reading-error" class="error"></p>
+      <div id="astro-reading-output" class="reading-output"></div>
+    </section>
   </main>
 
   <footer>

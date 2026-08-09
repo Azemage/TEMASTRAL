@@ -22,10 +22,12 @@ from anthropic import AsyncAnthropic
 
 from app import models, schemas
 from app.config import get_settings
+from app.core import ephemeris
+from app.core.astrocartography import analyze_nearby_lines
 from app.core.derived_houses import resolve_relation
-from app.core.reference_data import houses_meanings, rulerships
+from app.core.reference_data import astrocartography_significations, houses_meanings, rulerships
 from app.core.zodiacal_releasing import FORTUNE_LOT_NAME, SPIRIT_LOT_NAME
-from app.services import timing_service
+from app.services import astrocartography_service, timing_service
 from app.services.synastry_service import compute_synastry_for_charts
 from app.services.zodiacal_releasing_service import compute_zodiacal_releasing_for_chart
 
@@ -250,6 +252,58 @@ def _sanitize_timing_ratings(raw_ratings: dict | None) -> dict | None:
 # (stop_reason == "max_tokens"), pour ne jamais renvoyer une lecture coupée en plein milieu
 # d'une phrase à l'utilisateur.
 MAX_CONTINUATION_ROUNDS = 2
+
+
+def _astrocartography_max_tokens(request: schemas.ReadingRequest) -> int:
+    """Base généreuse : le nombre de lignes réellement proches du lieu analysé varie
+    beaucoup (0 à une dizaine) et n'est connu qu'après calcul, donc pas de dépendance au
+    payload comme pour les lots — un budget fixe couvre confortablement le cas le plus riche."""
+    return 3200
+
+
+def _astrocartography_prompt_block(request: schemas.ReadingRequest) -> str:
+    mode = request.astro_map_mode or "natal"
+    intro = """Cette lecture porte sur l'ASTROCARTOGRAPHIE, une technique qui projette sur une \
+carte du monde les lieux où chaque planète est angulaire (à l'un des 4 angles du thème : \
+Ascendant, Descendant, Milieu du Ciel, Fond du Ciel) — vivre ou voyager sur une de ces lignes \
+est traditionnellement associé à une activation de cette planète dans le domaine de vie de \
+l'angle concerné. Tu reçois dans `focus_location` le lieu analysé (déjà déterminé par calcul \
+déterministe, jamais par toi), et dans `nearby_lines` la liste des lignes qui passent à \
+proximité de ce lieu (calcul de distance orthodromique déjà effectué), chacune avec sa \
+`distance_km`, son `planet`, son `line_type` (ASC/DC/MC/IC) et sa `meaning` de référence. \
+Trie implicitement ton développement par ordre de proximité (déjà l'ordre du tableau reçu) : \
+les lignes les plus proches méritent le plus d'attention, les plus lointaines une mention \
+brève ou aucune si `nearby_lines` est vide."""
+
+    if mode == "transit":
+        scope = """MODE : CYCLOCARTOGRAPHIE (transit). Les lignes reçues reflètent les positions \
+planétaires ACTUELLES, pas celles de la naissance — ce sont donc des lignes qui bougent et se \
+déplacent avec le temps (rapidement pour la Lune et les planètes personnelles, lentement pour \
+les planètes lourdes), à ne jamais présenter comme une caractéristique fixe ou permanente du \
+lieu. Cadre-les comme un climat astrologique passager superposé à ce lieu à l'instant présent \
+(`as_of_date`), utile pour comprendre une période de voyage ou une fenêtre temporelle précise, \
+pas comme une prédiction durable."""
+    else:
+        scope = """MODE : ASTROCARTOGRAPHIE NATALE. Les lignes reçues sont calculées à partir de \
+l'instant de naissance et ne changent jamais : elles représentent un potentiel structurel \
+durable associé à ce lieu pour cette personne, à la manière d'un thème natal appliqué à la \
+géographie plutôt qu'au temps."""
+
+    guardrails = """Ne transforme jamais une ligne proche en injonction ("vous devez déménager \
+ici") ni en verdict absolu ("ce lieu est mauvais pour vous") : présente toujours ces \
+dynamiques comme un potentiel activé, à vivre consciemment, ni entièrement positif ni \
+entièrement négatif — une ligne de Saturne par exemple n'est pas une malédiction mais une \
+invitation à la structure et à l'effort. Ne fais aucune affirmation sur la sécurité, la \
+politique, l'économie ou les conditions de vie réelles du lieu : tu n'as aucune donnée sur ces \
+sujets, reste strictement sur la dimension symbolique/psychologique de la technique. Si \
+`nearby_lines` est vide, dis-le simplement et explique que ce lieu n'est pas marqué par une \
+ligne planétaire particulière plutôt que de forcer une interprétation."""
+
+    return f"""{intro}
+
+{scope}
+
+{guardrails}"""
 
 
 _TIMING_MAX_TOKENS_BY_HORIZON = {"week": 2200, "month": 2800, "year": 3500}
@@ -818,6 +872,8 @@ Termine toujours par un court paragraphe de synthèse bienveillant et encouragea
         specialized_block = _timing_prompt_block(request)
     elif request.reading_type == "derived_houses":
         specialized_block = _derived_houses_prompt_block(request)
+    elif request.reading_type == "astrocartography":
+        specialized_block = _astrocartography_prompt_block(request)
     else:
         specialized_block = _SPECIALIZED_PROMPT_BLOCKS[request.reading_type]
     return f"""{base}
@@ -942,6 +998,28 @@ def _build_user_payload(
         payload["composite_chart"] = synastry["composite_chart"]
         payload["charts_time_known"] = synastry["charts_time_known"]
         payload["reference"] = {"houses_meanings": houses_meanings()["houses"]}
+    elif request.reading_type == "astrocartography":
+        mode = request.astro_map_mode or "natal"
+        focus_lat = request.astro_focus_latitude if request.astro_focus_latitude is not None else chart.birth_latitude
+        focus_lon = request.astro_focus_longitude if request.astro_focus_longitude is not None else chart.birth_longitude
+        focus_label = request.astro_focus_label or chart.birth_city or "lieu analysé"
+
+        if mode == "transit":
+            as_of = request.as_of_date or date_type.today()
+            jd_ut = ephemeris.jd_ut_for_date_utc_noon(as_of.isoformat())
+            payload["as_of_date"] = as_of.isoformat()
+        else:
+            jd_ut = astrocartography_service.jd_ut_for_chart(chart)
+        lines = astrocartography_service.compute_lines_for_jd(jd_ut)
+        nearby = analyze_nearby_lines(lines, focus_lat, focus_lon, threshold_km=500)
+        significations = astrocartography_significations()["planet_line_meanings"]
+
+        payload["identity"] = _identity_context(chart_data)
+        payload["map_mode"] = mode
+        payload["focus_location"] = {"label": focus_label, "latitude": focus_lat, "longitude": focus_lon}
+        payload["nearby_lines"] = [
+            {**match, "meaning": significations.get(match["planet"], {}).get(match["line_type"], "")} for match in nearby
+        ]
 
     return payload
 
@@ -963,6 +1041,8 @@ async def generate_reading(
         max_tokens = _zodiacal_releasing_max_tokens(request)
     elif request.reading_type == "timing":
         max_tokens = _timing_max_tokens(request)
+    elif request.reading_type == "astrocartography":
+        max_tokens = _astrocartography_max_tokens(request)
     else:
         max_tokens = READING_TYPE_MAX_TOKENS.get(request.reading_type, 2000)
 

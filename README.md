@@ -70,8 +70,8 @@ Implémenté :
   (amour, amitié, professionnel, santé, développement personnel), même mécanisme que la
   notation de compatibilité pour une identité cohérente sur le site
 - Libération zodiacale (Zodiacal Releasing) : phases L1 (plusieurs années) et sous-phases L2
-  (mois), calculées pour les 14 lots (formellement définie pour le Lot de Fortune et le Lot
-  d'Esprit ; extension exploratoire du même algorithme aux 12 autres lots), avec détection des
+  (mois), calculées pour les 17 lots (formellement définie pour le lot Fortune et le lot
+  Esprit ; extension exploratoire du même algorithme aux 15 autres lots), avec détection des
   périodes de pointe et des "déliements du lien" (changements de trajectoire marqués) —
   technique hellénistique (Vettius Valens), calcul sans dérive sur des dizaines d'années. La
   lecture dédiée permet de cocher un ou plusieurs lots (lecture approfondie sur un seul lot,
@@ -89,10 +89,27 @@ Implémenté :
   valeurs partagées), générée par le modèle avec une courte justification par axe — une
   impression interprétative de synthèse, pas un score scientifique. Le mode personne/entreprise
   n'est pas encore implémenté (nécessite un thème d'entreprise dédié, cf. section V2 de la spec)
+- Astrocartographie & cyclocartographie, dans une partie séparée du thème natal et de la
+  lecture interprétée : projette sur une carte du monde (SVG, projection équirectangulaire)
+  les lignes ASC/DC/MC/IC des 10 planètes classiques — les lieux où chacune est angulaire.
+  Deux variantes : **natale** (lignes fixes calculées à l'instant de naissance, mises en cache
+  par thème, jamais recalculées) et **cyclocartographie** (lignes de transit reflétant les
+  positions planétaires actuelles, calculées une fois par jour et partagées par tous les
+  utilisateurs — pas de tâche cron, calcul paresseux à la première requête du jour). Formules
+  d'astronomie sphérique standard (temps sidéral de Greenwich, ascension droite/déclinaison
+  équatoriales, angle horaire de lever/coucher), indépendantes de tout logiciel commercial et
+  vérifiées contre des repères connus (ligne de MC du Soleil ≈ longitude de l'heure solaire
+  apparente, ASC/DC exactement à ±90° du MC à l'équateur). Lieux sauvegardés (ex. "et si je
+  déménageais à Lisbonne ?") : recherche de ville (géocodage), calcul déterministe des lignes
+  natales les plus proches (distance orthodromique), lecture LLM dédiée qui commente les lignes
+  proches du lieu choisi (par défaut le lieu de naissance) en s'appuyant sur les significations
+  par planète/type de ligne — jamais d'affirmation sur la sécurité/l'économie/la politique du
+  lieu, toujours cadré comme un potentiel symbolique plutôt qu'un verdict
 - Lecture interprétée par l'API Anthropic avec **prompt dédié par catégorie** : lecture
   générale (thème de base uniquement — planètes/maisons/aspects/dispositeurs, sans les lots
-  ni les maisons dérivées), et cinq lectures spécialisées (Lots, Maisons dérivées, Timing,
-  Libération zodiacale, Compatibilité) qui ne reçoivent que les données de leur propre technique
+  ni les maisons dérivées), et six lectures spécialisées (Lots, Maisons dérivées, Timing,
+  Libération zodiacale, Compatibilité, Astrocartographie) qui ne reçoivent que les données de
+  leur propre technique
 - Web app simple pour saisir une naissance, visualiser le thème et générer une lecture,
   organisée en "Thème natal" (données calculées) et "Lecture interprétée" (générale + les
   5 lectures spécialisées, chacune affichant d'abord ses données puis un bouton de génération ;
@@ -163,7 +180,7 @@ Principe directeur repris du cahier des charges : tout ce qui est dans `app/core
 | POST | `/api/charts` | Calcule et sauvegarde un thème natal à partir des données de naissance |
 | GET | `/api/charts` | Liste les thèmes de la session courante |
 | GET | `/api/charts/{id}` | Récupère un thème calculé |
-| POST | `/api/charts/{id}/readings` | Génère une lecture interprétée (LLM). `reading_type` = `global`\|`love`\|`career`\|`family`\|`lots`\|`derived_houses`\|`timing`\|`zodiacal_releasing`\|`compatibility` ; `relation_key` (voir `/api/reference/derived-house-relations`, ou `custom:N1:N2` pour une relation de second ordre composée librement) pour `derived_houses` (repli sur `reference_house` 1-12 si absent), `as_of_date` pour `timing`/`zodiacal_releasing`, `timing_horizon` (`week`\|`month`\|`year`, défaut `year`) pour `timing`, `zr_selected_lots`+`zr_mode` (`current`\|`predictive`)+`zr_axis_key` (voir `/api/reference/axes-thematiques-lots`, qualification natale en couche 1 pour les projections 10 ans) pour `zodiacal_releasing`, `chart_b_id`+`relationship_mode` pour `compatibility` |
+| POST | `/api/charts/{id}/readings` | Génère une lecture interprétée (LLM). `reading_type` = `global`\|`love`\|`career`\|`family`\|`lots`\|`derived_houses`\|`timing`\|`zodiacal_releasing`\|`compatibility`\|`astrocartography` ; `relation_key` (voir `/api/reference/derived-house-relations`, ou `custom:N1:N2` pour une relation de second ordre composée librement) pour `derived_houses` (repli sur `reference_house` 1-12 si absent), `as_of_date` pour `timing`/`zodiacal_releasing`, `timing_horizon` (`week`\|`month`\|`year`, défaut `year`) pour `timing`, `zr_selected_lots`+`zr_mode` (`current`\|`predictive`)+`zr_axis_key` (voir `/api/reference/axes-thematiques-lots`, qualification natale en couche 1 pour les projections 10 ans) pour `zodiacal_releasing`, `chart_b_id`+`relationship_mode` pour `compatibility`, `astro_map_mode` (`natal`\|`transit`)+`astro_focus_latitude`/`astro_focus_longitude`/`astro_focus_label` (défaut : lieu de naissance) pour `astrocartography` |
 | GET | `/api/charts/{id}/readings` | Liste les lectures déjà générées pour un thème |
 | GET | `/api/charts/{id}/timing?date=YYYY-MM-DD` | Transits actuels de toutes les planètes + profection annuelle, calculés à la demande (non persisté) |
 | GET | `/api/charts/{id}/timing/forecast?date=...&months=12` | Transits à venir sur la période, toutes planètes (pics d'orbe, fenêtres actives, intensité 1-4) |
@@ -171,6 +188,11 @@ Principe directeur repris du cahier des charges : tout ce qui est dans `app/core
 | GET | `/api/reference/axes-thematiques-lots` | Liste finale validée des 17 lots + les 7 axes thématiques (raccourcis de sélection) pour les projections à 10 ans |
 | GET | `/api/charts/{id}/zodiacal-releasing?date=YYYY-MM-DD&lookahead_years=5` | Phases L1/sous-phases L2 en cours pour les 17 lots, calculées à la demande (non persisté) |
 | GET | `/api/charts/{id}/compatibility?chart_b_id=...&mode=romantic\|friendship\|professional` | Inter-aspects pondérés, chevauchement de maisons et thème composite entre deux thèmes, calculés à la demande (non persisté) |
+| GET | `/api/charts/{id}/astrocartography` | Lignes ASC/DC/MC/IC natales des 10 planètes classiques, calculées une seule fois par thème puis mises en cache |
+| GET | `/api/astrocartography/transit?date=YYYY-MM-DD` | Lignes de transit (cyclocartographie) du jour demandé (défaut aujourd'hui, UTC), calculées une seule fois par jour et partagées par tous les utilisateurs |
+| POST/GET | `/api/charts/{id}/saved-locations` | Crée/liste les lieux sauvegardés (ville, coordonnées) avec l'analyse déterministe des lignes natales à proximité (distance orthodromique) |
+| DELETE | `/api/saved-locations/{id}` | Supprime un lieu sauvegardé |
+| GET | `/api/reference/astrocartography-significations` | Significations par planète et type de ligne (ASC/DC/MC/IC) utilisées par le prompt LLM |
 | GET | `/api/reference/config` | Options de configuration (systèmes de maisons, dispositeurs, points optionnels) |
 | GET | `/api/reference/timezones` | Liste des ~490 fuseaux horaires IANA canoniques |
 | GET | `/api/geocode?query=...` | Recherche ville -> latitude/longitude/fuseau horaire |

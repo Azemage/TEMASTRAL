@@ -143,6 +143,17 @@ function planetLabel(name) {
   return pick(PLANET_NAMES[name]) || name;
 }
 
+const ASTRO_LINE_TYPE_NAMES = {
+  ASC: { fr: "Ascendant", en: "Ascendant", es: "Ascendente" },
+  DC: { fr: "Descendant", en: "Descendant", es: "Descendente" },
+  MC: { fr: "Milieu du Ciel", en: "Midheaven", es: "Medio Cielo" },
+  IC: { fr: "Fond du Ciel", en: "Imum Coeli", es: "Fondo del Cielo" },
+};
+
+function astroLineTypeLabel(lineType) {
+  return pick(ASTRO_LINE_TYPE_NAMES[lineType]) || lineType;
+}
+
 const HOUSE_KEYWORDS = {
   1: { fr: "identité", en: "identity", es: "identidad" },
   2: { fr: "ressources", en: "resources", es: "recursos" },
@@ -759,4 +770,35 @@ const UI_TEXT = {
   error_prefix: { fr: "Erreur", en: "Error", es: "Error" },
   compat_ratings_title: { fr: "Notes de compatibilité", en: "Compatibility ratings", es: "Puntuaciones de compatibilidad" },
   timing_ratings_title: { fr: "Notes du pronostic", en: "Forecast ratings", es: "Puntuaciones del pronóstico" },
+
+  astro_section_title: { fr: "4. Astrocartographie", en: "4. Astrocartography", es: "4. Astrocartografía" },
+  astro_section_intro: {
+    fr: "Projette sur une carte du monde les lieux où chaque planète est angulaire (Ascendant, Descendant, Milieu du Ciel, Fond du Ciel). Deux variantes : l'astrocartographie natale (lignes fixes, calculées une seule fois à la naissance) et la cyclocartographie (lignes de transit, qui reflètent les positions planétaires actuelles).",
+    en: "Projects onto a world map the places where each planet is angular (Ascendant, Descendant, Midheaven, Imum Coeli). Two variants: natal astrocartography (fixed lines, computed once at birth) and cyclocartography (transit lines, reflecting current planetary positions).",
+    es: "Proyecta sobre un mapa del mundo los lugares donde cada planeta está angular (Ascendente, Descendente, Medio Cielo, Fondo del Cielo). Dos variantes: astrocartografía natal (líneas fijas, calculadas una sola vez al nacer) y ciclocartografía (líneas de tránsito, que reflejan las posiciones planetarias actuales).",
+  },
+  astro_mode_natal: { fr: "Natale", en: "Natal", es: "Natal" },
+  astro_mode_transit: { fr: "Cyclocartographie (transit)", en: "Cyclocartography (transit)", es: "Ciclocartografía (tránsito)" },
+  astro_saved_locations_title: { fr: "Lieux sauvegardés", en: "Saved locations", es: "Lugares guardados" },
+  astro_saved_locations_intro: {
+    fr: "Enregistrez un lieu (ex. une destination de déménagement envisagée) pour voir quelles lignes natales en passent à proximité.",
+    en: "Save a location (e.g. a possible relocation destination) to see which natal lines pass nearby.",
+    es: "Guarda un lugar (por ejemplo, un posible destino de mudanza) para ver qué líneas natales pasan cerca.",
+  },
+  label_location_to_analyze: { fr: "Lieu à analyser", en: "Location to analyze", es: "Lugar a analizar" },
+  btn_generate_astro_reading: { fr: "Générer la lecture d'astrocartographie", en: "Generate astrocartography reading", es: "Generar lectura de astrocartografía" },
+  status_computing_astro: { fr: "Calcul des lignes en cours...", en: "Computing lines...", es: "Calculando las líneas..." },
+  error_loading_astro: { fr: "Impossible de charger les lignes :", en: "Could not load the lines:", es: "No se pudieron cargar las líneas:" },
+  astro_no_saved_locations: { fr: "Aucun lieu sauvegardé pour l'instant.", en: "No saved locations yet.", es: "Aún no hay lugares guardados." },
+  astro_no_nearby_lines: { fr: "Aucune ligne natale à proximité.", en: "No natal line nearby.", es: "Ninguna línea natal cerca." },
+  astro_use_for_reading: { fr: "Utiliser pour la lecture", en: "Use for reading", es: "Usar para la lectura" },
+  astro_planets_filter_title: { fr: "Planètes affichées", en: "Displayed planets", es: "Planetas mostrados" },
+  astro_line_types_filter_title: { fr: "Types de lignes", en: "Line types", es: "Tipos de línea" },
+  astro_focus_default_note: {
+    fr: "Par défaut, la lecture porte sur votre lieu de naissance — cliquez \"Utiliser pour la lecture\" sur un lieu sauvegardé pour l'analyser à la place.",
+    en: "By default, the reading focuses on your birthplace — click \"Use for reading\" on a saved location to analyze it instead.",
+    es: "Por defecto, la lectura se centra en tu lugar de nacimiento — haz clic en \"Usar para la lectura\" en un lugar guardado para analizarlo en su lugar.",
+  },
+  astro_reading_focus_label: { fr: "Lieu analysé pour cette lecture :", en: "Location analyzed for this reading:", es: "Lugar analizado para esta lectura:" },
+  btn_delete: { fr: "Supprimer", en: "Delete", es: "Eliminar" },
 };
