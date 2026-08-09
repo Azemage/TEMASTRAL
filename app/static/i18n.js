@@ -850,4 +850,19 @@ const UI_TEXT = {
   },
   astro_score_label: { fr: "Score :", en: "Score:", es: "Puntuación:" },
   astro_crossings_label: { fr: "Croisements :", en: "Crossings:", es: "Cruces:" },
+  btn_forecast_ai_reading: {
+    fr: "Analyse IA de cette prévision",
+    en: "AI analysis of this forecast",
+    es: "Análisis IA de esta previsión",
+  },
+  astro_transit_cities_title: {
+    fr: "Top 5 des villes marquées par le ciel du jour",
+    en: "Top 5 cities marked by today's sky",
+    es: "Top 5 de ciudades marcadas por el cielo del día",
+  },
+  astro_transit_cities_intro: {
+    fr: "Recalculé automatiquement à chaque changement de date : les villes les plus proches des lignes de transit (et de leurs croisements) à cette date précise.",
+    en: "Recomputed automatically on every date change: the cities closest to the transit lines (and their crossings) on this specific date.",
+    es: "Recalculado automáticamente en cada cambio de fecha: las ciudades más cercanas a las líneas de tránsito (y sus cruces) en esta fecha concreta.",
+  },
 };

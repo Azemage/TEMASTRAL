@@ -138,6 +138,22 @@ def get_or_compute_transit_lines(db: Session, as_of_date: date_type | None = Non
     return rows
 
 
+def compute_interesting_cities_for_transit(
+    db: Session, as_of_date: date_type | None = None, threshold_km: float = 300.0, top_n: int = 5
+) -> list[dict]:
+    """Équivalent de compute_interesting_cities_for_chart mais pour la cyclocartographie
+    (transit) : classe les grandes villes mondiales selon leur proximité aux lignes de transit
+    et aux croisements de lignes DU JOUR (ou de la date demandée) — recalculé à chaque date
+    différente puisque les lignes de transit bougent avec le temps."""
+    transit_lines = get_or_compute_transit_lines(db, as_of_date)
+    lines_as_dicts = [
+        {"planet": line.planet, "line_type": line.line_type, "line_points": line.line_points} for line in transit_lines
+    ]
+    crossings = compute_all_crossings(lines_as_dicts)
+    cities = reference_data.world_cities()
+    return find_interesting_cities(lines_as_dicts, crossings, cities, threshold_km=threshold_km, top_n=top_n)
+
+
 def create_saved_location(
     db: Session,
     session: models.AnonymousSession,

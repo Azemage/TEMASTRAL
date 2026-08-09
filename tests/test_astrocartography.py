@@ -397,6 +397,43 @@ def test_location_forecast_endpoint_rejects_out_of_range_latitude(client):
     assert res.status_code == 422
 
 
+def test_location_forecast_endpoint_caps_years_at_ten(client):
+    res = client.get(
+        "/api/astrocartography/location-forecast", params={"latitude": 48.8566, "longitude": 2.3522, "years": 11}
+    )
+    assert res.status_code == 422
+    res_ok = client.get(
+        "/api/astrocartography/location-forecast", params={"latitude": 48.8566, "longitude": 2.3522, "years": 10}
+    )
+    assert res_ok.status_code == 200
+
+
+def test_astrocartography_forecast_reading_accepts_capped_years(client):
+    chart_id = client.post("/api/charts", json=VALID_CHART_PAYLOAD).json()["id"]
+    res = client.post(
+        f"/api/charts/{chart_id}/readings",
+        json={
+            "reading_type": "astrocartography_forecast",
+            "astro_focus_latitude": 48.8566,
+            "astro_focus_longitude": 2.3522,
+            "astro_focus_label": "Paris",
+            "forecast_years": 10,
+        },
+    )
+    # Pas de clé API configurée dans les tests : 503 (RuntimeError) attendu, pas une erreur de
+    # construction du payload en amont (422/500).
+    assert res.status_code == 503
+
+
+def test_astrocartography_forecast_reading_rejects_years_above_cap(client):
+    chart_id = client.post("/api/charts", json=VALID_CHART_PAYLOAD).json()["id"]
+    res = client.post(
+        f"/api/charts/{chart_id}/readings",
+        json={"reading_type": "astrocartography_forecast", "forecast_years": 15},
+    )
+    assert res.status_code == 422
+
+
 # ---------------------------------------------------------------------------
 # Croisements de lignes (approximation cartographique des parans) + villes intéressantes
 # ---------------------------------------------------------------------------
@@ -492,3 +529,26 @@ def test_interesting_cities_endpoint_respects_top_n_param(client):
     res = client.get(f"/api/charts/{chart_id}/astrocartography/interesting-cities", params={"top_n": 3})
     assert res.status_code == 200
     assert len(res.json()) <= 3
+
+
+def test_transit_interesting_cities_endpoint_defaults_to_top_5(client):
+    res = client.get("/api/astrocartography/transit/interesting-cities")
+    assert res.status_code == 200
+    body = res.json()
+    assert 0 < len(body) <= 5
+    assert [c["score"] for c in body] == sorted((c["score"] for c in body), reverse=True)
+
+
+def test_transit_interesting_cities_endpoint_recomputes_for_a_different_date(client):
+    res_today = client.get("/api/astrocartography/transit/interesting-cities")
+    res_future = client.get("/api/astrocartography/transit/interesting-cities", params={"date": "2028-03-15"})
+    assert res_today.status_code == res_future.status_code == 200
+    # Deux dates suffisamment éloignées doivent (quasi certainement) produire un classement
+    # différent, puisque les lignes de transit se déplacent avec le temps.
+    assert res_today.json() != res_future.json()
+
+
+def test_transit_interesting_cities_endpoint_respects_top_n_param(client):
+    res = client.get("/api/astrocartography/transit/interesting-cities", params={"top_n": 2})
+    assert res.status_code == 200
+    assert len(res.json()) <= 2

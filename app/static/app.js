@@ -1718,6 +1718,12 @@ function resetAstrocartographyStateForNewChart() {
   if (forecastResults) forecastResults.innerHTML = "";
   const forecastError = document.getElementById("astro-forecast-error");
   if (forecastError) forecastError.textContent = "";
+  const forecastAiBtn = document.getElementById("astro-forecast-ai-btn");
+  if (forecastAiBtn) forecastAiBtn.classList.add("hidden");
+  const forecastAiError = document.getElementById("astro-forecast-ai-error");
+  if (forecastAiError) forecastAiError.textContent = "";
+  const forecastAiOutput = document.getElementById("astro-forecast-ai-output");
+  if (forecastAiOutput) forecastAiOutput.innerHTML = "";
   const citiesList = document.getElementById("astro-interesting-cities-list");
   if (citiesList) citiesList.innerHTML = "";
   const citiesError = document.getElementById("astro-interesting-cities-error");
@@ -1876,16 +1882,12 @@ function renderAstroMapPanel(lines) {
         ${lineTypeCheckboxes}
       </div>
     </div>
-    <div class="astro-map-wrapper">${buildAstroMapSVG(lines, astroSavedLocations, selectedAstroMode === "natal" ? astroInterestingCities : [])}</div>
+    <div class="astro-map-wrapper">${buildAstroMapSVG(lines, astroSavedLocations, astroInterestingCities)}</div>
   `;
   attachWheelTooltip(panel.querySelector(".astro-map-wrapper"));
 
   const redraw = () => {
-    panel.querySelector(".astro-map-wrapper").innerHTML = buildAstroMapSVG(
-      lines,
-      astroSavedLocations,
-      selectedAstroMode === "natal" ? astroInterestingCities : []
-    );
+    panel.querySelector(".astro-map-wrapper").innerHTML = buildAstroMapSVG(lines, astroSavedLocations, astroInterestingCities);
   };
   panel.querySelectorAll(".astro-planet-checkbox").forEach((cb) => {
     cb.addEventListener("change", () => {
@@ -1938,20 +1940,27 @@ document.querySelectorAll(".astro-mode-btn").forEach((btn) => {
     } else {
       loadAstroLines(selectedAstroMode);
     }
+    loadAstroInterestingCities();
   });
 });
 
 document.getElementById("astro-transit-date").addEventListener("change", (e) => {
   astroTransitDate = e.target.value || null;
   astroLinesCache.transit = null; // la date a changé : le cache précédent ne vaut plus rien
-  if (selectedAstroMode === "transit") loadAstroLines("transit");
+  if (selectedAstroMode === "transit") {
+    loadAstroLines("transit");
+    loadAstroInterestingCities();
+  }
 });
 
 document.getElementById("astro-transit-date-today-btn").addEventListener("click", () => {
   astroTransitDate = null;
   document.getElementById("astro-transit-date").value = "";
   astroLinesCache.transit = null;
-  if (selectedAstroMode === "transit") loadAstroLines("transit");
+  if (selectedAstroMode === "transit") {
+    loadAstroLines("transit");
+    loadAstroInterestingCities();
+  }
 });
 
 function renderAstroSavedLocationsList() {
@@ -2028,14 +2037,35 @@ function renderAstroInterestingCitiesList() {
     .join("");
 }
 
+function updateInterestingCitiesPanelLabels() {
+  const titleEl = document.getElementById("astro-interesting-cities-title");
+  const introEl = document.getElementById("astro-interesting-cities-intro");
+  if (!titleEl || !introEl) return;
+  if (selectedAstroMode === "transit") {
+    titleEl.textContent = t("astro_transit_cities_title");
+    introEl.textContent = t("astro_transit_cities_intro");
+  } else {
+    titleEl.textContent = t("astro_interesting_cities_title");
+    introEl.textContent = t("astro_interesting_cities_intro");
+  }
+}
+
 async function loadAstroInterestingCities() {
   if (!currentChart) return;
+  updateInterestingCitiesPanelLabels();
+  const requestedMode = selectedAstroMode;
   try {
-    const res = await fetch(`/api/charts/${currentChart.id}/astrocartography/interesting-cities`);
+    const url =
+      requestedMode === "transit"
+        ? `/api/astrocartography/transit/interesting-cities?top_n=5${astroTransitDate ? `&date=${astroTransitDate}` : ""}`
+        : `/api/charts/${currentChart.id}/astrocartography/interesting-cities`;
+    const res = await fetch(url);
     if (!res.ok) throw new Error(`${t("error_prefix")} ${res.status}`);
-    astroInterestingCities = await res.json();
+    const cities = await res.json();
+    if (requestedMode !== selectedAstroMode) return; // le mode a changé pendant la requête : résultat obsolète
+    astroInterestingCities = cities;
     renderAstroInterestingCitiesList();
-    if (selectedAstroMode === "natal" && astroLinesCache.natal) renderAstroMapPanel(astroLinesCache.natal);
+    if (astroLinesCache[selectedAstroMode]) renderAstroMapPanel(astroLinesCache[selectedAstroMode]);
   } catch (err) {
     document.getElementById("astro-interesting-cities-error").textContent = err.message;
   }
@@ -2136,16 +2166,25 @@ function renderAstroForecastResults(data) {
     </table>`;
 }
 
+function clampForecastYears() {
+  const input = document.getElementById("astro-forecast-years");
+  const clamped = Math.min(10, Math.max(1, parseInt(input.value, 10) || 10));
+  input.value = clamped;
+  return clamped;
+}
+
 document.getElementById("astro-forecast-btn").addEventListener("click", async () => {
   const errorEl = document.getElementById("astro-forecast-error");
   const resultsEl = document.getElementById("astro-forecast-results");
+  const aiBtn = document.getElementById("astro-forecast-ai-btn");
   errorEl.textContent = "";
+  aiBtn.classList.add("hidden");
   if (!currentChart) return;
 
   const latitude = astroFocusLocation ? astroFocusLocation.latitude : currentChart.birth_latitude;
   const longitude = astroFocusLocation ? astroFocusLocation.longitude : currentChart.birth_longitude;
   const startDate = document.getElementById("astro-forecast-start-date").value || undefined;
-  const years = document.getElementById("astro-forecast-years").value || 10;
+  const years = clampForecastYears();
   const thresholdKm = document.getElementById("astro-forecast-threshold").value || 300;
 
   resultsEl.innerHTML = `<p>${t("status_computing_forecast")}</p>`;
@@ -2164,10 +2203,36 @@ document.getElementById("astro-forecast-btn").addEventListener("click", async ()
     }
     const data = await res.json();
     renderAstroForecastResults(data);
+    aiBtn.classList.remove("hidden");
   } catch (err) {
     resultsEl.innerHTML = "";
     errorEl.textContent = `${t("error_loading_forecast")} ${err.message}`;
   }
+});
+
+document.getElementById("astro-forecast-ai-btn").addEventListener("click", () => {
+  const latitude = astroFocusLocation ? astroFocusLocation.latitude : currentChart.birth_latitude;
+  const longitude = astroFocusLocation ? astroFocusLocation.longitude : currentChart.birth_longitude;
+  const label = astroFocusLocation ? astroFocusLocation.label : currentChart.birth_city;
+  const startDate = document.getElementById("astro-forecast-start-date").value || undefined;
+  const years = clampForecastYears();
+  const thresholdKm = document.getElementById("astro-forecast-threshold").value || 300;
+
+  generateSpecializedReading({
+    btnId: "astro-forecast-ai-btn",
+    errorId: "astro-forecast-ai-error",
+    outputId: "astro-forecast-ai-output",
+    defaultLabel: t("btn_forecast_ai_reading"),
+    requestBody: {
+      reading_type: "astrocartography_forecast",
+      astro_focus_latitude: latitude,
+      astro_focus_longitude: longitude,
+      astro_focus_label: label,
+      forecast_start_date: startDate,
+      forecast_years: years,
+      forecast_threshold_km: Number(thresholdKm),
+    },
+  });
 });
 
 document.getElementById("generate-astro-reading-btn").addEventListener("click", () => {

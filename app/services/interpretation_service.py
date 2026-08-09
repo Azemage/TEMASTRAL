@@ -306,6 +306,63 @@ ligne planétaire particulière plutôt que de forcer une interprétation."""
 {guardrails}"""
 
 
+def _select_significant_forecast_windows(windows: list[dict], max_count: int = 25) -> list[dict]:
+    """Réduit la liste brute de fenêtres (potentiellement plusieurs centaines sur 10 ans, tous
+    planètes/types de ligne confondus) aux plus significatives pour le LLM : les fenêtres où la
+    ligne passe le plus près du lieu (`peak_distance_km` la plus faible), puis re-triées
+    chronologiquement pour que la lecture suive un déroulé dans le temps plutôt que par ordre
+    de proximité."""
+    selected = sorted(windows, key=lambda w: w["peak_distance_km"])[:max_count]
+    return sorted(selected, key=lambda w: w["start_date"])
+
+
+def _astrocartography_forecast_max_tokens(request: schemas.ReadingRequest) -> int:
+    """Les fenêtres sont déjà réduites aux plus significatives (voir
+    _select_significant_forecast_windows) et l'horizon est plafonné à 10 ans côté API : un
+    budget fixe généreux couvre confortablement le cas le plus riche."""
+    return 4000
+
+
+def _astrocartography_forecast_prompt_block(request: schemas.ReadingRequest) -> str:
+    intro = """Cette lecture porte sur une PRÉVISION CYCLOCARTOGRAPHIQUE PLURIANNUELLE pour un \
+LIEU FIXE : contrairement à la lecture d'astrocartographie classique (un instant donné, des \
+lignes qui bougent), ici c'est le LIEU qui reste fixe (ex. le domicile de la personne) et on \
+regarde, sur `forecast_period` (jusqu'à 10 ans), quelles lignes planétaires de transit viennent \
+passer à proximité de ce lieu au fil du temps. Tu reçois dans `focus_location` le lieu analysé, \
+dans `forecast_period` la période couverte (`start_date`/`end_date`/`years`/`threshold_km`), et \
+dans `forecast_windows` la liste déjà calculée et déjà réduite aux fenêtres les plus \
+significatives (triées chronologiquement), chacune avec `planet`, `line_type` (ASC/DC/MC/IC), \
+`start_date`/`end_date` (la fenêtre où la ligne reste sous le seuil de distance), `peak_date` \
+(le jour de plus grande proximité) et `peak_distance_km`, ainsi qu'une `meaning` de référence."""
+
+    structure = """Structure la lecture de façon CHRONOLOGIQUE, par grandes périodes plutôt que \
+fenêtre par fenêtre : quand plusieurs fenêtres se chevauchent ou se suivent de près dans le \
+temps (même année, ou planètes différentes actives sur une période commune), regroupe-les en \
+une seule période à commenter ensemble — la convergence de plusieurs lignes sur une même \
+fenêtre temporelle est justement le signal le plus intéressant, pas un empilement de mentions \
+isolées. Ne traite jamais chacune des fenêtres reçues comme un point de lecture séparé et \
+égal : priorise les périodes où `peak_distance_km` est la plus faible et où plusieurs planètes \
+se recoupent, mentionne les autres plus brièvement."""
+
+    guardrails = """Ce sont des lignes de TRANSIT (cyclocartographie) : un climat astrologique \
+passager superposé à ce lieu pendant la fenêtre indiquée, jamais une caractéristique fixe ou \
+permanente. Ne formule JAMAIS de prédiction fermée ou datée avec certitude ("il se passera X \
+tel jour") : reste toujours en dynamique disponible ("cette période pourrait favoriser...", \
+"une tension est susceptible d'émerger autour de..."). Ne transforme jamais une fenêtre proche \
+en injonction à voyager ou déménager, ni en verdict absolu sur cette période ("cette année sera \
+mauvaise") : présente toujours ces dynamiques comme un potentiel activé, ni entièrement positif \
+ni entièrement négatif. Ne fais aucune affirmation sur la sécurité, la politique, l'économie ou \
+les conditions de vie réelles du lieu. Si `forecast_windows` est vide, dis-le simplement et \
+explique qu'aucune ligne de transit majeure ne vient marquer ce lieu sur la période demandée, \
+plutôt que de forcer une interprétation."""
+
+    return f"""{intro}
+
+{structure}
+
+{guardrails}"""
+
+
 _TIMING_MAX_TOKENS_BY_HORIZON = {"week": 2200, "month": 2800, "year": 3500}
 
 
@@ -874,6 +931,8 @@ Termine toujours par un court paragraphe de synthèse bienveillant et encouragea
         specialized_block = _derived_houses_prompt_block(request)
     elif request.reading_type == "astrocartography":
         specialized_block = _astrocartography_prompt_block(request)
+    elif request.reading_type == "astrocartography_forecast":
+        specialized_block = _astrocartography_forecast_prompt_block(request)
     else:
         specialized_block = _SPECIALIZED_PROMPT_BLOCKS[request.reading_type]
     return f"""{base}
@@ -1020,6 +1079,31 @@ def _build_user_payload(
         payload["nearby_lines"] = [
             {**match, "meaning": significations.get(match["planet"], {}).get(match["line_type"], "")} for match in nearby
         ]
+    elif request.reading_type == "astrocartography_forecast":
+        focus_lat = request.astro_focus_latitude if request.astro_focus_latitude is not None else chart.birth_latitude
+        focus_lon = request.astro_focus_longitude if request.astro_focus_longitude is not None else chart.birth_longitude
+        focus_label = request.astro_focus_label or chart.birth_city or "lieu analysé"
+        start_date = request.forecast_start_date or date_type.today()
+        years = request.forecast_years
+        threshold_km = request.forecast_threshold_km
+        end_date = start_date + timedelta(days=round(years * 365.25))
+
+        windows = astrocartography_service.compute_location_forecast(
+            latitude=focus_lat, longitude=focus_lon, start_date=start_date, years=years, threshold_km=threshold_km
+        )
+        significant_windows = _select_significant_forecast_windows(windows)
+        significations = astrocartography_significations()["planet_line_meanings"]
+
+        payload["identity"] = _identity_context(chart_data)
+        payload["focus_location"] = {"label": focus_label, "latitude": focus_lat, "longitude": focus_lon}
+        payload["forecast_period"] = {
+            "start_date": start_date, "end_date": end_date, "years": years, "threshold_km": threshold_km
+        }
+        payload["forecast_windows"] = [
+            {**window, "meaning": significations.get(window["planet"], {}).get(window["line_type"], "")}
+            for window in significant_windows
+        ]
+        payload["total_windows_found"] = len(windows)
 
     return payload
 
@@ -1043,6 +1127,8 @@ async def generate_reading(
         max_tokens = _timing_max_tokens(request)
     elif request.reading_type == "astrocartography":
         max_tokens = _astrocartography_max_tokens(request)
+    elif request.reading_type == "astrocartography_forecast":
+        max_tokens = _astrocartography_forecast_max_tokens(request)
     else:
         max_tokens = READING_TYPE_MAX_TOKENS.get(request.reading_type, 2000)
 

@@ -114,13 +114,21 @@ Implémenté :
   passe à proximité (`GET /api/astrocartography/location-forecast`), regroupées par
   planète/type de ligne avec date de pic de proximité — la Lune est exclue par défaut (sa ligne
   de MC balaie ~12°/jour, trop de fenêtres courtes sur un horizon pluriannuel pour être
-  pertinente) mais reste sélectionnable explicitement. **Villes intéressantes suggérées
-  automatiquement** (mode natal) : parmi ~240 grandes villes mondiales (Natural Earth 110m
-  populated places, domaine public), celles proches de plusieurs lignes natales et/ou d'un
-  croisement de deux lignes planétaires distinctes sont détectées et classées par score
-  déterministe, puis affichées à la fois en liste et sous forme de repères losange sur la carte
-  (`GET /api/charts/{id}/astrocartography/interesting-cities`). Un croisement de lignes est ici
-  une approximation cartographique des *parans* traditionnels : le point où deux courbes de
+  pertinente) mais reste sélectionnable explicitement. Horizon **plafonné à 10 ans** (trop de
+  données au-delà pour rester lisible), avec une **lecture LLM dédiée**
+  (`reading_type=astrocartography_forecast`) : les fenêtres de transit sur la période sont
+  réduites aux ~25 plus significatives (les plus proches du lieu), re-triées chronologiquement,
+  et le prompt demande explicitement de regrouper les périodes qui se recoupent plutôt que de
+  traiter chaque fenêtre comme un point isolé — toujours cadré comme climat passager, jamais
+  comme prédiction datée avec certitude. **Villes intéressantes suggérées automatiquement**,
+  en mode natal (score sur les 12 premières, `GET /api/charts/{id}/astrocartography/interesting-cities`)
+  **et en mode cyclocartographie** (top 5 recalculé à chaque changement de date,
+  `GET /api/astrocartography/transit/interesting-cities`) : parmi ~240 grandes villes mondiales
+  (Natural Earth 110m populated places, domaine public), celles proches de plusieurs lignes
+  (natales ou de transit selon le mode) et/ou d'un croisement de deux lignes planétaires
+  distinctes sont détectées et classées par score déterministe, puis affichées à la fois en
+  liste et sous forme de repères losange sur la carte. Un croisement de lignes est ici une
+  approximation cartographique des *parans* traditionnels : le point où deux courbes de
   planètes différentes se croisent effectivement sur la projection (interpolation linéaire entre
   échantillons de latitude consécutifs), pas le calcul astronomique classique par latitude
   d'angularité simultanée — voir `advanced_technique_parans` dans les significations pour la
@@ -200,7 +208,7 @@ Principe directeur repris du cahier des charges : tout ce qui est dans `app/core
 | POST | `/api/charts` | Calcule et sauvegarde un thème natal à partir des données de naissance |
 | GET | `/api/charts` | Liste les thèmes de la session courante |
 | GET | `/api/charts/{id}` | Récupère un thème calculé |
-| POST | `/api/charts/{id}/readings` | Génère une lecture interprétée (LLM). `reading_type` = `global`\|`love`\|`career`\|`family`\|`lots`\|`derived_houses`\|`timing`\|`zodiacal_releasing`\|`compatibility`\|`astrocartography` ; `relation_key` (voir `/api/reference/derived-house-relations`, ou `custom:N1:N2` pour une relation de second ordre composée librement) pour `derived_houses` (repli sur `reference_house` 1-12 si absent), `as_of_date` pour `timing`/`zodiacal_releasing`/`astrocartography` (mode `transit` uniquement — date de la cyclocartographie, défaut aujourd'hui), `timing_horizon` (`week`\|`month`\|`year`, défaut `year`) pour `timing`, `zr_selected_lots`+`zr_mode` (`current`\|`predictive`)+`zr_axis_key` (voir `/api/reference/axes-thematiques-lots`, qualification natale en couche 1 pour les projections 10 ans) pour `zodiacal_releasing`, `chart_b_id`+`relationship_mode` pour `compatibility`, `astro_map_mode` (`natal`\|`transit`)+`astro_focus_latitude`/`astro_focus_longitude`/`astro_focus_label` (défaut : lieu de naissance) pour `astrocartography` |
+| POST | `/api/charts/{id}/readings` | Génère une lecture interprétée (LLM). `reading_type` = `global`\|`love`\|`career`\|`family`\|`lots`\|`derived_houses`\|`timing`\|`zodiacal_releasing`\|`compatibility`\|`astrocartography`\|`astrocartography_forecast` ; `relation_key` (voir `/api/reference/derived-house-relations`, ou `custom:N1:N2` pour une relation de second ordre composée librement) pour `derived_houses` (repli sur `reference_house` 1-12 si absent), `as_of_date` pour `timing`/`zodiacal_releasing`/`astrocartography` (mode `transit` uniquement — date de la cyclocartographie, défaut aujourd'hui), `timing_horizon` (`week`\|`month`\|`year`, défaut `year`) pour `timing`, `zr_selected_lots`+`zr_mode` (`current`\|`predictive`)+`zr_axis_key` (voir `/api/reference/axes-thematiques-lots`, qualification natale en couche 1 pour les projections 10 ans) pour `zodiacal_releasing`, `chart_b_id`+`relationship_mode` pour `compatibility`, `astro_map_mode` (`natal`\|`transit`)+`astro_focus_latitude`/`astro_focus_longitude`/`astro_focus_label` (défaut : lieu de naissance) pour `astrocartography`, `astro_focus_latitude`/`astro_focus_longitude`/`astro_focus_label`+`forecast_start_date`+`forecast_years` (≤ 10)+`forecast_threshold_km` pour `astrocartography_forecast` |
 | GET | `/api/charts/{id}/readings` | Liste les lectures déjà générées pour un thème |
 | GET | `/api/charts/{id}/timing?date=YYYY-MM-DD` | Transits actuels de toutes les planètes + profection annuelle, calculés à la demande (non persisté) |
 | GET | `/api/charts/{id}/timing/forecast?date=...&months=12` | Transits à venir sur la période, toutes planètes (pics d'orbe, fenêtres actives, intensité 1-4) |
@@ -212,8 +220,9 @@ Principe directeur repris du cahier des charges : tout ce qui est dans `app/core
 | GET | `/api/astrocartography/transit?date=YYYY-MM-DD` | Lignes de transit (cyclocartographie) du jour demandé (défaut aujourd'hui, UTC), calculées une seule fois par jour et partagées par tous les utilisateurs |
 | POST/GET | `/api/charts/{id}/saved-locations` | Crée/liste les lieux sauvegardés (ville, coordonnées) avec l'analyse déterministe des lignes natales à proximité (distance orthodromique) |
 | DELETE | `/api/saved-locations/{id}` | Supprime un lieu sauvegardé |
-| GET | `/api/astrocartography/location-forecast?latitude=...&longitude=...&start_date=YYYY-MM-DD&years=10&planets=...&line_types=...&threshold_km=300&step_days=3` | Prévision multi-années pour un lieu fixe : fenêtres de temps où une ligne de transit passe à proximité, groupées par planète/type de ligne (`start_date`/`years`/`threshold_km`/`step_days` optionnels ; `planets`/`line_types` listes séparées par des virgules, défaut toutes sauf la Lune / ASC,DC,MC,IC) |
-| GET | `/api/charts/{id}/astrocartography/interesting-cities?threshold_km=300&top_n=12` | Villes suggérées automatiquement (parmi les grandes villes mondiales), classées par score de proximité aux lignes natales et aux croisements de lignes |
+| GET | `/api/astrocartography/location-forecast?latitude=...&longitude=...&start_date=YYYY-MM-DD&years=10&planets=...&line_types=...&threshold_km=300&step_days=3` | Prévision multi-années (max 10 ans) pour un lieu fixe : fenêtres de temps où une ligne de transit passe à proximité, groupées par planète/type de ligne (`start_date`/`years`/`threshold_km`/`step_days` optionnels ; `planets`/`line_types` listes séparées par des virgules, défaut toutes sauf la Lune / ASC,DC,MC,IC) |
+| GET | `/api/charts/{id}/astrocartography/interesting-cities?threshold_km=300&top_n=12` | Villes suggérées automatiquement (mode natal, parmi les grandes villes mondiales), classées par score de proximité aux lignes natales et aux croisements de lignes |
+| GET | `/api/astrocartography/transit/interesting-cities?date=YYYY-MM-DD&threshold_km=300&top_n=5` | Équivalent pour la cyclocartographie : top 5 villes par défaut, basé sur les lignes de transit de la date demandée (défaut aujourd'hui) — recalculé à chaque date différente |
 | GET | `/api/reference/astrocartography-significations` | Significations par planète et type de ligne (ASC/DC/MC/IC) utilisées par le prompt LLM |
 | GET | `/api/reference/config` | Options de configuration (systèmes de maisons, dispositeurs, points optionnels) |
 | GET | `/api/reference/timezones` | Liste des ~490 fuseaux horaires IANA canoniques |

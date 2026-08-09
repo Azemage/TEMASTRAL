@@ -15,12 +15,23 @@ class _FakeChart:
     zodiac_type = "tropical"
     rulership_system = "both"
 
-    def __init__(self, computed_chart_data, subject_name="Test", birth_date=date(1990, 5, 15), birth_city="Lyon", id="fake-id"):
+    def __init__(
+        self,
+        computed_chart_data,
+        subject_name="Test",
+        birth_date=date(1990, 5, 15),
+        birth_city="Lyon",
+        id="fake-id",
+        birth_latitude=45.7640,
+        birth_longitude=4.8357,
+    ):
         self.computed_chart_data = computed_chart_data
         self.subject_name = subject_name
         self.birth_date = birth_date
         self.birth_city = birth_city
         self.id = id
+        self.birth_latitude = birth_latitude
+        self.birth_longitude = birth_longitude
 
 
 def _make_chart():
@@ -44,7 +55,15 @@ def _make_chart_b():
         latitude=48.8566,
         longitude=2.3522,
     )
-    return _FakeChart(data, subject_name="Partenaire", birth_date=date(1988, 11, 2), birth_city="Paris", id="fake-id-b")
+    return _FakeChart(
+        data,
+        subject_name="Partenaire",
+        birth_date=date(1988, 11, 2),
+        birth_city="Paris",
+        id="fake-id-b",
+        birth_latitude=48.8566,
+        birth_longitude=2.3522,
+    )
 
 
 def test_global_reading_payload_excludes_lots_and_derived_houses():
@@ -626,3 +645,54 @@ def test_specialized_reading_types_omit_focus_zone_section():
     request = schemas.ReadingRequest(reading_type="lots")
     prompt = interpretation_service._build_system_prompt(request)
     assert "ZONES À COUVRIR" not in prompt
+
+
+def test_astrocartography_forecast_prompt_is_distinct_and_transit_framed():
+    request = schemas.ReadingRequest(reading_type="astrocartography_forecast")
+    prompt = interpretation_service._build_system_prompt(request)
+    astro_prompt = interpretation_service._build_system_prompt(schemas.ReadingRequest(reading_type="astrocartography"))
+    assert prompt != astro_prompt
+    assert "PRÉVISION CYCLOCARTOGRAPHIQUE PLURIANNUELLE" in prompt
+    assert "TRANSIT" in prompt
+
+
+def test_astrocartography_forecast_payload_includes_reduced_windows():
+    chart = _make_chart()
+    request = schemas.ReadingRequest(
+        reading_type="astrocartography_forecast",
+        astro_focus_latitude=48.8566,
+        astro_focus_longitude=2.3522,
+        astro_focus_label="Paris",
+        forecast_start_date=date(2024, 1, 1),
+        forecast_years=10,
+        forecast_threshold_km=300,
+    )
+    payload = interpretation_service._build_user_payload(chart, request)
+
+    assert payload["focus_location"] == {"label": "Paris", "latitude": 48.8566, "longitude": 2.3522}
+    assert payload["forecast_period"]["years"] == 10
+    assert payload["total_windows_found"] >= len(payload["forecast_windows"])
+    assert len(payload["forecast_windows"]) <= 25
+    # Fenêtres re-triées chronologiquement pour la lecture (pas par proximité).
+    starts = [w["start_date"] for w in payload["forecast_windows"]]
+    assert starts == sorted(starts)
+    for window in payload["forecast_windows"]:
+        assert "meaning" in window and window["planet"] and window["line_type"]
+
+
+def test_astrocartography_forecast_payload_defaults_focus_to_birthplace():
+    chart = _make_chart()
+    request = schemas.ReadingRequest(reading_type="astrocartography_forecast", forecast_years=1)
+    payload = interpretation_service._build_user_payload(chart, request)
+    assert payload["focus_location"]["label"] == chart.birth_city
+
+
+def test_select_significant_forecast_windows_keeps_closest_and_sorts_chronologically():
+    windows = [
+        {"planet": "Sun", "line_type": "MC", "start_date": date(2030, 1, 1), "peak_distance_km": 500},
+        {"planet": "Venus", "line_type": "MC", "start_date": date(2025, 1, 1), "peak_distance_km": 10},
+        {"planet": "Mars", "line_type": "MC", "start_date": date(2027, 1, 1), "peak_distance_km": 50},
+    ]
+    selected = interpretation_service._select_significant_forecast_windows(windows, max_count=2)
+    assert [w["planet"] for w in selected] == ["Venus", "Mars"]  # les 2 plus proches
+    assert [w["start_date"] for w in selected] == sorted(w["start_date"] for w in selected)

@@ -317,8 +317,8 @@
       <div id="astro-map-panel"></div>
 
       <hr class="reading-subsection-divider" />
-      <h3 data-i18n="astro_interesting_cities_title">Villes intéressantes suggérées</h3>
-      <p class="reading-section-intro" data-i18n="astro_interesting_cities_intro">
+      <h3 id="astro-interesting-cities-title" data-i18n="astro_interesting_cities_title">Villes intéressantes suggérées</h3>
+      <p id="astro-interesting-cities-intro" class="reading-section-intro" data-i18n="astro_interesting_cities_intro">
         Parmi les grandes villes mondiales, celles où plusieurs lignes natales passent à
         proximité ou se croisent — suggestion automatique, visible sur la carte (mode natal).
       </p>
@@ -358,8 +358,8 @@
           <input type="date" id="astro-forecast-start-date" />
         </div>
         <div>
-          <label for="astro-forecast-years" data-i18n="astro_forecast_years_label">Horizon (années)</label>
-          <input type="number" id="astro-forecast-years" min="1" max="30" value="10" />
+          <label for="astro-forecast-years" data-i18n="astro_forecast_years_label">Horizon (années, max 10)</label>
+          <input type="number" id="astro-forecast-years" min="1" max="10" value="10" />
         </div>
         <div>
           <label for="astro-forecast-threshold" data-i18n="astro_forecast_threshold_label">Seuil de proximité (km)</label>
@@ -369,6 +369,9 @@
       <button type="button" id="astro-forecast-btn" data-i18n="btn_compute_forecast">Calculer la prévision</button>
       <p id="astro-forecast-error" class="error"></p>
       <div id="astro-forecast-results"></div>
+      <button type="button" id="astro-forecast-ai-btn" class="hidden" data-i18n="btn_forecast_ai_reading">Analyse IA de cette prévision</button>
+      <p id="astro-forecast-ai-error" class="error"></p>
+      <div id="astro-forecast-ai-output" class="reading-output"></div>
 
       <hr class="reading-subsection-divider" />
       <button id="generate-astro-reading-btn" data-i18n="btn_generate_astro_reading">Générer la lecture d'astrocartographie</button>

@@ -51,7 +51,7 @@ def get_location_forecast(
     latitude: float = Query(..., ge=-90, le=90),
     longitude: float = Query(..., ge=-180, le=180),
     start_date: date_type = Query(default_factory=date_type.today),
-    years: int = Query(10, ge=1, le=30),
+    years: int = Query(10, ge=1, le=10),
     planets: str | None = Query(None, description="Planètes séparées par des virgules (défaut : toutes sauf la Lune)"),
     line_types: str | None = Query(None, description="Types de ligne séparés par des virgules (défaut : ASC,DC,MC,IC)"),
     threshold_km: float = Query(300.0, gt=0),
@@ -98,6 +98,16 @@ def get_interesting_cities(
 ):
     chart = get_owned_chart(chart_id, db, session)
     return astrocartography_service.compute_interesting_cities_for_chart(db, chart, threshold_km=threshold_km, top_n=top_n)
+
+
+@router.get("/api/astrocartography/transit/interesting-cities", response_model=list[schemas.InterestingCity])
+def get_transit_interesting_cities(
+    date: date_type | None = Query(None, description="Date pour la cyclocartographie (défaut : aujourd'hui, UTC)"),
+    threshold_km: float = Query(300.0, gt=0),
+    top_n: int = Query(5, ge=1, le=50),
+    db: Session = Depends(get_db),
+):
+    return astrocartography_service.compute_interesting_cities_for_transit(db, date, threshold_km=threshold_km, top_n=top_n)
 
 
 @router.post(

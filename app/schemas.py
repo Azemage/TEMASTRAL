@@ -404,9 +404,12 @@ class ReadingRequest(BaseModel):
     relationship_mode: str | None = None  # 'romantic' | 'friendship' | 'professional' ; utilisé par 'compatibility'
     timing_horizon: str = "year"  # 'week' | 'month' | 'year' ; utilisé par 'timing'
     astro_map_mode: str = "natal"  # 'natal' | 'transit' ; utilisé par 'astrocartography'
-    astro_focus_latitude: float | None = None  # utilisé par 'astrocartography' ; défaut = lieu de naissance du thème
+    astro_focus_latitude: float | None = None  # utilisé par 'astrocartography'/'astrocartography_forecast' ; défaut = lieu de naissance du thème
     astro_focus_longitude: float | None = None
     astro_focus_label: str | None = None  # nom du lieu analysé, pour la lecture (ex. "Lisbonne")
+    forecast_start_date: date_type | None = None  # utilisé par 'astrocartography_forecast' ; défaut = aujourd'hui
+    forecast_years: int = Field(default=10, ge=1, le=10)  # utilisé par 'astrocartography_forecast'
+    forecast_threshold_km: float = 300.0  # utilisé par 'astrocartography_forecast'
 
 
 # ---------------------------------------------------------------------------
