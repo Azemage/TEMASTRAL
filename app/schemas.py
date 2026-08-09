@@ -447,6 +447,24 @@ class SavedLocationCreateRequest(BaseModel):
     longitude: float
 
 
+class LocationForecastWindow(BaseModel):
+    planet: str
+    line_type: str
+    start_date: date_type
+    end_date: date_type
+    peak_date: date_type
+    peak_distance_km: float
+
+
+class LocationForecastResponse(BaseModel):
+    latitude: float
+    longitude: float
+    start_date: date_type
+    end_date: date_type
+    threshold_km: float
+    windows: list[LocationForecastWindow]
+
+
 class SavedLocationResponse(BaseModel):
     id: str
     natal_chart_id: str

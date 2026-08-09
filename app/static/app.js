@@ -1709,6 +1709,13 @@ function resetAstrocartographyStateForNewChart() {
   astroLinesCache = { natal: null, transit: null };
   astroSavedLocations = [];
   astroFocusLocation = null;
+  astroTransitDate = null;
+  const dateInput = document.getElementById("astro-transit-date");
+  if (dateInput) dateInput.value = "";
+  const forecastResults = document.getElementById("astro-forecast-results");
+  if (forecastResults) forecastResults.innerHTML = "";
+  const forecastError = document.getElementById("astro-forecast-error");
+  if (forecastError) forecastError.textContent = "";
   loadAstroLines(selectedAstroMode);
   loadAstroSavedLocations();
 }
@@ -1875,6 +1882,12 @@ function renderAstroMapPanel(lines) {
   });
 }
 
+let astroTransitDate = null; // null = aujourd'hui (défaut serveur)
+
+function astroTransitUrl() {
+  return astroTransitDate ? `/api/astrocartography/transit?date=${astroTransitDate}` : "/api/astrocartography/transit";
+}
+
 async function loadAstroLines(mode) {
   if (!currentChart) return;
   const panel = document.getElementById("astro-map-panel");
@@ -1882,7 +1895,7 @@ async function loadAstroLines(mode) {
   try {
     const [_land, res] = await Promise.all([
       loadWorldLandData(),
-      fetch(mode === "transit" ? "/api/astrocartography/transit" : `/api/charts/${currentChart.id}/astrocartography`),
+      fetch(mode === "transit" ? astroTransitUrl() : `/api/charts/${currentChart.id}/astrocartography`),
     ]);
     if (!res.ok) throw new Error(`${t("error_prefix")} ${res.status}`);
     const data = await res.json();
@@ -1898,12 +1911,26 @@ document.querySelectorAll(".astro-mode-btn").forEach((btn) => {
     document.querySelectorAll(".astro-mode-btn").forEach((b) => b.classList.remove("active"));
     btn.classList.add("active");
     selectedAstroMode = btn.dataset.astroMode;
+    document.getElementById("astro-transit-date-row").classList.toggle("hidden", selectedAstroMode !== "transit");
     if (astroLinesCache[selectedAstroMode]) {
       renderAstroMapPanel(astroLinesCache[selectedAstroMode]);
     } else {
       loadAstroLines(selectedAstroMode);
     }
   });
+});
+
+document.getElementById("astro-transit-date").addEventListener("change", (e) => {
+  astroTransitDate = e.target.value || null;
+  astroLinesCache.transit = null; // la date a changé : le cache précédent ne vaut plus rien
+  if (selectedAstroMode === "transit") loadAstroLines("transit");
+});
+
+document.getElementById("astro-transit-date-today-btn").addEventListener("click", () => {
+  astroTransitDate = null;
+  document.getElementById("astro-transit-date").value = "";
+  astroLinesCache.transit = null;
+  if (selectedAstroMode === "transit") loadAstroLines("transit");
 });
 
 function renderAstroSavedLocationsList() {
@@ -2014,6 +2041,73 @@ document.getElementById("astro-search-city-btn").addEventListener("click", async
   }
 });
 
+function renderAstroForecastResults(data) {
+  const container = document.getElementById("astro-forecast-results");
+  if (!data.windows.length) {
+    container.innerHTML = `<p>${t("astro_forecast_no_windows")}</p>`;
+    return;
+  }
+  const rows = data.windows
+    .map((w) => {
+      const lineLabel = escapeHtml(`${planetLabel(w.planet)} — ${astroLineTypeLabel(w.line_type)}`);
+      const period = w.start_date === w.end_date ? w.start_date : `${w.start_date} → ${w.end_date}`;
+      return `
+      <tr>
+        <td>${lineLabel}</td>
+        <td>${period}</td>
+        <td>${w.peak_date}</td>
+        <td>${w.peak_distance_km.toFixed(0)} km</td>
+      </tr>`;
+    })
+    .join("");
+  container.innerHTML = `
+    <table class="astro-forecast-table">
+      <thead>
+        <tr>
+          <th>${t("astro_forecast_col_line")}</th>
+          <th>${t("astro_forecast_col_period")}</th>
+          <th>${t("astro_forecast_col_peak")}</th>
+          <th>${t("astro_forecast_col_distance")}</th>
+        </tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+}
+
+document.getElementById("astro-forecast-btn").addEventListener("click", async () => {
+  const errorEl = document.getElementById("astro-forecast-error");
+  const resultsEl = document.getElementById("astro-forecast-results");
+  errorEl.textContent = "";
+  if (!currentChart) return;
+
+  const latitude = astroFocusLocation ? astroFocusLocation.latitude : currentChart.birth_latitude;
+  const longitude = astroFocusLocation ? astroFocusLocation.longitude : currentChart.birth_longitude;
+  const startDate = document.getElementById("astro-forecast-start-date").value || undefined;
+  const years = document.getElementById("astro-forecast-years").value || 10;
+  const thresholdKm = document.getElementById("astro-forecast-threshold").value || 300;
+
+  resultsEl.innerHTML = `<p>${t("status_computing_forecast")}</p>`;
+  try {
+    const params = new URLSearchParams({
+      latitude: String(latitude),
+      longitude: String(longitude),
+      years: String(years),
+      threshold_km: String(thresholdKm),
+    });
+    if (startDate) params.set("start_date", startDate);
+    const res = await fetch(`/api/astrocartography/location-forecast?${params}`);
+    if (!res.ok) {
+      const detail = await res.json().catch(() => ({}));
+      throw new Error(detail.detail || `${t("error_prefix")} ${res.status}`);
+    }
+    const data = await res.json();
+    renderAstroForecastResults(data);
+  } catch (err) {
+    resultsEl.innerHTML = "";
+    errorEl.textContent = `${t("error_loading_forecast")} ${err.message}`;
+  }
+});
+
 document.getElementById("generate-astro-reading-btn").addEventListener("click", () => {
   generateSpecializedReading({
     btnId: "generate-astro-reading-btn",
@@ -2026,6 +2120,7 @@ document.getElementById("generate-astro-reading-btn").addEventListener("click", 
       astro_focus_latitude: astroFocusLocation ? astroFocusLocation.latitude : undefined,
       astro_focus_longitude: astroFocusLocation ? astroFocusLocation.longitude : undefined,
       astro_focus_label: astroFocusLocation ? astroFocusLocation.label : undefined,
+      as_of_date: selectedAstroMode === "transit" ? astroTransitDate || undefined : undefined,
     },
   });
 });

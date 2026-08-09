@@ -51,6 +51,28 @@ def compute_meridian_lines(equatorial: EquatorialPosition, gst_degrees: float) -
     return {"MC": mc_longitude, "IC": ic_longitude}
 
 
+def line_longitude_at_latitude(
+    equatorial: EquatorialPosition, gst_degrees: float, line_type: str, latitude: float
+) -> float | None:
+    """Longitude de la ligne demandée à UNE latitude précise, sans balayer toutes les
+    latitudes — utilisé pour évaluer rapidement, à un instant donné, si une ligne passe près
+    d'un lieu fixe (prévision multi-années). Renvoie None pour ASC/DC si la planète ne se
+    lève/couche jamais à cette latitude ce jour-là (barrière circumpolaire)."""
+    if line_type in ("MC", "IC"):
+        return compute_meridian_lines(equatorial, gst_degrees)[line_type]
+    if line_type not in ("ASC", "DC"):
+        raise ValueError(f"Type de ligne inconnu : {line_type}")
+
+    dec_rad = math.radians(equatorial.declination)
+    lat_rad = math.radians(latitude)
+    cos_h0 = -math.tan(lat_rad) * math.tan(dec_rad)
+    if not (-1 <= cos_h0 <= 1):
+        return None
+    h0 = math.degrees(math.acos(cos_h0))
+    lst = equatorial.right_ascension + (-h0 if line_type == "ASC" else h0)
+    return _normalize_longitude(lst - gst_degrees)
+
+
 def compute_horizon_line_points(equatorial: EquatorialPosition, gst_degrees: float) -> dict[str, list[dict]]:
     """Lignes d'ASC (lever) et de DC (coucher) : courbes dépendant de la latitude."""
     asc_points: list[dict] = []
@@ -114,7 +136,7 @@ def compute_astrocartography_lines(
     return lines
 
 
-def _haversine_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
+def haversine_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
     r_earth_km = 6371.0
     phi1, phi2 = math.radians(lat1), math.radians(lat2)
     d_phi = math.radians(lat2 - lat1)
@@ -143,7 +165,7 @@ def _closest_point_on_line(line_points: list[dict], latitude: float, longitude: 
             ratio = (latitude - lower["lat"]) / (upper["lat"] - lower["lat"])
             interpolated_lon = lower["lon"] + ratio * (upper["lon"] - lower["lon"])
             target = {"lat": latitude, "lon": interpolated_lon}
-    distance = _haversine_km(latitude, longitude, target["lat"], target["lon"])
+    distance = haversine_km(latitude, longitude, target["lat"], target["lon"])
     return distance, target
 
 

@@ -308,6 +308,12 @@
         <button type="button" class="astro-mode-btn" data-astro-mode="transit" data-i18n="astro_mode_transit">Cyclocartographie (transit)</button>
       </div>
 
+      <div id="astro-transit-date-row" class="form-row hidden">
+        <label for="astro-transit-date" data-i18n="astro_transit_date_label">Date à analyser</label>
+        <input type="date" id="astro-transit-date" />
+        <button type="button" id="astro-transit-date-today-btn" data-i18n="astro_transit_date_today">Aujourd'hui</button>
+      </div>
+
       <div id="astro-map-panel"></div>
 
       <hr class="reading-subsection-divider" />
@@ -326,6 +332,34 @@
       </div>
       <div id="astro-saved-locations-list"></div>
       <p id="astro-location-error" class="error"></p>
+
+      <hr class="reading-subsection-divider" />
+      <h3 data-i18n="astro_forecast_title">Prévision multi-années pour un lieu fixe</h3>
+      <p class="reading-section-intro" data-i18n="astro_forecast_intro">
+        Le lieu reste fixe (ex. votre lieu de vie) : cet outil calcule, sur plusieurs années,
+        les fenêtres de temps où une ligne de transit (cyclocartographie) passe à proximité.
+      </p>
+      <p class="reading-section-intro" data-i18n="astro_forecast_location_note">
+        Utilise le lieu actuellement sélectionné ci-dessus (« Utiliser pour la lecture ») ou,
+        à défaut, le lieu de naissance.
+      </p>
+      <div class="form-row triple">
+        <div>
+          <label for="astro-forecast-start-date" data-i18n="astro_forecast_start_date_label">Date de départ</label>
+          <input type="date" id="astro-forecast-start-date" />
+        </div>
+        <div>
+          <label for="astro-forecast-years" data-i18n="astro_forecast_years_label">Horizon (années)</label>
+          <input type="number" id="astro-forecast-years" min="1" max="30" value="10" />
+        </div>
+        <div>
+          <label for="astro-forecast-threshold" data-i18n="astro_forecast_threshold_label">Seuil de proximité (km)</label>
+          <input type="number" id="astro-forecast-threshold" min="10" step="10" value="300" />
+        </div>
+      </div>
+      <button type="button" id="astro-forecast-btn" data-i18n="btn_compute_forecast">Calculer la prévision</button>
+      <p id="astro-forecast-error" class="error"></p>
+      <div id="astro-forecast-results"></div>
 
       <hr class="reading-subsection-divider" />
       <button id="generate-astro-reading-btn" data-i18n="btn_generate_astro_reading">Générer la lecture d'astrocartographie</button>

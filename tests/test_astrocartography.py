@@ -1,16 +1,21 @@
+from datetime import date
+
 import pytest
 import swisseph as swe
 from fastapi.testclient import TestClient
 
 from app.core.astrocartography import (
     ASTROCARTOGRAPHY_PLANETS,
+    LINE_TYPES,
     analyze_nearby_lines,
     compute_horizon_line_points,
     compute_meridian_lines,
+    line_longitude_at_latitude,
     _normalize_longitude,
 )
 from app.core.ephemeris import PLANET_IDS, calc_planet_equatorial, greenwich_sidereal_time_degrees
 from app.main import app
+from app.services.astrocartography_service import compute_location_forecast
 
 VALID_CHART_PAYLOAD = {
     "birth_data": {
@@ -230,3 +235,122 @@ def test_astrocartography_reading_payload_defaults_focus_to_birthplace(client):
     # Pas de clé API configurée dans les tests : on attend un 503 (RuntimeError), pas une
     # erreur de construction du payload en amont (422/500), qui indiquerait un vrai bug.
     assert reading_res.status_code == 503
+
+
+# ---------------------------------------------------------------------------
+# Prévision multi-années pour un lieu fixe (cyclocartographie inverse)
+# ---------------------------------------------------------------------------
+def test_line_longitude_at_latitude_matches_meridian_lines_for_mc_ic():
+    jd_ut = swe.julday(2024, 3, 20, 12.0)
+    equatorial = calc_planet_equatorial(jd_ut, PLANET_IDS["Sun"])
+    gst_degrees = greenwich_sidereal_time_degrees(jd_ut)
+    meridians = compute_meridian_lines(equatorial, gst_degrees)
+
+    assert line_longitude_at_latitude(equatorial, gst_degrees, "MC", 45.0) == meridians["MC"]
+    assert line_longitude_at_latitude(equatorial, gst_degrees, "IC", -20.0) == meridians["IC"]
+
+
+def test_line_longitude_at_latitude_matches_full_horizon_curve_for_asc_dc():
+    jd_ut = swe.julday(2024, 3, 20, 12.0)
+    equatorial = calc_planet_equatorial(jd_ut, PLANET_IDS["Sun"])
+    gst_degrees = greenwich_sidereal_time_degrees(jd_ut)
+    horizons = compute_horizon_line_points(equatorial, gst_degrees)
+    sample_point = next(p for p in horizons["ASC"] if p["lat"] == 40.0)
+
+    result = line_longitude_at_latitude(equatorial, gst_degrees, "ASC", 40.0)
+    # Les points de la courbe complète sont arrondis à 3 décimales, contrairement à
+    # l'évaluation ponctuelle : léger écart attendu, borné par cet arrondi.
+    assert abs(result - sample_point["lon"]) < 1e-2
+
+
+def test_line_longitude_at_latitude_returns_none_when_circumpolar():
+    jd_ut = swe.julday(2024, 6, 21, 12.0)  # solstice : forte déclinaison du Soleil
+    equatorial = calc_planet_equatorial(jd_ut, PLANET_IDS["Sun"])
+    gst_degrees = greenwich_sidereal_time_degrees(jd_ut)
+    assert line_longitude_at_latitude(equatorial, gst_degrees, "ASC", 89.0) is None
+
+
+def test_line_longitude_at_latitude_rejects_unknown_line_type():
+    jd_ut = swe.julday(2024, 3, 20, 12.0)
+    equatorial = calc_planet_equatorial(jd_ut, PLANET_IDS["Sun"])
+    gst_degrees = greenwich_sidereal_time_degrees(jd_ut)
+    with pytest.raises(ValueError):
+        line_longitude_at_latitude(equatorial, gst_degrees, "XX", 40.0)
+
+
+def test_compute_location_forecast_finds_windows_near_paris():
+    windows = compute_location_forecast(
+        latitude=48.8566,
+        longitude=2.3522,
+        start_date=date(2024, 1, 1),
+        years=2,
+        planets=["Sun"],
+        line_types=["MC"],
+        threshold_km=500.0,
+        step_days=5,
+    )
+    assert len(windows) >= 1
+    for window in windows:
+        assert window["planet"] == "Sun"
+        assert window["line_type"] == "MC"
+        assert window["start_date"] <= window["peak_date"] <= window["end_date"]
+        assert window["peak_distance_km"] <= 500.0
+    # Trié du plus tôt au plus tard.
+    assert [w["start_date"] for w in windows] == sorted(w["start_date"] for w in windows)
+
+
+def test_compute_location_forecast_defaults_cover_all_planets_and_line_types():
+    windows = compute_location_forecast(
+        latitude=48.8566, longitude=2.3522, start_date=date(2024, 1, 1), years=1, step_days=10
+    )
+    seen_planets = {w["planet"] for w in windows}
+    seen_line_types = {w["line_type"] for w in windows}
+    assert seen_planets.issubset(set(ASTROCARTOGRAPHY_PLANETS))
+    assert seen_line_types.issubset(set(LINE_TYPES))
+
+
+def test_location_forecast_endpoint_returns_windows(client):
+    res = client.get(
+        "/api/astrocartography/location-forecast",
+        params={"latitude": 48.8566, "longitude": 2.3522, "years": 2, "step_days": 5, "planets": "Sun", "line_types": "MC"},
+    )
+    assert res.status_code == 200
+    body = res.json()
+    assert body["latitude"] == 48.8566
+    assert body["longitude"] == 2.3522
+    assert body["threshold_km"] == 300.0
+    assert isinstance(body["windows"], list)
+    for window in body["windows"]:
+        assert window["planet"] == "Sun"
+        assert window["line_type"] == "MC"
+
+
+def test_location_forecast_endpoint_defaults_exclude_moon(client):
+    res = client.get(
+        "/api/astrocartography/location-forecast",
+        params={"latitude": 48.8566, "longitude": 2.3522, "years": 1, "step_days": 10},
+    )
+    assert res.status_code == 200
+    planets_seen = {w["planet"] for w in res.json()["windows"]}
+    assert "Moon" not in planets_seen
+
+
+def test_location_forecast_endpoint_rejects_unknown_planet(client):
+    res = client.get(
+        "/api/astrocartography/location-forecast",
+        params={"latitude": 48.8566, "longitude": 2.3522, "planets": "Sun,Bogus"},
+    )
+    assert res.status_code == 400
+
+
+def test_location_forecast_endpoint_rejects_unknown_line_type(client):
+    res = client.get(
+        "/api/astrocartography/location-forecast",
+        params={"latitude": 48.8566, "longitude": 2.3522, "line_types": "MC,XX"},
+    )
+    assert res.status_code == 400
+
+
+def test_location_forecast_endpoint_rejects_out_of_range_latitude(client):
+    res = client.get("/api/astrocartography/location-forecast", params={"latitude": 200, "longitude": 2.3522})
+    assert res.status_code == 422

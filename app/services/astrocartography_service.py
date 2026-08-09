@@ -9,13 +9,20 @@ tous les utilisateurs : un seul calcul par jour, mis en cache pour tous.
 from __future__ import annotations
 
 from datetime import date as date_type
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from sqlalchemy.orm import Session
 
 from app import models
 from app.core import ephemeris
-from app.core.astrocartography import ASTROCARTOGRAPHY_PLANETS, analyze_nearby_lines, compute_astrocartography_lines
+from app.core.astrocartography import (
+    ASTROCARTOGRAPHY_PLANETS,
+    LINE_TYPES,
+    analyze_nearby_lines,
+    compute_astrocartography_lines,
+    haversine_km,
+    line_longitude_at_latitude,
+)
 from app.core.ephemeris import PLANET_IDS
 
 DEFAULT_TIME_WHEN_UNKNOWN = "12:00:00"
@@ -142,3 +149,74 @@ def delete_saved_location(db: Session, session: models.AnonymousSession, locatio
     db.delete(location)
     db.commit()
     return True
+
+
+def compute_location_forecast(
+    latitude: float,
+    longitude: float,
+    start_date: date_type,
+    years: int,
+    planets: list[str] | None = None,
+    line_types: list[str] | None = None,
+    threshold_km: float = 300.0,
+    step_days: int = 7,
+) -> list[dict]:
+    """Prévision inverse de la carte du jour : le lieu est fixe, on balaie le temps pour
+    détecter les fenêtres où une ligne planétaire (de transit) passe à proximité. Pour chaque
+    date échantillonnée, la longitude de la ligne est évaluée directement à `latitude` (voir
+    line_longitude_at_latitude) plutôt que sur les 170 latitudes du tracé complet — inutile ici
+    puisqu'on ne s'intéresse qu'à un seul point, et bien plus rapide sur un horizon de
+    plusieurs années. Les échantillons consécutifs sous le seuil sont regroupés en fenêtres
+    avec une date de plus grande proximité (`peak_date`)."""
+    selected_planets = planets or ASTROCARTOGRAPHY_PLANETS
+    selected_line_types = line_types or list(LINE_TYPES)
+    end_date = start_date + timedelta(days=round(years * 365.25))
+
+    samples: list[tuple[date_type, dict[tuple[str, str], float | None]]] = []
+    current = start_date
+    while current <= end_date:
+        jd_ut = ephemeris.jd_ut_for_date_utc_noon(current.isoformat())
+        equatorial_positions = {planet: ephemeris.calc_planet_equatorial(jd_ut, PLANET_IDS[planet]) for planet in selected_planets}
+        gst_degrees = ephemeris.greenwich_sidereal_time_degrees(jd_ut)
+
+        distances: dict[tuple[str, str], float | None] = {}
+        for planet in selected_planets:
+            for line_type in selected_line_types:
+                line_lon = line_longitude_at_latitude(equatorial_positions[planet], gst_degrees, line_type, latitude)
+                distances[(planet, line_type)] = (
+                    None if line_lon is None else haversine_km(latitude, longitude, latitude, line_lon)
+                )
+        samples.append((current, distances))
+        current += timedelta(days=step_days)
+
+    windows: list[dict] = []
+    for planet in selected_planets:
+        for line_type in selected_line_types:
+            key = (planet, line_type)
+            open_window: dict | None = None
+            for sample_date, distances in samples:
+                distance = distances[key]
+                active = distance is not None and distance <= threshold_km
+                if active:
+                    if open_window is None:
+                        open_window = {
+                            "planet": planet,
+                            "line_type": line_type,
+                            "start_date": sample_date,
+                            "end_date": sample_date,
+                            "peak_date": sample_date,
+                            "peak_distance_km": distance,
+                        }
+                    else:
+                        open_window["end_date"] = sample_date
+                        if distance < open_window["peak_distance_km"]:
+                            open_window["peak_distance_km"] = distance
+                            open_window["peak_date"] = sample_date
+                elif open_window is not None:
+                    windows.append(open_window)
+                    open_window = None
+            if open_window is not None:
+                windows.append(open_window)
+
+    windows.sort(key=lambda w: w["start_date"])
+    return windows

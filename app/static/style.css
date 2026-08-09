@@ -774,6 +774,26 @@ th { color: var(--accent-2); }
   cursor: pointer;
 }
 
+.astro-forecast-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 0.6rem;
+  font-size: 0.9rem;
+}
+
+.astro-forecast-table th,
+.astro-forecast-table td {
+  text-align: left;
+  padding: 0.4rem 0.6rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.astro-forecast-table th {
+  color: var(--muted);
+  font-weight: 600;
+  font-size: 0.8rem;
+}
+
 .astro-location-delete-btn:hover {
   border-color: #ff5d5d;
   color: #ff5d5d;

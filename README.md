@@ -105,7 +105,16 @@ Implémenté :
   natales les plus proches (distance orthodromique), lecture LLM dédiée qui commente les lignes
   proches du lieu choisi (par défaut le lieu de naissance) en s'appuyant sur les significations
   par planète/type de ligne — jamais d'affirmation sur la sécurité/l'économie/la politique du
-  lieu, toujours cadré comme un potentiel symbolique plutôt qu'un verdict
+  lieu, toujours cadré comme un potentiel symbolique plutôt qu'un verdict. En mode
+  cyclocartographie, une **date arbitraire** peut être choisie (pas seulement aujourd'hui :
+  ex. "dans 6 mois je pars à Madrid") — les lignes de transit sont recalculées pour cette date
+  et la lecture LLM en tient compte (`as_of_date`). **Prévision multi-années pour un lieu
+  fixe** (inverse de la cyclocartographie du jour) : le lieu reste fixe (ex. domicile actuel) et
+  l'outil balaie plusieurs années pour détecter les fenêtres de temps où une ligne de transit
+  passe à proximité (`GET /api/astrocartography/location-forecast`), regroupées par
+  planète/type de ligne avec date de pic de proximité — la Lune est exclue par défaut (sa ligne
+  de MC balaie ~12°/jour, trop de fenêtres courtes sur un horizon pluriannuel pour être
+  pertinente) mais reste sélectionnable explicitement
 - Lecture interprétée par l'API Anthropic avec **prompt dédié par catégorie** : lecture
   générale (thème de base uniquement — planètes/maisons/aspects/dispositeurs, sans les lots
   ni les maisons dérivées), et six lectures spécialisées (Lots, Maisons dérivées, Timing,
@@ -181,7 +190,7 @@ Principe directeur repris du cahier des charges : tout ce qui est dans `app/core
 | POST | `/api/charts` | Calcule et sauvegarde un thème natal à partir des données de naissance |
 | GET | `/api/charts` | Liste les thèmes de la session courante |
 | GET | `/api/charts/{id}` | Récupère un thème calculé |
-| POST | `/api/charts/{id}/readings` | Génère une lecture interprétée (LLM). `reading_type` = `global`\|`love`\|`career`\|`family`\|`lots`\|`derived_houses`\|`timing`\|`zodiacal_releasing`\|`compatibility`\|`astrocartography` ; `relation_key` (voir `/api/reference/derived-house-relations`, ou `custom:N1:N2` pour une relation de second ordre composée librement) pour `derived_houses` (repli sur `reference_house` 1-12 si absent), `as_of_date` pour `timing`/`zodiacal_releasing`, `timing_horizon` (`week`\|`month`\|`year`, défaut `year`) pour `timing`, `zr_selected_lots`+`zr_mode` (`current`\|`predictive`)+`zr_axis_key` (voir `/api/reference/axes-thematiques-lots`, qualification natale en couche 1 pour les projections 10 ans) pour `zodiacal_releasing`, `chart_b_id`+`relationship_mode` pour `compatibility`, `astro_map_mode` (`natal`\|`transit`)+`astro_focus_latitude`/`astro_focus_longitude`/`astro_focus_label` (défaut : lieu de naissance) pour `astrocartography` |
+| POST | `/api/charts/{id}/readings` | Génère une lecture interprétée (LLM). `reading_type` = `global`\|`love`\|`career`\|`family`\|`lots`\|`derived_houses`\|`timing`\|`zodiacal_releasing`\|`compatibility`\|`astrocartography` ; `relation_key` (voir `/api/reference/derived-house-relations`, ou `custom:N1:N2` pour une relation de second ordre composée librement) pour `derived_houses` (repli sur `reference_house` 1-12 si absent), `as_of_date` pour `timing`/`zodiacal_releasing`/`astrocartography` (mode `transit` uniquement — date de la cyclocartographie, défaut aujourd'hui), `timing_horizon` (`week`\|`month`\|`year`, défaut `year`) pour `timing`, `zr_selected_lots`+`zr_mode` (`current`\|`predictive`)+`zr_axis_key` (voir `/api/reference/axes-thematiques-lots`, qualification natale en couche 1 pour les projections 10 ans) pour `zodiacal_releasing`, `chart_b_id`+`relationship_mode` pour `compatibility`, `astro_map_mode` (`natal`\|`transit`)+`astro_focus_latitude`/`astro_focus_longitude`/`astro_focus_label` (défaut : lieu de naissance) pour `astrocartography` |
 | GET | `/api/charts/{id}/readings` | Liste les lectures déjà générées pour un thème |
 | GET | `/api/charts/{id}/timing?date=YYYY-MM-DD` | Transits actuels de toutes les planètes + profection annuelle, calculés à la demande (non persisté) |
 | GET | `/api/charts/{id}/timing/forecast?date=...&months=12` | Transits à venir sur la période, toutes planètes (pics d'orbe, fenêtres actives, intensité 1-4) |
@@ -193,6 +202,7 @@ Principe directeur repris du cahier des charges : tout ce qui est dans `app/core
 | GET | `/api/astrocartography/transit?date=YYYY-MM-DD` | Lignes de transit (cyclocartographie) du jour demandé (défaut aujourd'hui, UTC), calculées une seule fois par jour et partagées par tous les utilisateurs |
 | POST/GET | `/api/charts/{id}/saved-locations` | Crée/liste les lieux sauvegardés (ville, coordonnées) avec l'analyse déterministe des lignes natales à proximité (distance orthodromique) |
 | DELETE | `/api/saved-locations/{id}` | Supprime un lieu sauvegardé |
+| GET | `/api/astrocartography/location-forecast?latitude=...&longitude=...&start_date=YYYY-MM-DD&years=10&planets=...&line_types=...&threshold_km=300&step_days=3` | Prévision multi-années pour un lieu fixe : fenêtres de temps où une ligne de transit passe à proximité, groupées par planète/type de ligne (`start_date`/`years`/`threshold_km`/`step_days` optionnels ; `planets`/`line_types` listes séparées par des virgules, défaut toutes sauf la Lune / ASC,DC,MC,IC) |
 | GET | `/api/reference/astrocartography-significations` | Significations par planète et type de ligne (ASC/DC/MC/IC) utilisées par le prompt LLM |
 | GET | `/api/reference/config` | Options de configuration (systèmes de maisons, dispositeurs, points optionnels) |
 | GET | `/api/reference/timezones` | Liste des ~490 fuseaux horaires IANA canoniques |
