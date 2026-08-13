@@ -792,6 +792,7 @@ const UI_TEXT = {
   astro_no_saved_locations: { fr: "Aucun lieu sauvegardé pour l'instant.", en: "No saved locations yet.", es: "Aún no hay lugares guardados." },
   astro_no_nearby_lines: { fr: "Aucune ligne natale à proximité.", en: "No natal line nearby.", es: "Ninguna línea natal cerca." },
   astro_use_for_reading: { fr: "Utiliser pour la lecture", en: "Use for reading", es: "Usar para la lectura" },
+  astro_focus_badge_label: { fr: "✓ Utilisé pour la lecture", en: "✓ Used for reading", es: "✓ Usado para la lectura" },
   astro_planets_filter_title: { fr: "Planètes affichées", en: "Displayed planets", es: "Planetas mostrados" },
   astro_line_types_filter_title: { fr: "Types de lignes", en: "Line types", es: "Tipos de línea" },
   astro_focus_default_note: {
@@ -866,7 +867,7 @@ const UI_TEXT = {
     es: "Recalculado automáticamente en cada cambio de fecha: las ciudades más cercanas a las líneas de tránsito (y sus cruces) en esta fecha concreta.",
   },
 
-  witchy_section_title: { fr: "Calendrier ésotérique", en: "Esoteric calendar", es: "Calendario esotérico" },
+  witchy_section_title: { fr: "5. Calendrier ésotérique", en: "5. Esoteric calendar", es: "5. Calendario esotérico" },
   witchy_section_intro: {
     fr: "Calendrier annuel collectif (le même pour tout le monde cette année-là, indépendant de votre thème natal) : lunaisons, éclipses, stations rétrogrades et changements de signe des planètes lentes.",
     en: "Collective yearly calendar (the same for everyone that year, independent of your natal chart): lunations, eclipses, retrograde stations and slow-planet sign changes.",

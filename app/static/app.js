@@ -185,9 +185,11 @@ document.getElementById("birth-form").addEventListener("submit", async (e) => {
     currentChart = await res.json();
     renderChart(currentChart);
     document.getElementById("results-section").classList.remove("hidden");
-    document.getElementById("reading-section").classList.remove("hidden");
-    document.getElementById("astro-section").classList.remove("hidden");
-    document.getElementById("witchy-section").classList.remove("hidden");
+    document.getElementById("section-toggle-row").classList.remove("hidden");
+    // Les 3 sections restent repliées par défaut (allège l'affichage initial) : seuls les
+    // boutons pour les révéler à la demande sont montrés, voir écouteurs .section-toggle-btn.
+    ["reading-section", "astro-section", "witchy-section"].forEach((id) => document.getElementById(id).classList.add("hidden"));
+    document.querySelectorAll(".section-toggle-btn").forEach((btn) => btn.classList.remove("active"));
     resetAstrocartographyStateForNewChart();
     resetWitchyCalendarStateForNewChart();
     document.getElementById("results-section").scrollIntoView({ behavior: "smooth" });
@@ -197,6 +199,20 @@ document.getElementById("birth-form").addEventListener("submit", async (e) => {
     submitBtn.disabled = false;
     submitBtn.textContent = t("btn_calculate_chart");
   }
+});
+
+// Section 3 (Lecture interprétée), 4 (Astrocartographie) et 5 (Calendrier ésotérique) restent
+// repliées par défaut sous la roue natale : chaque bouton révèle/replie sa propre section,
+// indépendamment des autres.
+document.querySelectorAll(".section-toggle-btn").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    const target = document.getElementById(btn.dataset.target);
+    if (!target) return;
+    const wasHidden = target.classList.contains("hidden");
+    target.classList.toggle("hidden");
+    btn.classList.toggle("active", wasHidden);
+    if (wasHidden) target.scrollIntoView({ behavior: "smooth", block: "start" });
+  });
 });
 
 function renderTraitTags(characterTraits) {
@@ -1988,6 +2004,23 @@ document.getElementById("astro-transit-date-today-btn").addEventListener("click"
   }
 });
 
+// Point d'entrée unique pour changer le lieu de focus de la lecture d'astrocartographie,
+// depuis les lieux sauvegardés OU les villes suggérées : garde les deux listes synchronisées
+// (surbrillance + pastille "utilisé pour la lecture" sur la bonne carte, dans les deux).
+function setAstroFocusLocation(location) {
+  astroFocusLocation = location;
+  renderAstroSavedLocationsList();
+  renderAstroInterestingCitiesList();
+}
+
+function isAstroFocusedLocation(latitude, longitude) {
+  return !!astroFocusLocation && astroFocusLocation.latitude === latitude && astroFocusLocation.longitude === longitude;
+}
+
+function astroFocusBadgeHtml() {
+  return `<span class="astro-focus-badge">${t("astro_focus_badge_label")}</span>`;
+}
+
 function renderAstroSavedLocationsList() {
   const container = document.getElementById("astro-saved-locations-list");
   if (!container) return;
@@ -2002,12 +2035,12 @@ function renderAstroSavedLocationsList() {
         const nearby = (loc.nearby_lines_analysis || [])
           .map((n) => `${planetLabel(n.planet)} ${astroLineTypeLabel(n.line_type)} (${n.distance_km} km)`)
           .join(", ") || t("astro_no_nearby_lines");
-        const isFocused = astroFocusLocation && astroFocusLocation.latitude === loc.latitude && astroFocusLocation.longitude === loc.longitude;
+        const isFocused = isAstroFocusedLocation(loc.latitude, loc.longitude);
         return `
         <div class="astro-location-card${isFocused ? " astro-location-focused" : ""}" data-location-id="${loc.id}">
           <div class="astro-location-header">
             <strong>${loc.city || loc.label || `${loc.latitude.toFixed(2)}, ${loc.longitude.toFixed(2)}`}</strong>
-            <button type="button" class="astro-location-focus-btn" data-location-id="${loc.id}">${t("astro_use_for_reading")}</button>
+            ${isFocused ? astroFocusBadgeHtml() : `<button type="button" class="astro-location-focus-btn" data-location-id="${loc.id}">${t("astro_use_for_reading")}</button>`}
             <button type="button" class="astro-location-delete-btn" data-location-id="${loc.id}">${t("btn_delete")}</button>
           </div>
           <p class="reading-section-intro">${nearby}</p>
@@ -2028,8 +2061,7 @@ function renderAstroSavedLocationsList() {
   container.querySelectorAll(".astro-location-focus-btn").forEach((btn) => {
     btn.addEventListener("click", () => {
       const loc = astroSavedLocations.find((l) => l.id === btn.dataset.locationId);
-      astroFocusLocation = loc ? { label: loc.city || loc.label, latitude: loc.latitude, longitude: loc.longitude } : null;
-      renderAstroSavedLocationsList();
+      setAstroFocusLocation(loc ? { label: loc.city || loc.label, latitude: loc.latitude, longitude: loc.longitude } : null);
     });
   });
 }
@@ -2042,24 +2074,34 @@ function renderAstroInterestingCitiesList() {
     return;
   }
   container.innerHTML = astroInterestingCities
-    .map((c) => {
+    .map((c, index) => {
       const linesText = c.nearby_lines
         .map((n) => `${planetLabel(n.planet)} ${astroLineTypeLabel(n.line_type)} (${n.distance_km} km)`)
         .join(", ");
       const crossingsText = c.nearby_crossings
         .map((cr) => `${planetLabel(cr.planet_a)} × ${planetLabel(cr.planet_b)} (${cr.distance_km} km)`)
         .join(", ");
+      const isFocused = isAstroFocusedLocation(c.latitude, c.longitude);
       return `
-      <div class="astro-location-card">
+      <div class="astro-location-card${isFocused ? " astro-location-focused" : ""}" data-city-index="${index}">
         <div class="astro-location-header">
           <strong>${escapeHtml(c.name)}, ${escapeHtml(c.country)}</strong>
           <span class="astro-city-score">${t("astro_score_label")} ${c.score}</span>
+          ${isFocused ? astroFocusBadgeHtml() : `<button type="button" class="astro-location-focus-btn" data-city-index="${index}">${t("astro_use_for_reading")}</button>`}
         </div>
         ${linesText ? `<p class="astro-city-detail">${escapeHtml(linesText)}</p>` : ""}
         ${crossingsText ? `<p class="astro-city-detail astro-city-crossings">${t("astro_crossings_label")} ${escapeHtml(crossingsText)}</p>` : ""}
       </div>`;
     })
     .join("");
+
+  container.querySelectorAll(".astro-location-focus-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const city = astroInterestingCities[Number(btn.dataset.cityIndex)];
+      if (!city) return;
+      setAstroFocusLocation({ label: `${city.name}, ${city.country}`, latitude: city.latitude, longitude: city.longitude });
+    });
+  });
 }
 
 function updateInterestingCitiesPanelLabels() {
@@ -2103,6 +2145,7 @@ async function loadAstroSavedLocations() {
     if (!res.ok) throw new Error(`${t("error_prefix")} ${res.status}`);
     astroSavedLocations = await res.json();
     renderAstroSavedLocationsList();
+    renderAstroInterestingCitiesList();
     if (astroLinesCache[selectedAstroMode]) renderAstroMapPanel(astroLinesCache[selectedAstroMode]);
   } catch (err) {
     document.getElementById("astro-location-error").textContent = err.message;
