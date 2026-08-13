@@ -169,6 +169,25 @@ Implémenté :
   événement pour le bloc global, + 1 à 2 phrases de bloc personnel visiblement distinct
   lorsqu'un croisement est détecté), qui répond systématiquement à "quelle énergie" et "à quoi
   c'est utile" (intention, rituel, type d'action) dans un ton évocateur mais jamais fataliste.
+  **Deux modes de lecture** (V3) : le mode aperçu ci-dessus reste concis et affiche en plus,
+  pour chaque événement, jusqu'à 2 **signaux contextuels forts** (`contextual_signals`,
+  `app/core/witchy_calendar.py::compute_contextual_signals`) — inter-aspects transit-transit du
+  jour même, majeurs et à orbe serrée (< 2°), impliquant un acteur principal de l'événement (ex.
+  Soleil/Lune pour une éclipse), en excluant l'aspect entre les acteurs eux-mêmes puisqu'il EST
+  déjà l'événement — et, pour les éclipses uniquement, un `location_context` (hémisphère +
+  visibilité locale calculée avec `swe.sol_eclipse_how`/`lun_eclipse_how` depuis le lieu de
+  naissance, présentée comme un détail contextuel, jamais comme condition de validité de
+  l'énergie). En cliquant sur une ligne du calendrier (ou en choisissant n'importe quelle date),
+  un second mode **détail journée** (`reading_type=witchy_day_detail`) donne l'analyse complète
+  de la "carte du jour" à cette date : `app/core/day_chart.py::compute_day_chart` réutilise
+  intégralement le moteur d'aspects/dispositeurs du thème natal (positions de toutes les
+  planètes de ce jour, tous leurs aspects entre elles, dispositeurs traditionnel/moderne) et
+  `compute_theme_confirme` (déjà utilisé pour l'astrocartographie), relu ici comme le "climat
+  énergétique collectif de la journée" plutôt que l'identité d'une personne — sans Ascendant ni
+  maisons, puisqu'aucun lieu n'est associé à une date seule. La personnalisation y reste active
+  via `personalize_day_chart`, qui généralise le mécanisme d'aspect natal à chaque planète de la
+  carte du jour (pas seulement à l'événement principal) pour signaler les "résonances
+  personnelles" de la journée.
 - Lecture interprétée par l'API Anthropic avec **prompt dédié par catégorie** : lecture
   générale (thème de base uniquement — planètes/maisons/aspects/dispositeurs, sans les lots
   ni les maisons dérivées), et six lectures spécialisées (Lots, Maisons dérivées, Timing,

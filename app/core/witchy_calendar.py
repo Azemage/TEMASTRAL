@@ -17,6 +17,7 @@ from itertools import combinations
 
 import swisseph as swe
 
+from app.core.day_chart import compute_day_chart
 from app.core.ephemeris import CALC_FLAGS, PLANET_IDS
 from app.core.reference_data import witchy_calendar_events
 from app.core.zodiac import SIGNS, sign_and_degree
@@ -395,3 +396,117 @@ def compute_witchy_calendar(year: int) -> list[dict]:
     )
     events.sort(key=lambda e: e["event_date"])
     return events
+
+
+# ---------------------------------------------------------------------------
+# location_context : visibilité locale des éclipses — voir note_dependance_geographique du
+# document source. Information contextuelle affichée à la lecture (dépend du lieu de
+# l'utilisateur), jamais mise en cache dans le calendrier collectif partagé ci-dessus.
+# ---------------------------------------------------------------------------
+def _eclipse_jd_for_date(event_type: str, event_date: str) -> float | None:
+    """Retrouve l'instant exact (jour julien UT) de l'éclipse déjà détectée à `event_date` en
+    relançant la même recherche swisseph que compute_eclipse_events, à partir de la veille —
+    aucun nouveau moteur, seule l'heure précise (non conservée dans le CalendarEvent) manque."""
+    year, month, day = (int(part) for part in event_date.split("-"))
+    start_jd = swe.julday(year, month, day, 0) - 1
+    try:
+        if event_type == "eclipse_solaire":
+            _flag, tret = swe.sol_eclipse_when_glob(start_jd, CALC_FLAGS, 0, False)
+        elif event_type == "eclipse_lunaire":
+            _flag, tret = swe.lun_eclipse_when(start_jd, CALC_FLAGS, 0, False)
+        else:
+            return None
+    except swe.Error:
+        return None
+    eclipse_jd = tret[0]
+    return eclipse_jd if _jd_to_iso_date(eclipse_jd) == event_date else None
+
+
+def compute_eclipse_local_visibility(event: dict, latitude: float, longitude: float) -> bool | None:
+    """Éclipse visible (au moins partiellement) depuis (latitude, longitude) au moment exact de
+    l'événement, via les fonctions de circonstances locales de swisseph (sol_eclipse_how /
+    lun_eclipse_how : bit de retour à 0 si rien n'est visible depuis cette position). None si
+    `event` n'est pas une éclipse ou si l'instant exact n'a pas pu être retrouvé."""
+    eclipse_jd = _eclipse_jd_for_date(event["event_type"], event["event_date"])
+    if eclipse_jd is None:
+        return None
+    geopos = (longitude, latitude, 0.0)
+    if event["event_type"] == "eclipse_solaire":
+        retflags, _attr = swe.sol_eclipse_how(eclipse_jd, geopos, CALC_FLAGS)
+    else:
+        retflags, _attr = swe.lun_eclipse_how(eclipse_jd, geopos, CALC_FLAGS)
+    return retflags != 0
+
+
+def compute_hemisphere(latitude: float) -> str:
+    return "nord" if latitude >= 0 else "sud"
+
+
+def compute_location_context(event: dict, latitude: float, longitude: float) -> dict | None:
+    """`location_context` de l'output_schema du document source, pour un événement et un lieu
+    utilisateur donnés — None pour tout événement autre qu'une éclipse (non applicable)."""
+    if event["event_type"] not in ("eclipse_solaire", "eclipse_lunaire"):
+        return None
+    return {
+        "hemisphere": compute_hemisphere(latitude),
+        "eclipse_visible_locally": compute_eclipse_local_visibility(event, latitude, longitude),
+    }
+
+
+# ---------------------------------------------------------------------------
+# enrichissement_contextuel_mode_apercu : 1-2 signaux contextuels forts par événement, calculés
+# à partir des inter-aspects transit-transit (pas transit-natal) du jour de l'événement.
+# ---------------------------------------------------------------------------
+_EVENT_MAIN_ACTORS = {
+    "nouvelle_lune": lambda e: {"Sun", "Moon"},
+    "pleine_lune": lambda e: {"Sun", "Moon"},
+    "eclipse_solaire": lambda e: {"Sun", "Moon"},
+    "eclipse_lunaire": lambda e: {"Sun", "Moon"},
+    "station_retrograde": lambda e: {e["planet"]},
+    "station_directe": lambda e: {e["planet"]},
+    "ingres": lambda e: {e["planet"]},
+    "grande_conjonction": lambda e: {e["planet"], e["planet_b"]},
+}
+MAJOR_ASPECT_TYPES = {"conjunction", "sextile", "square", "trine", "opposition"}
+CONTEXTUAL_SIGNAL_ORB_THRESHOLD = 2.0
+CONTEXTUAL_SIGNAL_MAX_SIGNALS = 2
+
+
+def compute_contextual_signals(event: dict, day_aspects: list[dict]) -> list[dict]:
+    """Signaux contextuels forts du mode aperçu (voir enrichissement_contextuel_mode_apercu du
+    document source) : parmi `day_aspects` (déjà calculés pour le jour de l'événement — voir
+    app.core.day_chart.compute_day_chart, AUCUN nouveau calcul ici), ne garder que les aspects
+    majeurs à orbe serré impliquant un acteur principal de l'événement, en excluant l'aspect
+    ENTRE les acteurs principaux eux-mêmes (qui EST l'événement, pas un signal supplémentaire),
+    puis ne renvoyer que le(s) plus serré(s) — jamais une liste exhaustive."""
+    actors_fn = _EVENT_MAIN_ACTORS.get(event["event_type"])
+    if actors_fn is None:
+        return []
+    actors = actors_fn(event)
+    candidates = []
+    for aspect in day_aspects:
+        if aspect["type"] not in MAJOR_ASPECT_TYPES or aspect["orb"] >= CONTEXTUAL_SIGNAL_ORB_THRESHOLD:
+            continue
+        p1, p2 = aspect["planet1"], aspect["planet2"]
+        involves_actor = p1 in actors or p2 in actors
+        both_are_actors = p1 in actors and p2 in actors
+        if not involves_actor or both_are_actors:
+            continue
+        candidates.append(aspect)
+    candidates.sort(key=lambda a: a["orb"])
+    return candidates[:CONTEXTUAL_SIGNAL_MAX_SIGNALS]
+
+
+def enrich_events_with_contextual_signals(events: list[dict]) -> list[dict]:
+    """Attache `contextual_signals` à chaque événement (mode aperçu). Un seul day_chart calculé
+    par date distincte, plusieurs événements pouvant partager la même date (ex. éclipse +
+    lunaison, ou deux stations le même jour)."""
+    day_aspects_cache: dict[str, list[dict]] = {}
+    enriched = []
+    for event in events:
+        date = event["event_date"]
+        if date not in day_aspects_cache:
+            day_aspects_cache[date] = compute_day_chart(date)["aspects"]
+        signals = compute_contextual_signals(event, day_aspects_cache[date])
+        enriched.append({**event, "contextual_signals": signals})
+    return enriched

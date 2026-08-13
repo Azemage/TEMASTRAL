@@ -401,12 +401,30 @@
       </div>
       <button type="button" id="witchy-load-btn" data-i18n="btn_load_witchy_calendar">Charger le calendrier</button>
       <p id="witchy-error" class="error"></p>
+      <p class="reading-section-intro" data-i18n="witchy_events_click_hint">Cliquez sur une ligne pour voir la carte complète de ce jour-là.</p>
       <div id="witchy-events-list"></div>
 
       <hr class="reading-subsection-divider" />
       <button id="generate-witchy-reading-btn" data-i18n="btn_generate_witchy_reading">Générer la lecture du calendrier</button>
       <p id="witchy-reading-error" class="error"></p>
       <div id="witchy-reading-output" class="reading-output"></div>
+
+      <hr class="reading-subsection-divider" />
+      <h3 data-i18n="witchy_day_detail_title">Carte du jour</h3>
+      <p class="reading-section-intro" data-i18n="witchy_day_detail_intro">
+        Analyse complète d'une date précise (positions, aspects, dispositeurs, climat
+        énergétique collectif du jour) et ce qui vous touche personnellement ce jour-là.
+        Cliquez sur un événement ci-dessus, ou choisissez n'importe quelle date.
+      </p>
+      <div class="form-row triple">
+        <div>
+          <label for="witchy-day-detail-date" data-i18n="witchy_day_detail_date_label">Date</label>
+          <input type="date" id="witchy-day-detail-date" />
+        </div>
+      </div>
+      <button id="generate-witchy-day-detail-btn" data-i18n="btn_generate_witchy_day_detail">Voir la carte du jour</button>
+      <p id="witchy-day-detail-error" class="error"></p>
+      <div id="witchy-day-detail-output" class="reading-output"></div>
     </section>
   </main>
 

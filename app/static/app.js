@@ -2351,6 +2351,12 @@ function resetWitchyCalendarStateForNewChart() {
   if (readingError) readingError.textContent = "";
   const readingOutput = document.getElementById("witchy-reading-output");
   if (readingOutput) readingOutput.innerHTML = "";
+  const dayDetailDateInput = document.getElementById("witchy-day-detail-date");
+  if (dayDetailDateInput) dayDetailDateInput.value = "";
+  const dayDetailError = document.getElementById("witchy-day-detail-error");
+  if (dayDetailError) dayDetailError.textContent = "";
+  const dayDetailOutput = document.getElementById("witchy-day-detail-output");
+  if (dayDetailOutput) dayDetailOutput.innerHTML = "";
   loadWitchyCalendar();
 }
 
@@ -2367,7 +2373,7 @@ function renderWitchyEventsList() {
         ${witchyCalendarEvents
           .map(
             (e) => `
-          <tr>
+          <tr class="witchy-event-row" data-date="${e.event_date}" tabindex="0">
             <td>${e.event_date}</td>
             <td>${escapeHtml(witchyEventLabel(e))}${e.super_moon ? ` <span class="witchy-super-badge">${t("witchy_super_moon_badge")}</span>` : ""}</td>
             <td>${WITCHY_EVENT_STAR_MAP[e.score] || ""}</td>
@@ -2376,6 +2382,20 @@ function renderWitchyEventsList() {
           .join("")}
       </tbody>
     </table>`;
+  container.querySelectorAll(".witchy-event-row").forEach((row) => {
+    const activate = () => {
+      const dateInput = document.getElementById("witchy-day-detail-date");
+      if (dateInput) dateInput.value = row.dataset.date;
+      document.getElementById("generate-witchy-day-detail-btn")?.click();
+    };
+    row.addEventListener("click", activate);
+    row.addEventListener("keydown", (evt) => {
+      if (evt.key === "Enter" || evt.key === " ") {
+        evt.preventDefault();
+        activate();
+      }
+    });
+  });
 }
 
 async function loadWitchyCalendar() {
@@ -2410,6 +2430,26 @@ document.getElementById("generate-witchy-reading-btn").addEventListener("click",
     requestBody: {
       reading_type: "witchy_calendar",
       witchy_calendar_year: witchySelectedYear,
+    },
+  });
+});
+
+document.getElementById("generate-witchy-day-detail-btn").addEventListener("click", () => {
+  const dateInput = document.getElementById("witchy-day-detail-date");
+  const errorEl = document.getElementById("witchy-day-detail-error");
+  if (!dateInput.value) {
+    errorEl.textContent = t("error_witchy_day_detail_no_date");
+    return;
+  }
+  errorEl.textContent = "";
+  generateSpecializedReading({
+    btnId: "generate-witchy-day-detail-btn",
+    errorId: "witchy-day-detail-error",
+    outputId: "witchy-day-detail-output",
+    defaultLabel: t("btn_generate_witchy_day_detail"),
+    requestBody: {
+      reading_type: "witchy_day_detail",
+      witchy_day_detail_date: dateInput.value,
     },
   });
 });

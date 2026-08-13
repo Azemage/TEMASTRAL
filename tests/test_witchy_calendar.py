@@ -4,23 +4,30 @@ import pytest
 import swisseph as swe
 from fastapi.testclient import TestClient
 
+from app.core.day_chart import compute_day_chart
 from app.core.witchy_calendar import (
     SLOW_PLANET_PAIRS,
     STATION_PLANETS,
     SUPER_MOON_DISTANCE_KM_THRESHOLD,
     _score_from_raw,
+    compute_contextual_signals,
     compute_eclipse_events,
+    compute_eclipse_local_visibility,
     compute_grand_conjunction_events,
+    compute_hemisphere,
     compute_ingress_events,
+    compute_location_context,
     compute_lunation_events,
     compute_station_events,
     compute_witchy_calendar,
+    enrich_events_with_contextual_signals,
 )
 from app.core.witchy_calendar_personalization import (
     DURATION_EVENT_TYPES,
     PUNCTUAL_EVENT_TYPES,
     _mechanism_1_aspect_natal,
     _mechanism_2_maison_natale,
+    personalize_day_chart,
     personalize_witchy_events,
 )
 from app.database import SessionLocal
@@ -435,3 +442,187 @@ def test_personalize_witchy_events_output_is_json_serializable():
     personalized = personalize_witchy_events(events, chart_data)
     json.dumps(personalized)
     assert len(personalized) == len(events)
+
+
+# ---------------------------------------------------------------------------
+# V3 : carte du jour (mode_detail_journee)
+# ---------------------------------------------------------------------------
+def test_compute_day_chart_has_no_houses_or_ascendant():
+    """Une carte du jour n'a ni Ascendant ni maisons (aucun lieu associé à une date seule) —
+    voir modes_de_lecture.mode_detail_journee.reutilisation_moteur du document source."""
+    day_chart = compute_day_chart("2027-01-22")
+    assert "houses" not in day_chart
+    assert "angles" not in day_chart
+    assert set(p["name"] for p in day_chart["planets"]) == {
+        "Sun", "Moon", "Mercury", "Venus", "Mars", "Jupiter", "Saturn", "Uranus", "Neptune", "Pluto",
+    }
+
+
+def test_compute_day_chart_computes_all_planet_aspects():
+    day_chart = compute_day_chart("2027-01-22")
+    assert len(day_chart["aspects"]) > 0
+    for aspect in day_chart["aspects"]:
+        assert {"planet1", "planet2", "type", "orb"} <= aspect.keys()
+
+
+def test_compute_day_chart_is_deterministic():
+    assert compute_day_chart("2027-01-22") == compute_day_chart("2027-01-22")
+
+
+def test_compute_day_chart_themes_confirmes_only_keeps_planets_with_a_reason():
+    day_chart = compute_day_chart("2027-01-22")
+    for planet, data in day_chart["themes_confirmes_du_jour"].items():
+        assert data["present"] is True
+        assert len(data["reasons"]) > 0
+
+
+def test_personalize_day_chart_detects_tight_aspect_to_natal_point():
+    from app.core.zodiac import SIGNS
+
+    day_chart = compute_day_chart("2027-01-22")
+    # Le Soleil du jour (voir fixture) doit tomber quelque part sur le zodiaque ; on construit un
+    # point natal en conjonction serrée avec lui pour vérifier la détection (mécanisme 1 réutilisé
+    # tel quel, ici appliqué à chaque planète de la carte du jour plutôt qu'à un seul événement).
+    sun_lon = next(p["absolute_longitude"] for p in day_chart["planets"] if p["name"] == "Sun")
+    chart_data = {
+        "planets": [{"name": "Moon", "absolute_longitude": sun_lon, "sign": "Libra", "house": 7}],  # Lune natale collée au Soleil du jour
+        "angles": {
+            "ascendant": {"absolute_longitude": (sun_lon + 100) % 360, "sign": SIGNS[0]},
+            "midheaven": {"absolute_longitude": (sun_lon + 190) % 360, "sign": SIGNS[9]},
+        },
+        "dispositors_traditional": {"convergence": {"dominant_dispositor": None, "level": "aucune"}},
+        "dispositors_modern": {"convergence": {"dominant_dispositor": None, "level": "aucune"}},
+    }
+    resonances = personalize_day_chart(day_chart, chart_data)
+    assert any(r["planete_du_jour"] == "Sun" and r["cible_natale_touchee"] == "Moon" for r in resonances)
+
+
+def test_personalize_day_chart_output_is_json_serializable():
+    import json
+
+    day_chart = compute_day_chart("2027-01-22")
+    chart_data = _synthetic_chart_data()
+    resonances = personalize_day_chart(day_chart, chart_data)
+    json.dumps(resonances)
+
+
+# ---------------------------------------------------------------------------
+# V3 : location_context (visibilité locale des éclipses)
+# ---------------------------------------------------------------------------
+def test_compute_hemisphere():
+    assert compute_hemisphere(45.0) == "nord"
+    assert compute_hemisphere(-33.87) == "sud"
+    assert compute_hemisphere(0.0) == "nord"
+
+
+def test_compute_eclipse_local_visibility_matches_known_2024_total_solar_eclipse():
+    """Éclipse solaire totale du 8 avril 2024 (référence externe connue) : visible depuis le
+    Texas (dans la bande de totalité), pas visible depuis Paris (nuit/hémisphère opposé)."""
+    import swisseph as swe
+
+    start_jd = swe.julday(2024, 1, 1, 0)
+    end_jd = swe.julday(2025, 1, 1, 0)
+    eclipses = compute_eclipse_events(start_jd, end_jd)
+    eclipse = next(e for e in eclipses if e["event_date"] == "2024-04-08")
+
+    assert compute_eclipse_local_visibility(eclipse, 29.42, -98.49) is True  # San Antonio, TX
+    assert compute_eclipse_local_visibility(eclipse, 48.8566, 2.3522) is False  # Paris
+
+
+def test_compute_eclipse_local_visibility_returns_none_for_non_eclipse_event():
+    event = {"event_type": "nouvelle_lune", "event_date": "2027-01-07"}
+    assert compute_eclipse_local_visibility(event, 45.0, 5.0) is None
+
+
+def test_compute_location_context_only_applies_to_eclipses():
+    eclipse_event = {"event_type": "eclipse_solaire", "event_date": "2027-02-06"}
+    other_event = {"event_type": "nouvelle_lune", "event_date": "2027-01-07"}
+    assert compute_location_context(eclipse_event, 45.0, 5.0) is not None
+    assert compute_location_context(other_event, 45.0, 5.0) is None
+
+
+# ---------------------------------------------------------------------------
+# V3 : enrichissement contextuel mode aperçu
+# ---------------------------------------------------------------------------
+def test_compute_contextual_signals_excludes_aspect_between_main_actors():
+    event = {"event_type": "eclipse_solaire", "planet": "Sun"}
+    day_aspects = [
+        {"planet1": "Sun", "planet2": "Moon", "type": "conjunction", "orb": 0.1},  # l'éclipse elle-même, exclue
+        {"planet1": "Mars", "planet2": "Uranus", "type": "square", "orb": 0.5},  # n'implique aucun acteur, exclue
+        {"planet1": "Sun", "planet2": "Mars", "type": "square", "orb": 0.3},  # signal valable (implique le Soleil)
+    ]
+    signals = compute_contextual_signals(event, day_aspects)
+    assert len(signals) == 1
+    assert {signals[0]["planet1"], signals[0]["planet2"]} == {"Sun", "Mars"}
+
+
+def test_compute_contextual_signals_filters_by_orb_and_major_type_and_caps_at_two():
+    event = {"event_type": "station_retrograde", "planet": "Mercury"}
+    day_aspects = [
+        {"planet1": "Mercury", "planet2": "Venus", "type": "sextile", "orb": 1.9},  # dans l'orbe
+        {"planet1": "Mercury", "planet2": "Mars", "type": "square", "orb": 2.5},  # hors orbe (>= 2°)
+        {"planet1": "Mercury", "planet2": "Jupiter", "type": "quincunx", "orb": 0.5},  # aspect mineur, exclu
+        {"planet1": "Mercury", "planet2": "Saturn", "type": "trine", "orb": 0.2},
+        {"planet1": "Mercury", "planet2": "Uranus", "type": "conjunction", "orb": 0.1},
+        {"planet1": "Venus", "planet2": "Mars", "type": "sextile", "orb": 0.1},  # n'implique pas Mercure
+    ]
+    signals = compute_contextual_signals(event, day_aspects)
+    assert len(signals) == 2  # plafonné, jamais une liste exhaustive
+    assert [s["orb"] for s in signals] == sorted(s["orb"] for s in signals)  # les plus serrés d'abord
+    assert all("Mercury" in (s["planet1"], s["planet2"]) for s in signals)
+
+
+def test_compute_contextual_signals_returns_empty_for_unknown_event_type():
+    assert compute_contextual_signals({"event_type": "inconnu"}, [{"planet1": "A", "planet2": "B", "type": "trine", "orb": 0.1}]) == []
+
+
+def test_enrich_events_with_contextual_signals_adds_field_to_every_event():
+    events = compute_witchy_calendar(2027)[:10]
+    enriched = enrich_events_with_contextual_signals(events)
+    assert len(enriched) == len(events)
+    for event in enriched:
+        assert "contextual_signals" in event
+        assert len(event["contextual_signals"]) <= 2
+
+
+def test_enrich_events_with_contextual_signals_output_is_json_serializable():
+    import json
+
+    events = compute_witchy_calendar(2027)[:10]
+    json.dumps(enrich_events_with_contextual_signals(events))
+
+
+# ---------------------------------------------------------------------------
+# V3 : lecture LLM mode détail journée
+# ---------------------------------------------------------------------------
+def test_witchy_day_detail_prompt_is_distinct_and_mentions_day_chart():
+    from app import schemas
+
+    prompt = interpretation_service._build_system_prompt(
+        schemas.ReadingRequest(reading_type="witchy_day_detail")
+    )
+    other_prompt = interpretation_service._build_system_prompt(schemas.ReadingRequest(reading_type="witchy_calendar"))
+    assert prompt != other_prompt
+    assert "day_chart" in prompt
+    assert "themes_confirmes_du_jour" in prompt
+    assert "maisons" in prompt  # précise l'absence de maisons/Ascendant pour une carte du jour
+
+
+def test_witchy_day_detail_reading_payload_returns_503_without_api_key(client):
+    chart_id = client.post(
+        "/api/charts",
+        json={
+            "birth_data": {
+                "date": "1990-05-15",
+                "time": "14:32:00",
+                "time_known": True,
+                "timezone": "Europe/Paris",
+                "location": {"city": "Lyon", "country": "France", "latitude": 45.764, "longitude": 4.8357},
+            }
+        },
+    ).json()["id"]
+    res = client.post(
+        f"/api/charts/{chart_id}/readings",
+        json={"reading_type": "witchy_day_detail", "witchy_day_detail_date": "2027-01-22"},
+    )
+    assert res.status_code == 503

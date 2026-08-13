@@ -389,7 +389,7 @@ class NatalChartResponse(BaseModel):
 # Interprétation LLM (cf. cahier des charges, section 4.7)
 # ---------------------------------------------------------------------------
 class ReadingRequest(BaseModel):
-    reading_type: str = "global"  # 'global' | 'love' | 'career' | 'family' | 'lots' | 'derived_houses' | 'timing' | 'zodiacal_releasing' | 'compatibility' | 'astrocartography'
+    reading_type: str = "global"  # 'global' | 'love' | 'career' | 'family' | 'lots' | 'derived_houses' | 'timing' | 'zodiacal_releasing' | 'compatibility' | 'astrocartography' | 'astrocartography_forecast' | 'witchy_calendar' | 'witchy_day_detail'
     focus_areas: list[str] = Field(default_factory=lambda: ["general"])
     level: str = "débutant"
     tone: str = "accessible et bienveillant"
@@ -411,6 +411,7 @@ class ReadingRequest(BaseModel):
     forecast_years: int = Field(default=10, ge=1, le=10)  # utilisé par 'astrocartography_forecast'
     forecast_threshold_km: float = 300.0  # utilisé par 'astrocartography_forecast'
     witchy_calendar_year: int | None = None  # utilisé par 'witchy_calendar' ; défaut = année en cours
+    witchy_day_detail_date: date_type | None = None  # utilisé par 'witchy_day_detail' (mode_detail_journee) ; défaut = aujourd'hui
 
 
 # ---------------------------------------------------------------------------

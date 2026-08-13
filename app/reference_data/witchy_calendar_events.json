@@ -89,6 +89,35 @@
     "Reprendre les règles de ton déjà établies (pas de fatalisme, tendances non certitudes) même dans un format bref."
   ],
 
+  "modes_de_lecture": {
+    "description": "Deux modes distincts pour éviter le compromis entre calendrier lisible et analyse complète. L'utilisateur navigue de l'un à l'autre en cliquant sur une date du calendrier.",
+
+    "mode_apercu_calendrier": {
+      "usage": "vue par défaut du calendrier annuel/mensuel",
+      "contenu": "événement principal + explication_globale + max 1-2 signaux contextuels forts (voir enrichissement_contextuel ci-dessous) + impact_personnel si détecté",
+      "contrainte": "toujours concis, scannable — c'est une liste d'événements, pas une lecture développée"
+    },
+
+    "mode_detail_journee": {
+      "usage": "déclenché par un clic/tap sur une date spécifique depuis le calendrier",
+      "contenu": "analyse complète de la 'carte du jour' à cette date précise",
+      "reutilisation_moteur": "AUCUN nouveau moteur de calcul nécessaire — une carte du jour est structurellement identique à un thème natal (positions + aspects + dispositeurs), sans Ascendant/maisons puisqu'aucun lieu de naissance n'y est associé. Réutilise directement : aspects.json (calcul des aspects entre TOUTES les planètes de ce jour, pas seulement celles liées à l'événement principal), rulerships.json (dispositeurs du jour), et le mécanisme de themes_confirmes déjà spécifié dans strategie_lecture_professionnelle.md — appliqué à cette carte du jour plutôt qu'à un thème natal individuel.",
+      "reinterpretation_conceptuelle": "themes_confirmes calculé sur une carte du jour se lit comme 'climat énergétique collectif de cette journée' plutôt que comme 'identité d'une personne' — même moteur, autre niveau de lecture (collectif plutôt qu'individuel).",
+      "personnalisation_conservee": "le croisement personnel (mecanisme_1_aspect_natal, mecanisme_2_maison_natale, déjà spécifiés plus haut) reste actif en mode détail, en plus de l'analyse complète du jour — l'utilisateur voit à la fois le climat collectif complet ET ce qui le touche personnellement ce jour-là."
+    },
+
+    "difference_de_prompt": {
+      "mode_apercu": "reprend prompt_instructions_for_brief_descriptions (1-3 phrases, événement principal + signaux limités)",
+      "mode_detail": "reprend la méthodologie complète de strategie_lecture_professionnelle.md (architecture générale du jour, thèmes confirmés du jour développés, ton posé) — seule différence : le sujet de la lecture est 'cette journée' plutôt qu'une personne, donc pas de section identité/vocation/amour personnels sauf via le bloc de personnalisation optionnelle déjà défini"
+    }
+  },
+
+  "enrichissement_contextuel_mode_apercu": {
+    "description": "Mécanisme de sélection des 1-2 signaux contextuels forts affichés en mode aperçu (pas en mode détail, qui affiche tout).",
+    "principe": "Calculer les inter-aspects entre planètes en transit ce jour-là (transit-vs-transit, pas transit-vs-natal), filtrer sur les aspects majeurs à orbe serré (< 2°) IMPLIQUANT les acteurs principaux de l'événement (ex. pour une éclipse : tout aspect serré au Soleil ou à la Lune ce jour-là), puis ne garder que le(s) signal(aux) le(s) plus fort(s) — jamais une liste exhaustive en mode aperçu.",
+    "exemple": "Éclipse solaire en Lion + Mars en carré serré à Uranus le même jour → un second bloc court : 'Cette éclipse se double d'un Mars en carré serré à Uranus — une énergie qui peut rendre les nouveaux départs plus impulsifs et moins prévisibles que d'habitude.'"
+  },
+
   "personnalisation_optionnelle": {
     "description": "Option avancée (V2+) : croiser chaque événement du calendrier avec le thème natal de l'utilisateur pour signaler les événements qui l'affectent personnellement plus fort. Deux mécanismes indépendants, à tester tous les deux pour chaque événement.",
 
@@ -144,6 +173,7 @@
     "mvp": "Lunaisons + Éclipses — couvre déjà le cœur de l'expérience 'witchy calendar' attendue par les utilisateurs de ce type d'app, avec un calcul raisonnable.",
     "v1": "Ajouter stations rétrogrades et ingrès de planètes lentes.",
     "v2": "Grandes conjonctions (détection dynamique) + personnalisation optionnelle croisée avec le thème natal.",
+    "v3": "location_context (visibilité locale des éclipses) + modes_de_lecture (aperçu concis / détail carte du jour) + enrichissement_contextuel_mode_apercu (signaux transit-transit forts).",
     "calcul_global_partage": "Ce calendrier est LE MÊME pour tous les utilisateurs d'une année donnée (sauf la couche de personnalisation V2+) — calculer une fois par an en amont et mettre en cache, plutôt que recalculer par utilisateur à chaque consultation, sur le même principe que la cyclocartographie."
   }
 }

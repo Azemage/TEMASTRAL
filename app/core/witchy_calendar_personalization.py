@@ -121,3 +121,35 @@ def personalize_witchy_events(events: list[dict], chart_data: dict) -> list[dict
 
         personalized.append({**event, "impact_personnel": impact})
     return personalized
+
+
+def personalize_day_chart(day_chart: dict, chart_data: dict) -> list[dict]:
+    """Mode détail journée (voir modes_de_lecture.mode_detail_journee.personnalisation_conservee
+    du document source) : applique le mécanisme 1 (aspect_natal, déjà générique sur n'importe
+    quelle longitude) à CHAQUE planète de la carte du jour plutôt qu'à un seul événement
+    ponctuel — les "résonances personnelles" de la journée entière. Le mécanisme 2 (maison
+    natale) ne s'applique pas ici : une carte du jour n'a pas de maisons (voir day_chart.py)."""
+    resonances = []
+    for planet in day_chart["planets"]:
+        name = planet["name"]
+        if name not in CLASSIC_PLANETS:
+            continue
+        match = _mechanism_1_aspect_natal(planet["absolute_longitude"], chart_data)
+        if match is None:
+            continue
+        theme_confirme_amplifie = (
+            compute_theme_confirme(match["target"], chart_data)["present"]
+            if match["target"] in CLASSIC_PLANETS
+            else False
+        )
+        resonances.append(
+            {
+                "planete_du_jour": name,
+                "cible_natale_touchee": match["target"],
+                "aspect_type": match["aspect_type"],
+                "orbe": match["orb"],
+                "theme_confirme_amplifie": theme_confirme_amplifie,
+            }
+        )
+    resonances.sort(key=lambda r: r["orbe"])
+    return resonances

@@ -883,6 +883,28 @@ const UI_TEXT = {
   status_loading_witchy_calendar: { fr: "Calcul du calendrier en cours...", en: "Computing calendar...", es: "Calculando el calendario..." },
   error_loading_witchy_calendar: { fr: "Impossible de charger le calendrier :", en: "Could not load the calendar:", es: "No se pudo cargar el calendario:" },
   witchy_no_events: { fr: "Aucun événement calculé pour cette année.", en: "No events computed for this year.", es: "Ningún evento calculado para este año." },
+  witchy_events_click_hint: {
+    fr: "Cliquez sur une ligne pour voir la carte complète de ce jour-là.",
+    en: "Click a row to see the full chart for that day.",
+    es: "Haz clic en una fila para ver la carta completa de ese día.",
+  },
+  witchy_day_detail_title: { fr: "Carte du jour", en: "Day chart", es: "Carta del día" },
+  witchy_day_detail_intro: {
+    fr: "Analyse complète d'une date précise (positions, aspects, dispositeurs, climat énergétique collectif du jour) et ce qui vous touche personnellement ce jour-là. Cliquez sur un événement ci-dessus, ou choisissez n'importe quelle date.",
+    en: "Full analysis of a specific date (positions, aspects, dispositors, the day's collective energetic climate) and what touches you personally that day. Click an event above, or pick any date.",
+    es: "Análisis completo de una fecha concreta (posiciones, aspectos, dispositores, clima energético colectivo del día) y lo que te toca personalmente ese día. Haz clic en un evento arriba, o elige cualquier fecha.",
+  },
+  witchy_day_detail_date_label: { fr: "Date", en: "Date", es: "Fecha" },
+  btn_generate_witchy_day_detail: {
+    fr: "Voir la carte du jour",
+    en: "View day chart",
+    es: "Ver la carta del día",
+  },
+  error_witchy_day_detail_no_date: {
+    fr: "Choisissez d'abord une date.",
+    en: "Pick a date first.",
+    es: "Elige primero una fecha.",
+  },
   witchy_super_moon_badge: { fr: "Super Lune", en: "Supermoon", es: "Superluna" },
   witchy_label_nouvelle_lune: { fr: "Nouvelle Lune en {sign}", en: "New Moon in {sign}", es: "Luna Nueva en {sign}" },
   witchy_label_pleine_lune: { fr: "Pleine Lune en {sign}", en: "Full Moon in {sign}", es: "Luna Llena en {sign}" },

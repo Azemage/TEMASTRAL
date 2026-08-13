@@ -865,6 +865,15 @@ th { color: var(--accent-2); }
   font-size: 0.8rem;
 }
 
+.witchy-event-row {
+  cursor: pointer;
+}
+
+.witchy-event-row:hover,
+.witchy-event-row:focus-visible {
+  background: var(--surface-alt, rgba(255, 255, 255, 0.04));
+}
+
 .astro-location-delete-btn:hover {
   border-color: #ff5d5d;
   color: #ff5d5d;

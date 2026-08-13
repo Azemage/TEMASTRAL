@@ -28,8 +28,13 @@ from app.core.astrocartography_personalization import personalize_nearby_lines
 from app.core.derived_houses import resolve_relation
 from app.core.profections import compute_profection
 from app.core.reference_data import astrocartography_significations, houses_meanings, rulerships
-from app.core.witchy_calendar import compute_witchy_calendar
-from app.core.witchy_calendar_personalization import personalize_witchy_events
+from app.core.day_chart import compute_day_chart
+from app.core.witchy_calendar import (
+    compute_location_context,
+    compute_witchy_calendar,
+    enrich_events_with_contextual_signals,
+)
+from app.core.witchy_calendar_personalization import personalize_day_chart, personalize_witchy_events
 from app.core.zodiacal_releasing import FORTUNE_LOT_NAME, SPIRIT_LOT_NAME
 from app.services import astrocartography_service, timing_service
 from app.services.synastry_service import compute_synastry_for_charts
@@ -421,7 +426,21 @@ un nouveau signe, et grandes conjonctions (aspect majeur exact entre deux planè
 `sign` (signe occupé au moment de l'événement), `meaning_template` (le sens de référence à \
 partir duquel rédiger, jamais à recopier tel quel) et `score` (1 à 5, déjà calculé — ne le \
 recalcule jamais et ne cite jamais ce chiffre brut dans le texte, traduis-le en intensité \
-ressentie)."""
+ressentie). Les éclipses (`eclipse_solaire`/`eclipse_lunaire`) portent en plus \
+`location_context` (`hemisphere` et `eclipse_visible_locally`, déjà calculés pour le lieu de \
+cette personne) : mentionne cette info UNIQUEMENT comme un détail contextuel bref si tu \
+l'utilises (ex. "visible depuis chez toi" ou "pas visible directement mais l'énergie reste \
+valable") — ne la présente JAMAIS comme une condition qui validerait ou invaliderait l'énergie \
+symbolique de l'éclipse, qui reste traditionnellement globale."""
+
+    contextual_signals = """SIGNAUX CONTEXTUELS — chaque événement porte aussi \
+`contextual_signals` (0 à 2 entrées), déjà calculé : un inter-aspect fort du même jour \
+(transit-transit, orbe serré) impliquant un acteur principal de l'événement (ex. pour une \
+éclipse, un aspect serré au Soleil ou à la Lune ce jour-là par une autre planète). Si la liste \
+est vide, n'en parle pas. Si elle contient un ou deux signaux, ajoute pour CHACUN une phrase \
+courte supplémentaire (jamais plus d'une par signal) qui nuance ou colore l'énergie principale \
+— jamais une liste exhaustive, seulement le(s) signal(aux) déjà sélectionné(s) comme les plus \
+forts."""
 
     personalization = """BLOC PERSONNEL — pour chaque événement, regarde `impact_personnel` :
 - Si `impact_personnel.detecte` est faux : n'ajoute AUCUN commentaire personnel pour cet \
@@ -440,9 +459,10 @@ mentionnant EN PREMIER (ex. "cet événement touche un point central de ton thè
 signal le plus fort, plus fort que la proximité de l'aspect elle-même."""
 
     structure = """FORMAT IMPÉRATIF — c'est un calendrier SCANNABLE, pas une lecture \
-développée : pour CHAQUE événement, un texte COURT (bloc global 1 à 3 phrases, + bloc \
-personnel 1 à 2 phrases si applicable, voir ci-dessus) — jamais plus, même pour les \
-événements les plus marquants. Structure la réponse chronologiquement, groupée par mois \
+développée : pour CHAQUE événement, un texte COURT (bloc global 1 à 3 phrases, + au maximum 1 \
+phrase par signal contextuel présent, + bloc personnel 1 à 2 phrases si applicable, voir \
+ci-dessus) — jamais plus, même pour les événements les plus marquants. Structure la réponse \
+chronologiquement, groupée par mois \
 (## Janvier, ## Février, etc.) pour rester lisible sur une année complète. Pour le bloc \
 global, réponds toujours à DEUX questions en une phrase ou deux : quelle énergie est à \
 l'œuvre, ET à quoi c'est utile concrètement (une intention à poser, un petit rituel, un type \
@@ -461,6 +481,70 @@ symbolique standard du signe occupé : reste sur la dimension symbolique, jamais
 factuelle ou anxiogène. Si `events` est vide pour l'année demandée, dis-le simplement."""
 
     return f"""{intro}
+
+{contextual_signals}
+
+{personalization}
+
+{structure}
+
+{guardrails}"""
+
+
+def _witchy_day_detail_max_tokens(request: schemas.ReadingRequest) -> int:
+    """Une seule journée (positions + tous les aspects entre les ~10 planètes + dispositeurs +
+    résonances personnelles), analysée en profondeur (méthodologie complète, pas le format bref
+    du calendrier) : nettement moins de contenu qu'une année entière (voir
+    _witchy_calendar_max_tokens) mais plus développé par élément que le mode aperçu."""
+    return 3500
+
+
+def _witchy_day_detail_prompt_block(request: schemas.ReadingRequest) -> str:
+    intro = """Cette lecture est le MODE DÉTAIL JOURNÉE du calendrier ésotérique : une analyse \
+complète de la "carte du jour" à une date précise (`date`), pas un événement du calendrier \
+annuel. Une carte du jour est structurellement identique à un thème natal (positions, aspects, \
+dispositeurs) mais SANS Ascendant ni maisons, puisqu'aucun lieu de naissance n'y est associé — \
+ne mentionne donc jamais de maisons ni d'Ascendant pour cette carte du jour. Tu reçois \
+`day_chart` (positions de toutes les planètes ce jour-là dans `planets`, TOUS les aspects entre \
+elles dans `aspects` — pas seulement ceux liés à un événement particulier —, \
+`dispositors_traditional`/`dispositors_modern`, et `themes_confirmes_du_jour` : les planètes \
+qui ressortent comme dispositeur final dominant ou membres d'un amas planétaire ce jour-là). \
+Traite `themes_confirmes_du_jour` comme le CLIMAT ÉNERGÉTIQUE COLLECTIF de cette journée \
+précise (pas l'identité d'une personne) — même mécanisme que pour un thème natal individuel, \
+mais relu à l'échelle d'un jour plutôt que d'une vie."""
+
+    calendar_link = """Si `evenements_du_calendrier_ce_jour` n'est pas vide, cette date \
+coïncide avec un ou plusieurs événements déjà identifiés par le calendrier annuel (lunaison, \
+éclipse, station, ingrès, grande conjonction — mêmes champs que d'habitude, dont \
+`impact_personnel`) : ouvre la lecture en les situant clairement dans l'analyse complète de la \
+journée. Si la liste est vide, c'est un jour "ordinaire" du calendrier — analyse quand même la \
+carte du jour normalement, sans en inventer un artificiellement."""
+
+    personalization = """RÉSONANCES PERSONNELLES — `resonances_personnelles_du_jour` liste les \
+planètes de cette journée qui forment un aspect natal serré avec cette personne (voir \
+`identity`) : pour chacune, `cible_natale_touchee` (planète ou angle natal), `aspect_type`, \
+`orbe`, et `theme_confirme_amplifie` (vrai si la cible touchée est déjà un pilier du thème \
+natal de la personne). Consacre TOUJOURS une section clairement distincte et introduite (ex. \
+"Ce qui te touche personnellement aujourd'hui") à ces résonances, séparée de l'analyse \
+collective de la journée — jamais fusionnée dans le même paragraphe. Si la liste est vide, \
+dis simplement que rien de personnel de particulièrement serré ne ressort ce jour-là, sans \
+inventer de lien."""
+
+    structure = """FORMAT : c'est ici une lecture DÉVELOPPÉE (contrairement au calendrier \
+annuel, volontairement bref) — structure-la avec des sections Markdown (## Climat du jour, ## \
+Aspects clés, ## Ce qui te touche personnellement, etc.), développe chaque aspect ou thème \
+confirmé notable avec un exemple concret de ce à quoi cette énergie peut ressembler dans une \
+journée (une décision, une conversation, un état d'esprit), pas seulement une description \
+abstraite."""
+
+    guardrails = """Ton posé et nuancé, jamais fataliste : une carte du jour décrit une \
+tendance énergétique collective disponible ce jour-là, jamais un événement garanti ou une \
+prédiction factuelle. N'invente aucune position ni aucun aspect hors de `day_chart` : \
+appuie-toi exclusivement sur les données fournies."""
+
+    return f"""{intro}
+
+{calendar_link}
 
 {personalization}
 
@@ -1041,6 +1125,8 @@ Termine toujours par un court paragraphe de synthèse bienveillant et encouragea
         specialized_block = _astrocartography_forecast_prompt_block(request)
     elif request.reading_type == "witchy_calendar":
         specialized_block = _witchy_calendar_prompt_block(request)
+    elif request.reading_type == "witchy_day_detail":
+        specialized_block = _witchy_day_detail_prompt_block(request)
     else:
         specialized_block = _SPECIALIZED_PROMPT_BLOCKS[request.reading_type]
     return f"""{base}
@@ -1236,8 +1322,40 @@ def _build_user_payload(
         # Personnalisation V2 (voir app/core/witchy_calendar_personalization.py) : chaque
         # événement reçoit un bloc impact_personnel (croisement avec le thème natal), en plus
         # du sens générique — voir _witchy_calendar_prompt_block pour comment l'exploiter.
+        events = personalize_witchy_events(compute_witchy_calendar(year), chart_data)
+        # V3 (voir app/reference_data/witchy_calendar_events.json, enrichissement_contextuel_
+        # mode_apercu et location_context) : 1-2 signaux contextuels forts par événement
+        # (inter-aspects transit-transit du jour) et, pour les éclipses, la visibilité locale
+        # depuis le lieu de naissance de la personne (utilisé comme lieu de référence, faute
+        # d'une géolocalisation "actuelle" distincte dans l'app).
+        events = enrich_events_with_contextual_signals(events)
+        events = [
+            {
+                **event,
+                "location_context": compute_location_context(event, chart.birth_latitude, chart.birth_longitude),
+            }
+            for event in events
+        ]
         payload["identity"] = _identity_context(chart_data)
-        payload["events"] = personalize_witchy_events(compute_witchy_calendar(year), chart_data)
+        payload["events"] = events
+    elif request.reading_type == "witchy_day_detail":
+        # Mode détail journée (voir modes_de_lecture.mode_detail_journee du document source) :
+        # AUCUN nouveau moteur, réutilise directement app/core/day_chart.py (positions + aspects
+        # + dispositeurs + thèmes confirmés du jour, sans Ascendant ni maisons) et le mécanisme
+        # 1 de personnalisation, généralisé à toute la carte du jour par personalize_day_chart.
+        detail_date = request.witchy_day_detail_date or date_type.today()
+        date_str = detail_date.isoformat()
+        day_chart = compute_day_chart(date_str)
+        year_events = compute_witchy_calendar(detail_date.year)
+        events_this_day = personalize_witchy_events(
+            [e for e in year_events if e["event_date"] == date_str], chart_data
+        )
+
+        payload["identity"] = _identity_context(chart_data)
+        payload["date"] = date_str
+        payload["day_chart"] = day_chart
+        payload["evenements_du_calendrier_ce_jour"] = events_this_day
+        payload["resonances_personnelles_du_jour"] = personalize_day_chart(day_chart, chart_data)
 
     return payload
 
@@ -1265,6 +1383,8 @@ async def generate_reading(
         max_tokens = _astrocartography_forecast_max_tokens(request)
     elif request.reading_type == "witchy_calendar":
         max_tokens = _witchy_calendar_max_tokens(request)
+    elif request.reading_type == "witchy_day_detail":
+        max_tokens = _witchy_day_detail_max_tokens(request)
     else:
         max_tokens = READING_TYPE_MAX_TOKENS.get(request.reading_type, 2000)
 
