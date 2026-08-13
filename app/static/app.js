@@ -2290,6 +2290,8 @@ function witchyEventLabel(event) {
   return tf(`witchy_label_${event.event_type}`, {
     sign: event.sign ? signLabel(event.sign) : "",
     planet: event.planet ? planetLabel(event.planet) : "",
+    planetB: event.planet_b ? planetLabel(event.planet_b) : "",
+    aspect: event.aspect_type ? aspectTypeLabel(event.aspect_type) : "",
   });
 }
 

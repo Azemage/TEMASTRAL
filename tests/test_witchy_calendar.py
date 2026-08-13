@@ -5,14 +5,23 @@ import swisseph as swe
 from fastapi.testclient import TestClient
 
 from app.core.witchy_calendar import (
+    SLOW_PLANET_PAIRS,
     STATION_PLANETS,
     SUPER_MOON_DISTANCE_KM_THRESHOLD,
     _score_from_raw,
     compute_eclipse_events,
+    compute_grand_conjunction_events,
     compute_ingress_events,
     compute_lunation_events,
     compute_station_events,
     compute_witchy_calendar,
+)
+from app.core.witchy_calendar_personalization import (
+    DURATION_EVENT_TYPES,
+    PUNCTUAL_EVENT_TYPES,
+    _mechanism_1_aspect_natal,
+    _mechanism_2_maison_natale,
+    personalize_witchy_events,
 )
 from app.database import SessionLocal
 from app.main import app
@@ -229,3 +238,200 @@ def test_witchy_calendar_prompt_is_distinct_and_explains_scannable_format():
     assert prompt != other_prompt
     assert "CALENDRIER" in prompt
     assert "events" in prompt
+
+
+def test_witchy_calendar_prompt_explains_personalization_blocks():
+    from app import schemas
+
+    prompt = interpretation_service._build_system_prompt(schemas.ReadingRequest(reading_type="witchy_calendar"))
+    assert "impact_personnel" in prompt
+    assert "theme_confirme_amplifie" in prompt
+
+
+# ---------------------------------------------------------------------------
+# V2 : grandes conjonctions
+# ---------------------------------------------------------------------------
+def test_known_2020_jupiter_saturn_great_conjunction_is_detected():
+    """Grande conjonction Jupiter-Saturne du 21 décembre 2020 (référence externe connue, la
+    plus médiatisée de ce type) — vérifie que la détection dynamique par paire de planètes
+    lentes fonctionne correctement, pas seulement qu'elle ne lève pas d'exception."""
+    start_jd = swe.julday(2020, 1, 1, 0)
+    end_jd = swe.julday(2021, 1, 1, 0)
+    events = compute_grand_conjunction_events(start_jd, end_jd)
+    jupiter_saturn_conjunctions = [
+        e
+        for e in events
+        if {e["planet"], e["planet_b"]} == {"Jupiter", "Saturn"} and e["aspect_type"] == "conjunction"
+    ]
+    assert any(e["event_date"] == "2020-12-21" for e in jupiter_saturn_conjunctions)
+
+
+def test_grand_conjunction_events_cover_distinct_slow_planet_pairs():
+    start_jd = swe.julday(2020, 1, 1, 0)
+    end_jd = swe.julday(2021, 1, 1, 0)
+    events = compute_grand_conjunction_events(start_jd, end_jd)
+    assert len(events) > 0
+    for event in events:
+        assert (event["planet"], event["planet_b"]) in SLOW_PLANET_PAIRS
+        assert event["aspect_type"] in ("conjunction", "square", "opposition")
+        assert event["planet"] != event["planet_b"]
+
+
+def test_grand_conjunction_events_use_catalog_weight():
+    start_jd = swe.julday(2020, 1, 1, 0)
+    end_jd = swe.julday(2021, 1, 1, 0)
+    events = compute_grand_conjunction_events(start_jd, end_jd)
+    for event in events:
+        assert event["score_brut"] == 9  # poids_base du catalogue, voir witchy_calendar_events.json
+        assert event["score"] == _score_from_raw(9)
+
+
+def test_compute_witchy_calendar_includes_grand_conjunctions_for_2020():
+    events = compute_witchy_calendar(2020)
+    assert any(e["event_type"] == "grande_conjonction" for e in events)
+
+
+# ---------------------------------------------------------------------------
+# V2 : personnalisation par croisement avec le thème natal
+# ---------------------------------------------------------------------------
+def _synthetic_chart_data():
+    from app.core.zodiac import SIGNS
+
+    return {
+        "planets": [
+            {"name": "Sun", "absolute_longitude": 4.0, "sign": "Aries", "house": 1},
+            {"name": "Moon", "absolute_longitude": 200.0, "sign": "Libra", "house": 7},
+            {"name": "Mercury", "absolute_longitude": 10.0, "sign": "Aries", "house": 1},
+            {"name": "Venus", "absolute_longitude": 40.0, "sign": "Taurus", "house": 2},
+            {"name": "Mars", "absolute_longitude": 70.0, "sign": "Gemini", "house": 3},
+            {"name": "Jupiter", "absolute_longitude": 100.0, "sign": "Cancer", "house": 4},
+            {"name": "Saturn", "absolute_longitude": 5.1, "sign": "Aries", "house": 1},
+            {"name": "Uranus", "absolute_longitude": 160.0, "sign": "Virgo", "house": 6},
+            {"name": "Neptune", "absolute_longitude": 190.0, "sign": "Libra", "house": 7},
+            {"name": "Pluto", "absolute_longitude": 220.0, "sign": "Scorpio", "house": 8},
+        ],
+        "angles": {
+            "ascendant": {"absolute_longitude": 0.0, "sign": "Aries"},
+            "midheaven": {"absolute_longitude": 270.0, "sign": "Capricorn"},
+        },
+        "houses": [{"number": i + 1, "sign": SIGNS[i], "absolute_longitude": i * 30.0} for i in range(12)],
+        "dispositors_traditional": {"convergence": {"dominant_dispositor": "Saturn", "level": "forte"}},
+        "dispositors_modern": {"convergence": {"dominant_dispositor": None, "level": "aucune"}},
+    }
+
+
+def test_mechanism_1_prioritizes_luminary_over_tighter_slow_planet_aspect():
+    chart_data = _synthetic_chart_data()
+    # Événement à 5.2° : Soleil (4.0°, écart 1.2°) ET Saturne (5.1°, écart 0.1°, bien plus
+    # serré) sont tous deux en orbe de conjonction (2°) — le Soleil doit néanmoins l'emporter
+    # (luminaire prioritaire, voir priorite_cibles du document source).
+    match = _mechanism_1_aspect_natal(5.2, chart_data)
+    assert match is not None
+    assert match["target"] == "Sun"
+    assert match["aspect_type"] == "conjunction"
+
+
+def test_mechanism_1_returns_none_when_nothing_in_orb():
+    chart_data = _synthetic_chart_data()
+    assert _mechanism_1_aspect_natal(135.0, chart_data) is None  # loin de tous les points testés
+
+
+def test_mechanism_2_returns_house_and_its_ruler():
+    chart_data = _synthetic_chart_data()
+    house_number, ruler = _mechanism_2_maison_natale(15.0, chart_data)  # tombe en maison 1 (0-30°, Bélier)
+    assert house_number == 1
+    assert ruler == "Mars"  # maître traditionnel du Bélier
+
+
+def test_personalize_witchy_events_flags_theme_confirme_amplification():
+    chart_data = _synthetic_chart_data()  # Saturne = dispositeur final dominant (convergence forte)
+    events = [
+        {
+            "event_date": "2027-01-01",
+            "event_type": "nouvelle_lune",
+            "planet": "Moon",
+            "sign": "Aries",
+            "score_brut": 5,
+            "score": 3,
+            "event_longitude": 5.15,  # très serré sur Saturne (5.1°), loin du Soleil/Lune/ASC
+        }
+    ]
+    # Neutralise les autres cibles proches pour isoler Saturne comme seule correspondance.
+    chart_data["planets"][0]["absolute_longitude"] = 60.0  # Sun loin
+    chart_data["angles"]["ascendant"]["absolute_longitude"] = 200.0  # ASC loin
+
+    result = personalize_witchy_events(events, chart_data)
+    impact = result[0]["impact_personnel"]
+    assert impact["detecte"] is True
+    assert impact["mecanisme"] == "aspect_natal"
+    assert impact["cible_touchee"] == "Saturn"
+    assert impact["theme_confirme_amplifie"] is True  # Saturne est dispositeur dominant (forte)
+
+
+def test_personalize_witchy_events_no_detection_returns_empty_block():
+    chart_data = _synthetic_chart_data()
+    events = [
+        {
+            "event_date": "2027-01-01",
+            "event_type": "nouvelle_lune",
+            "planet": "Moon",
+            "sign": "Libra",
+            "score_brut": 5,
+            "score": 3,
+            "event_longitude": 135.0,  # loin de tout point natal testé
+        }
+    ]
+    impact = personalize_witchy_events(events, chart_data)[0]["impact_personnel"]
+    assert impact == {
+        "detecte": False,
+        "mecanisme": None,
+        "cible_touchee": None,
+        "orbe_ou_maison": None,
+        "theme_confirme_amplifie": False,
+    }
+
+
+def test_personalize_witchy_events_uses_mechanism_2_for_duration_events_only():
+    chart_data = _synthetic_chart_data()
+    events = [
+        {
+            "event_date": "2027-01-01",
+            "event_type": "ingres",
+            "planet": "Jupiter",
+            "sign": "Aries",
+            "score_brut": 8,
+            "score": 4,
+            "event_longitude": 15.0,
+        },
+        {
+            "event_date": "2027-01-02",
+            "event_type": "station_retrograde",
+            "planet": "Mercury",
+            "sign": "Aries",
+            "score_brut": 4,
+            "score": 2,
+            "event_longitude": 4.2,  # serré sur le Soleil natal (4.0°) -> mécanisme 1 attendu
+        },
+    ]
+    result = personalize_witchy_events(events, chart_data)
+    assert result[0]["impact_personnel"]["mecanisme"] == "maison_natale"
+    assert result[1]["impact_personnel"]["mecanisme"] == "aspect_natal"
+
+
+def test_punctual_and_duration_event_type_sets_partition_known_event_types():
+    known_types = {
+        "nouvelle_lune", "pleine_lune", "eclipse_solaire", "eclipse_lunaire",
+        "station_retrograde", "station_directe", "ingres", "grande_conjonction",
+    }
+    assert PUNCTUAL_EVENT_TYPES | DURATION_EVENT_TYPES == known_types
+    assert PUNCTUAL_EVENT_TYPES.isdisjoint(DURATION_EVENT_TYPES)
+
+
+def test_personalize_witchy_events_output_is_json_serializable():
+    import json
+
+    chart_data = _synthetic_chart_data()
+    events = compute_witchy_calendar(2027)
+    personalized = personalize_witchy_events(events, chart_data)
+    json.dumps(personalized)
+    assert len(personalized) == len(events)

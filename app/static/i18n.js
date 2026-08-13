@@ -898,4 +898,9 @@ const UI_TEXT = {
     es: "{planet} se vuelve directo en {sign}",
   },
   witchy_label_ingres: { fr: "{planet} entre en {sign}", en: "{planet} enters {sign}", es: "{planet} entra en {sign}" },
+  witchy_label_grande_conjonction: {
+    fr: "{planet} {aspect} {planetB} en {sign}",
+    en: "{planet} {aspect} {planetB} in {sign}",
+    es: "{planet} {aspect} {planetB} en {sign}",
+  },
 };

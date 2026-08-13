@@ -1,21 +1,19 @@
 """Calendrier ésotérique annuel : détection déterministe des événements astrologiques
-collectifs (lunaisons, éclipses, stations rétrogrades, ingrès de planètes lentes) sur une
-année civile — voir app/reference_data/witchy_calendar_events.json pour les poids et gabarits
-de sens utilisés ensuite par la lecture LLM.
-
-Portée de cette version (MVP+V1 du document source) : lunaisons, éclipses, stations
-rétrogrades, ingrès de planètes lentes. Les grandes conjonctions (aspect majeur entre deux
-planètes lentes, dates variables sur des décennies) et la personnalisation par croisement
-avec le thème natal restent en V2, non implémentées ici.
+collectifs (lunaisons, éclipses, stations rétrogrades, ingrès de planètes lentes, grandes
+conjonctions) sur une année civile — voir app/reference_data/witchy_calendar_events.json pour
+les poids et gabarits de sens utilisés ensuite par la lecture LLM.
 
 Ce calendrier ne dépend d'AUCUN thème natal : c'est le même pour tout le monde une année
 donnée (voir witchy_calendar_service.py pour le cache partagé, même principe que les lignes
-de transit de l'astrocartographie).
+de transit de l'astrocartographie). La personnalisation par croisement avec le thème natal
+(V2 du document source) est une couche séparée, voir witchy_calendar_personalization.py —
+appliquée seulement à la lecture LLM, jamais au calendrier collectif lui-même.
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass
+from itertools import combinations
 
 import swisseph as swe
 
@@ -149,7 +147,8 @@ def compute_lunation_events(start_jd: float, end_jd: float) -> list[dict]:
     events: list[dict] = []
     for target_angle, event_type in ((0.0, "nouvelle_lune"), (180.0, "pleine_lune")):
         for jd in _find_lunations(start_jd, end_jd, target_angle):
-            sign, _degree = sign_and_degree(_longitude(jd, PLANET_IDS["Moon"]))
+            moon_lon = _longitude(jd, PLANET_IDS["Moon"])
+            sign, _degree = sign_and_degree(moon_lon)
             moon_distance_km = _distance_km(jd, PLANET_IDS["Moon"])
             is_super = moon_distance_km <= SUPER_MOON_DISTANCE_KM_THRESHOLD
             score_brut = catalog["poids_base"] + (2 if is_super else 0)
@@ -165,6 +164,7 @@ def compute_lunation_events(start_jd: float, end_jd: float) -> list[dict]:
                         "meaning_template": catalog["sous_types"][event_type]["meaning_template"],
                         "super_moon": is_super,
                         "moon_distance_km": round(moon_distance_km),
+                        "event_longitude": round(moon_lon, 3),
                     },
                 ).to_dict()
             )
@@ -188,7 +188,8 @@ def compute_eclipse_events(start_jd: float, end_jd: float) -> list[dict]:
         eclipse_jd = tret[0]
         if eclipse_jd >= end_jd:
             break
-        sign, _degree = sign_and_degree(_longitude(eclipse_jd, PLANET_IDS["Sun"]))
+        sun_lon = _longitude(eclipse_jd, PLANET_IDS["Sun"])
+        sign, _degree = sign_and_degree(sun_lon)
         score_brut = catalog["poids_base"] + 1  # solaire : +1 par rapport à lunaire (voir catalogue)
         events.append(
             CalendarEvent(
@@ -198,7 +199,10 @@ def compute_eclipse_events(start_jd: float, end_jd: float) -> list[dict]:
                 sign=sign,
                 score_brut=score_brut,
                 score=_score_from_raw(score_brut),
-                details={"meaning_template": catalog["sous_types"]["eclipse_solaire"]["meaning"]},
+                details={
+                    "meaning_template": catalog["sous_types"]["eclipse_solaire"]["meaning"],
+                    "event_longitude": round(sun_lon, 3),
+                },
             ).to_dict()
         )
         jd = eclipse_jd + 1  # reprend la recherche après cette éclipse
@@ -212,7 +216,8 @@ def compute_eclipse_events(start_jd: float, end_jd: float) -> list[dict]:
         eclipse_jd = tret[0]
         if eclipse_jd >= end_jd:
             break
-        sign, _degree = sign_and_degree(_longitude(eclipse_jd, PLANET_IDS["Moon"]))
+        moon_lon = _longitude(eclipse_jd, PLANET_IDS["Moon"])
+        sign, _degree = sign_and_degree(moon_lon)
         score_brut = catalog["poids_base"]
         events.append(
             CalendarEvent(
@@ -222,7 +227,10 @@ def compute_eclipse_events(start_jd: float, end_jd: float) -> list[dict]:
                 sign=sign,
                 score_brut=score_brut,
                 score=_score_from_raw(score_brut),
-                details={"meaning_template": catalog["sous_types"]["eclipse_lunaire"]["meaning"]},
+                details={
+                    "meaning_template": catalog["sous_types"]["eclipse_lunaire"]["meaning"],
+                    "event_longitude": round(moon_lon, 3),
+                },
             ).to_dict()
         )
         jd = eclipse_jd + 1
@@ -242,7 +250,8 @@ def compute_station_events(start_jd: float, end_jd: float) -> list[dict]:
     for planet in STATION_PLANETS:
         planet_id = PLANET_IDS[planet]
         for jd in _scan_zero_crossings(lambda t, pid=planet_id: _speed_longitude(t, pid), start_jd, end_jd):
-            sign, _degree = sign_and_degree(_longitude(jd, planet_id))
+            station_lon = _longitude(jd, planet_id)
+            sign, _degree = sign_and_degree(station_lon)
             # Sens de la station : vitesse négative juste après -> devient rétrograde.
             direction = "retrograde" if _speed_longitude(jd + 0.5, planet_id) < 0 else "direct"
             score_brut = catalog["poids_base"] + _STATION_MODIFIERS.get(planet, 0)
@@ -254,7 +263,11 @@ def compute_station_events(start_jd: float, end_jd: float) -> list[dict]:
                     sign=sign,
                     score_brut=score_brut,
                     score=_score_from_raw(score_brut),
-                    details={"meaning_template": catalog["meaning_template"], "direction": direction},
+                    details={
+                        "meaning_template": catalog["meaning_template"],
+                        "direction": direction,
+                        "event_longitude": round(station_lon, 3),
+                    },
                 ).to_dict()
             )
     return events
@@ -289,6 +302,7 @@ def compute_ingress_events(start_jd: float, end_jd: float) -> list[dict]:
                     return ((_longitude(t, pid) - b + 180) % 360) - 180
 
                 exact_jd = _bisect(f, jd, next_jd)
+                event_lon = _longitude(exact_jd, planet_id)
                 from_sign, to_sign = SIGNS[prev_index], SIGNS[curr_index]
                 score_brut = catalog["poids_base"] + _INGRESS_MODIFIERS.get(planet, 0)
                 events.append(
@@ -303,11 +317,64 @@ def compute_ingress_events(start_jd: float, end_jd: float) -> list[dict]:
                             "meaning_template": catalog["meaning_template"],
                             "from_sign": from_sign,
                             "direct": entering_next,
+                            "event_longitude": round(event_lon, 3),
                         },
                     ).to_dict()
                 )
             jd = next_jd
             prev_lon = curr_lon
+    return events
+
+
+# ---------------------------------------------------------------------------
+# Grandes conjonctions : aspect majeur exact (conjonction/carré/opposition) entre deux
+# planètes lentes — calcul dynamique (pas une liste figée), les dates réelles variant sur des
+# décennies selon la paire de planètes.
+# ---------------------------------------------------------------------------
+SLOW_PLANET_PAIRS = list(combinations(SLOW_PLANETS, 2))
+# conjonction = écart de 0° ; opposition = 180° ; carré = 90° OU 270° (montant/descendant),
+# les deux comptent comme des carrés à part entière.
+_GRAND_CONJUNCTION_TARGETS = {"conjunction": [0.0], "square": [90.0, 270.0], "opposition": [180.0]}
+
+
+def compute_grand_conjunction_events(start_jd: float, end_jd: float) -> list[dict]:
+    catalog = witchy_calendar_events()["event_catalog"]["grandes_conjonctions"]
+    events: list[dict] = []
+    for planet_a, planet_b in SLOW_PLANET_PAIRS:
+        id_a, id_b = PLANET_IDS[planet_a], PLANET_IDS[planet_b]
+
+        def directed_diff(t: float) -> float:
+            return (_longitude(t, id_b) - _longitude(t, id_a)) % 360
+
+        for aspect_type, targets in _GRAND_CONJUNCTION_TARGETS.items():
+            for target in targets:
+
+                def f(t, tgt=target):
+                    return ((directed_diff(t) - tgt + 180) % 360) - 180
+
+                for jd in _scan_zero_crossings(f, start_jd, end_jd):
+                    lon_a = _longitude(jd, id_a)
+                    lon_b = _longitude(jd, id_b)
+                    sign_a, _ = sign_and_degree(lon_a)
+                    sign_b, _ = sign_and_degree(lon_b)
+                    score_brut = catalog["poids_base"]
+                    events.append(
+                        CalendarEvent(
+                            event_date=_jd_to_iso_date(jd),
+                            event_type="grande_conjonction",
+                            planet=planet_a,
+                            sign=sign_a,
+                            score_brut=score_brut,
+                            score=_score_from_raw(score_brut),
+                            details={
+                                "meaning_template": catalog["meaning_template"],
+                                "planet_b": planet_b,
+                                "sign_b": sign_b,
+                                "aspect_type": aspect_type,
+                                "event_longitude": round(lon_a, 3),
+                            },
+                        ).to_dict()
+                    )
     return events
 
 
@@ -324,6 +391,7 @@ def compute_witchy_calendar(year: int) -> list[dict]:
         + compute_eclipse_events(start_jd, end_jd)
         + compute_station_events(start_jd, end_jd)
         + compute_ingress_events(start_jd, end_jd)
+        + compute_grand_conjunction_events(start_jd, end_jd)
     )
     events.sort(key=lambda e: e["event_date"])
     return events

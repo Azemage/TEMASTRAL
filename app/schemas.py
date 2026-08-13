@@ -528,18 +528,22 @@ class ReadingResponse(BaseModel):
 # ---------------------------------------------------------------------------
 class WitchyCalendarEvent(BaseModel):
     event_date: date_type
-    event_type: str  # 'nouvelle_lune' | 'pleine_lune' | 'eclipse_solaire' | 'eclipse_lunaire' | 'station_retrograde' | 'station_directe' | 'ingres'
+    event_type: str  # 'nouvelle_lune' | 'pleine_lune' | 'eclipse_solaire' | 'eclipse_lunaire' | 'station_retrograde' | 'station_directe' | 'ingres' | 'grande_conjonction'
     planet: str | None = None
     sign: str | None = None
     score_brut: float
     score: int = Field(ge=1, le=5)
     meaning_template: str | None = None
+    event_longitude: float | None = None  # longitude écliptique exacte de l'événement (0-360°)
     # Champs propres à certains types d'événement uniquement (voir app/core/witchy_calendar.py)
     super_moon: bool | None = None  # lunaisons
     moon_distance_km: int | None = None  # lunaisons
     direction: str | None = None  # stations : 'retrograde' | 'direct'
     from_sign: str | None = None  # ingrès
     direct: bool | None = None  # ingrès : sens du franchissement (direct vs rétrograde)
+    planet_b: str | None = None  # grandes conjonctions : seconde planète de la paire
+    sign_b: str | None = None  # grandes conjonctions : signe occupé par planet_b
+    aspect_type: str | None = None  # grandes conjonctions : 'conjunction' | 'square' | 'opposition'
 
 
 class WitchyCalendarResponse(BaseModel):

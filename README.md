@@ -147,17 +147,28 @@ Implémenté :
   année civile — même principe que les lignes de transit) : lunaisons (Nouvelle/Pleine Lune,
   avec détection de super lune sous ~360 000 km), éclipses solaires/lunaires (fonctions dédiées
   de Swiss Ephemeris `sol_eclipse_when_glob`/`lun_eclipse_when`, plus fiables qu'une détection
-  manuelle), stations rétrogrades/directes des 8 planètes concernées, et ingrès de planètes
-  lentes (Jupiter à Pluton) dans un nouveau signe — recherche de racine par bissection sur les
-  fonctions astronomiques concernées (élongation Lune-Soleil, vitesse apparente, longitude),
+  manuelle), stations rétrogrades/directes des 8 planètes concernées, ingrès de planètes
+  lentes (Jupiter à Pluton) dans un nouveau signe, et **grandes conjonctions** — aspect majeur
+  exact (conjonction/carré/opposition) entre deux planètes lentes, détecté dynamiquement
+  (dates variant sur des décennies, pas une liste figée) pour chacune des 10 paires possibles,
+  vérifié contre la grande conjonction Jupiter-Saturne du 21 décembre 2020 (référence connue).
+  Recherche de racine par bissection sur les fonctions astronomiques concernées (élongation
+  Lune-Soleil, vitesse apparente, longitude, écart angulaire dirigé entre deux planètes),
   échantillonnée quotidiennement puis affinée. Score de priorité déterministe (poids de base +
   modificateurs, ex. éclipse solaire/super lune/planète rare en station) converti en note 1-5.
-  Lecture LLM dédiée (`reading_type=witchy_calendar`) au format volontairement scannable (1 à 3
-  phrases par événement, jamais plus), qui répond systématiquement à "quelle énergie" et "à
-  quoi c'est utile" (intention, rituel, type d'action) dans un ton évocateur mais jamais
-  fataliste. Portée de cette version : les grandes conjonctions planétaires et la
-  personnalisation croisée avec le thème natal (V2 du document source) ne sont pas encore
-  implémentées.
+  **Personnalisation par croisement avec le thème natal** (`app/core/witchy_calendar_personalization.py`,
+  toujours activée dans la lecture) : deux mécanismes indépendants selon le type d'événement —
+  aspect natal serré (événements ponctuels : lunaisons, éclipses, stations ; orbe 2° pour
+  conjonction/opposition, 1,5° pour carré/trigone/sextile ; priorité aux luminaires/Ascendant
+  sur une planète lente même à orbe plus large) pour les événements ponctuels, maison natale
+  traversée (événements qui durent : ingrès, grandes conjonctions) pour les événements de
+  fond — avec amplification explicite si la cible touchée fait partie des thèmes confirmés du
+  thème (réutilise `compute_theme_confirme` d'`astrocartography_personalization.py` : dispositeur
+  final dominant, maître de l'Ascendant, stellium). Lecture LLM dédiée
+  (`reading_type=witchy_calendar`) au format volontairement scannable (1 à 3 phrases par
+  événement pour le bloc global, + 1 à 2 phrases de bloc personnel visiblement distinct
+  lorsqu'un croisement est détecté), qui répond systématiquement à "quelle énergie" et "à quoi
+  c'est utile" (intention, rituel, type d'action) dans un ton évocateur mais jamais fataliste.
 - Lecture interprétée par l'API Anthropic avec **prompt dédié par catégorie** : lecture
   générale (thème de base uniquement — planètes/maisons/aspects/dispositeurs, sans les lots
   ni les maisons dérivées), et six lectures spécialisées (Lots, Maisons dérivées, Timing,

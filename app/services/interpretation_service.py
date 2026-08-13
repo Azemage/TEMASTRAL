@@ -29,6 +29,7 @@ from app.core.derived_houses import resolve_relation
 from app.core.profections import compute_profection
 from app.core.reference_data import astrocartography_significations, houses_meanings, rulerships
 from app.core.witchy_calendar import compute_witchy_calendar
+from app.core.witchy_calendar_personalization import personalize_witchy_events
 from app.core.zodiacal_releasing import FORTUNE_LOT_NAME, SPIRIT_LOT_NAME
 from app.services import astrocartography_service, timing_service
 from app.services.synastry_service import compute_synastry_for_charts
@@ -399,35 +400,58 @@ plutôt que de forcer une interprétation."""
 
 def _witchy_calendar_max_tokens(request: schemas.ReadingRequest) -> int:
     """Une année complète compte typiquement 45-55 événements (lunaisons, éclipses, stations,
-    ingrès) ; même à quelques dizaines de tokens chacun (blurb bref voulu, voir le prompt), le
-    total reste modeste — un budget fixe généreux couvre confortablement le cas le plus riche."""
-    return 6000
+    ingrès, grandes conjonctions) ; même à quelques dizaines de tokens chacun (blurb bref
+    voulu, voir le prompt), le total reste modeste. Relevé par rapport à une version purement
+    collective : une partie des événements porte désormais aussi un bloc personnel (voir
+    impact_personnel), qui ajoute 1-2 phrases par événement concerné."""
+    return 7500
 
 
 def _witchy_calendar_prompt_block(request: schemas.ReadingRequest) -> str:
     intro = """Cette lecture est un CALENDRIER ÉSOTÉRIQUE ANNUEL au ton "witchy" (astrologie \
-mondaine + tradition païenne), un calendrier collectif valable pour tout le monde cette \
-année-là — PAS une lecture centrée sur le thème natal d'un individu. Tu reçois dans `events` \
-la liste déjà calculée et déjà triée chronologiquement de tous les événements de l'année \
-(`year`) : lunaisons (Nouvelle/Pleine Lune, avec `super_moon` si applicable), éclipses \
-solaires/lunaires, stations rétrogrades/directes de planètes, et ingrès de planètes lentes \
-dans un nouveau signe. Chaque événement porte déjà `event_type`, `planet`, `sign` (signe \
-occupé au moment de l'événement), `meaning_template` (le sens de référence à partir duquel \
-rédiger, jamais à recopier tel quel) et `score` (1 à 5, déjà calculé — ne le recalcule \
-jamais et ne cite jamais ce chiffre brut dans le texte, traduis-le en intensité ressentie)."""
+mondaine + tradition païenne). Le calendrier lui-même est COLLECTIF (valable pour tout le \
+monde cette année-là), mais chaque événement a déjà été croisé avec le thème natal de cette \
+personne précise (voir `identity` pour son Soleil/Lune/Ascendant, et `impact_personnel` sur \
+chaque événement) : ne traite donc jamais ce calendrier comme purement générique. Tu reçois \
+dans `events` la liste déjà calculée et déjà triée chronologiquement de tous les événements de \
+l'année (`year`) : lunaisons (Nouvelle/Pleine Lune, avec `super_moon` si applicable), éclipses \
+solaires/lunaires, stations rétrogrades/directes de planètes, ingrès de planètes lentes dans \
+un nouveau signe, et grandes conjonctions (aspect majeur exact entre deux planètes lentes, \
+`planet`+`planet_b`, `aspect_type`). Chaque événement porte déjà `event_type`, `planet`, \
+`sign` (signe occupé au moment de l'événement), `meaning_template` (le sens de référence à \
+partir duquel rédiger, jamais à recopier tel quel) et `score` (1 à 5, déjà calculé — ne le \
+recalcule jamais et ne cite jamais ce chiffre brut dans le texte, traduis-le en intensité \
+ressentie)."""
+
+    personalization = """BLOC PERSONNEL — pour chaque événement, regarde `impact_personnel` :
+- Si `impact_personnel.detecte` est faux : n'ajoute AUCUN commentaire personnel pour cet \
+événement, contente-toi du texte global (voir FORMAT ci-dessous). N'invente jamais un lien \
+personnel de remplissage.
+- Si `impact_personnel.detecte` est vrai : ajoute, TOUJOURS comme phrase(s) visiblement \
+DISTINCTE(S) du texte global (jamais fusionnée dans la même phrase — introduis-la clairement, \
+ex. "Pour toi en particulier :"), une explication brève (1 à 2 phrases maximum) du lien avant \
+d'en donner l'effet. `impact_personnel.mecanisme` vaut soit `aspect_natal` (l'événement forme \
+un aspect serré — voir `orbe_ou_maison` — avec `cible_touchee`, une planète ou un angle natal ; \
+un aspect au Soleil, à la Lune ou à l'Ascendant est plus parlant qu'à une planète lente, garde \
+ce liant en tête) soit `maison_natale` (l'événement dure et colore la `cible_touchee`, un \
+secteur de vie entier, pour toute sa durée — pas un instant précis). Si \
+`impact_personnel.theme_confirme_amplifie` est vrai, ouvre le bloc personnel en le \
+mentionnant EN PREMIER (ex. "cet événement touche un point central de ton thème") — c'est le \
+signal le plus fort, plus fort que la proximité de l'aspect elle-même."""
 
     structure = """FORMAT IMPÉRATIF — c'est un calendrier SCANNABLE, pas une lecture \
-développée : pour CHAQUE événement, un texte COURT de 1 à 3 phrases maximum, jamais plus. \
-Structure la réponse chronologiquement, groupée par mois (## Janvier, ## Février, etc.) pour \
-rester lisible sur une année complète. Pour chaque événement, réponds toujours à DEUX \
-questions en une phrase ou deux : quelle énergie est à l'œuvre, ET à quoi c'est utile \
-concrètement (une intention à poser, un petit rituel, un type d'action ou de recul \
-recommandé) — jamais une description purement astronomique sans application pratique. Les \
-événements dont `score` est le plus élevé (éclipses, super lunes, ingrès de planètes lentes) \
-méritent une phrase de plus que les lunaisons ordinaires ou les stations de Mercure, mais \
-aucun événement ne doit dépasser 3 phrases : pour un développement complet d'un événement \
-particulier, la personne peut demander une lecture ciblée séparée, ce n'est pas le rôle de ce \
-calendrier."""
+développée : pour CHAQUE événement, un texte COURT (bloc global 1 à 3 phrases, + bloc \
+personnel 1 à 2 phrases si applicable, voir ci-dessus) — jamais plus, même pour les \
+événements les plus marquants. Structure la réponse chronologiquement, groupée par mois \
+(## Janvier, ## Février, etc.) pour rester lisible sur une année complète. Pour le bloc \
+global, réponds toujours à DEUX questions en une phrase ou deux : quelle énergie est à \
+l'œuvre, ET à quoi c'est utile concrètement (une intention à poser, un petit rituel, un type \
+d'action ou de recul recommandé) — jamais une description purement astronomique sans \
+application pratique. Les événements dont `score` est le plus élevé (éclipses, super lunes, \
+ingrès de planètes lentes, grandes conjonctions) méritent une phrase de plus que les \
+lunaisons ordinaires ou les stations de Mercure : pour un développement complet d'un \
+événement particulier, la personne peut demander une lecture ciblée séparée, ce n'est pas le \
+rôle de ce calendrier."""
 
     guardrails = """Ton évocateur et pratique, cohérent avec le positionnement "witchy" \
 (intentions, rituels, symboles), mais jamais fataliste : reformule toujours en tendance ou \
@@ -437,6 +461,8 @@ symbolique standard du signe occupé : reste sur la dimension symbolique, jamais
 factuelle ou anxiogène. Si `events` est vide pour l'année demandée, dis-le simplement."""
 
     return f"""{intro}
+
+{personalization}
 
 {structure}
 
@@ -1207,7 +1233,11 @@ def _build_user_payload(
         # l'appel LLM qui suit.
         year = request.witchy_calendar_year or date_type.today().year
         payload["year"] = year
-        payload["events"] = compute_witchy_calendar(year)
+        # Personnalisation V2 (voir app/core/witchy_calendar_personalization.py) : chaque
+        # événement reçoit un bloc impact_personnel (croisement avec le thème natal), en plus
+        # du sens générique — voir _witchy_calendar_prompt_block pour comment l'exploiter.
+        payload["identity"] = _identity_context(chart_data)
+        payload["events"] = personalize_witchy_events(compute_witchy_calendar(year), chart_data)
 
     return payload
 
