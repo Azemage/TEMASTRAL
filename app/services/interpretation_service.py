@@ -24,7 +24,9 @@ from app import models, schemas
 from app.config import get_settings
 from app.core import ephemeris
 from app.core.astrocartography import analyze_nearby_lines
+from app.core.astrocartography_personalization import personalize_nearby_lines
 from app.core.derived_houses import resolve_relation
+from app.core.profections import compute_profection
 from app.core.reference_data import astrocartography_significations, houses_meanings, rulerships
 from app.core.zodiacal_releasing import FORTUNE_LOT_NAME, SPIRIT_LOT_NAME
 from app.services import astrocartography_service, timing_service
@@ -257,8 +259,11 @@ MAX_CONTINUATION_ROUNDS = 2
 def _astrocartography_max_tokens(request: schemas.ReadingRequest) -> int:
     """Base généreuse : le nombre de lignes réellement proches du lieu analysé varie
     beaucoup (0 à une dizaine) et n'est connu qu'après calcul, donc pas de dépendance au
-    payload comme pour les lots — un budget fixe couvre confortablement le cas le plus riche."""
-    return 3200
+    payload comme pour les lots — un budget fixe couvre confortablement le cas le plus riche.
+    Relevé par rapport à une lecture générique de lignes : chaque ligne prioritaire est
+    maintenant développée avec 3 couches de personnalisation (condition natale, thèmes
+    confirmés, pertinence temporelle) plutôt que la seule signification générique."""
+    return 4000
 
 
 def _astrocartography_prompt_block(request: schemas.ReadingRequest) -> str:
@@ -269,11 +274,39 @@ Ascendant, Descendant, Milieu du Ciel, Fond du Ciel) — vivre ou voyager sur un
 est traditionnellement associé à une activation de cette planète dans le domaine de vie de \
 l'angle concerné. Tu reçois dans `focus_location` le lieu analysé (déjà déterminé par calcul \
 déterministe, jamais par toi), et dans `nearby_lines` la liste des lignes qui passent à \
-proximité de ce lieu (calcul de distance orthodromique déjà effectué), chacune avec sa \
-`distance_km`, son `planet`, son `line_type` (ASC/DC/MC/IC) et sa `meaning` de référence. \
-Trie implicitement ton développement par ordre de proximité (déjà l'ordre du tableau reçu) : \
-les lignes les plus proches méritent le plus d'attention, les plus lointaines une mention \
-brève ou aucune si `nearby_lines` est vide."""
+proximité de ce lieu (calcul de distance orthodromique déjà effectué), triée du score de \
+priorité le plus élevé au plus faible (`priority_score`, calcul déterministe déjà effectué — \
+ne le recalcule jamais, ne le cite jamais tel quel dans le texte)."""
+
+    personalization = """CHAQUE ligne de `nearby_lines` est déjà personnalisée pour cette \
+personne précise — ne te contente JAMAIS de sa `base_meaning` générique (planète × type de \
+ligne, identique pour tout le monde ayant la même ligne) : c'est le point de départ, jamais le \
+point d'arrivée. Utilise systématiquement les champs suivants pour nuancer :
+- `natal_condition` : l'état de cette planète au thème natal. `dignity` ('domicile'/\
+'exaltation' = la planète a les moyens de tenir sa promesse à cet endroit ; 'exil'/'chute' = \
+le potentiel existe mais s'exprime avec plus d'efforts ou de maladresse ; 'pérégrin' = ni l'un \
+ni l'autre, condition neutre). `aspect_quality` ('favorable' = le potentiel s'active \
+facilement ; 'challenging' = une tension ou un prix à payer, à NOMMER explicitement plutôt \
+qu'à ignorer, surtout si `friction_with_malefic` est vrai ; 'mixed' = les deux se combinent). \
+`retrograde` : si vrai, la ligne peut demander un temps d'adaptation avant de porter ses \
+fruits plutôt qu'un effet immédiat.
+- `theme_confirme_lie` : si `present` est vrai, cette planète est déjà un pilier identifié de \
+l'identité de la personne dans SA lecture natale (voir `reasons` — dispositeur dominant, \
+maître de l'Ascendant, stellium). C'est le signal le plus fort de pertinence personnelle : \
+ouvre l'interprétation de cette ligne en le mentionnant explicitement plutôt qu'en le glissant \
+en fin de paragraphe — vivre sur cette ligne n'active pas juste "une planète", ça active le \
+cœur même de son identité telle qu'établie dans son thème.
+- `pertinence_temporelle` : si `active` est vrai (voir `reasons` — maître de l'année de \
+profection en cours, période de Libération Zodiacale active), signale cette ligne comme une \
+FENÊTRE D'ACTUALITÉ pour cette personne EN CE MOMENT précis de sa vie, pas comme un potentiel \
+générique valable "un jour". Sans activation, présente-la comme un potentiel de fond durable.
+
+Les lignes sont déjà triées par ordre de priorité décroissant : développe en profondeur les \
+3 à 5 premières (celles qui combinent le plus de ces signaux), et résume les suivantes en une \
+phrase chacune ou un simple regroupement en fin de lecture — ne traite jamais les 40 lignes \
+possibles d'un thème avec la même profondeur, ce serait répétitif et diluerait ce qui compte \
+vraiment pour cette personne. Si `nearby_lines` est vide, dis-le simplement plutôt que de \
+forcer une interprétation."""
 
     if mode == "transit":
         scope = """MODE : CYCLOCARTOGRAPHIE (transit). Les lignes reçues reflètent les positions \
@@ -295,11 +328,11 @@ dynamiques comme un potentiel activé, à vivre consciemment, ni entièrement po
 entièrement négatif — une ligne de Saturne par exemple n'est pas une malédiction mais une \
 invitation à la structure et à l'effort. Ne fais aucune affirmation sur la sécurité, la \
 politique, l'économie ou les conditions de vie réelles du lieu : tu n'as aucune donnée sur ces \
-sujets, reste strictement sur la dimension symbolique/psychologique de la technique. Si \
-`nearby_lines` est vide, dis-le simplement et explique que ce lieu n'est pas marqué par une \
-ligne planétaire particulière plutôt que de forcer une interprétation."""
+sujets, reste strictement sur la dimension symbolique/psychologique de la technique."""
 
     return f"""{intro}
+
+{personalization}
 
 {scope}
 
@@ -1068,17 +1101,24 @@ def _build_user_payload(
             jd_ut = ephemeris.jd_ut_for_date_utc_noon(as_of.isoformat())
             payload["as_of_date"] = as_of.isoformat()
         else:
+            as_of = date_type.today()
             jd_ut = astrocartography_service.jd_ut_for_chart(chart)
         lines = astrocartography_service.compute_lines_for_jd(jd_ut)
         nearby = analyze_nearby_lines(lines, focus_lat, focus_lon, threshold_km=500)
         significations = astrocartography_significations()["planet_line_meanings"]
 
+        # Personnalisation (voir app/core/astrocartography_personalization.py) : croise chaque
+        # ligne proche avec la condition natale de sa planète, les thèmes confirmés du thème
+        # (dispositeur dominant, maître de l'Ascendant, stellium) et sa pertinence temporelle
+        # actuelle (profection, Libération Zodiacale) — pas seulement la signification générique
+        # planète × type de ligne, identique pour tout le monde.
+        profection = compute_profection(chart.birth_date, chart_data["angles"]["ascendant"]["sign"], as_of)
+        zr_data = compute_zodiacal_releasing_for_chart(chart, as_of)
+
         payload["identity"] = _identity_context(chart_data)
         payload["map_mode"] = mode
         payload["focus_location"] = {"label": focus_label, "latitude": focus_lat, "longitude": focus_lon}
-        payload["nearby_lines"] = [
-            {**match, "meaning": significations.get(match["planet"], {}).get(match["line_type"], "")} for match in nearby
-        ]
+        payload["nearby_lines"] = personalize_nearby_lines(nearby, chart_data, significations, profection, zr_data)
     elif request.reading_type == "astrocartography_forecast":
         focus_lat = request.astro_focus_latitude if request.astro_focus_latitude is not None else chart.birth_latitude
         focus_lon = request.astro_focus_longitude if request.astro_focus_longitude is not None else chart.birth_longitude

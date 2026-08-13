@@ -18,6 +18,9 @@ from app.core.astrocartography import (
     _normalize_longitude,
 )
 from app.core.ephemeris import PLANET_IDS, calc_planet_equatorial, greenwich_sidereal_time_degrees
+from app.database import SessionLocal
+from app.models import NatalChart
+from app.services import astrocartography_service, interpretation_service
 from app.core.reference_data import world_cities
 from app.main import app
 from app.services.astrocartography_service import compute_location_forecast
@@ -276,6 +279,59 @@ def test_astrocartography_reading_payload_defaults_focus_to_birthplace(client):
     # Pas de clé API configurée dans les tests : on attend un 503 (RuntimeError), pas une
     # erreur de construction du payload en amont (422/500), qui indiquerait un vrai bug.
     assert reading_res.status_code == 503
+
+
+def test_astrocartography_reading_payload_is_personalized_per_line(client):
+    """Vérifie que nearby_lines contient bien les 3 couches de personnalisation (condition
+    natale, thèmes confirmés, pertinence temporelle) et un score de priorité, pas seulement
+    la signification générique — voir app/core/astrocartography_personalization.py. Le point
+    de focus est choisi pour tomber exactement sur une ligne natale connue, afin de garantir
+    au moins une entrée dans nearby_lines plutôt que de dépendre du hasard des coordonnées."""
+    chart_id = client.post("/api/charts", json=VALID_CHART_PAYLOAD).json()["id"]
+    db = SessionLocal()
+    try:
+        chart = db.query(NatalChart).filter_by(id=chart_id).one()
+        jd_ut = astrocartography_service.jd_ut_for_chart(chart)
+        lines = astrocartography_service.compute_lines_for_jd(jd_ut)
+        some_line = next(line for line in lines if line["line_type"] == "MC")
+        focus_lat, focus_lon = 45.0, some_line["line_points"][0]["lon"]
+
+        from app import schemas
+
+        request = schemas.ReadingRequest(
+            reading_type="astrocartography",
+            astro_map_mode="natal",
+            astro_focus_latitude=focus_lat,
+            astro_focus_longitude=focus_lon,
+        )
+        payload = interpretation_service._build_user_payload(chart, request)
+    finally:
+        db.close()
+
+    assert len(payload["nearby_lines"]) >= 1
+    for entry in payload["nearby_lines"]:
+        assert entry["natal_condition"]["dignity"] in {"domicile", "exaltation", "exil", "chute", "pérégrin"}
+        assert "aspect_quality" in entry["natal_condition"]
+        assert "present" in entry["theme_confirme_lie"]
+        assert "active" in entry["pertinence_temporelle"]
+        assert isinstance(entry["priority_score"], (int, float))
+    # Sans default=str : mêmes contraintes que la colonne JSON SQLAlchemy où ce payload est
+    # ensuite stocké (voir la régression corrigée pour astrocartography_forecast).
+    import json
+
+    json.dumps(payload)
+    # Trié par priorité décroissante.
+    scores = [entry["priority_score"] for entry in payload["nearby_lines"]]
+    assert scores == sorted(scores, reverse=True)
+
+
+def test_astrocartography_prompt_explains_personalization_fields():
+    from app import schemas
+
+    prompt = interpretation_service._build_system_prompt(schemas.ReadingRequest(reading_type="astrocartography"))
+    assert "theme_confirme_lie" in prompt
+    assert "pertinence_temporelle" in prompt
+    assert "natal_condition" in prompt
 
 
 # ---------------------------------------------------------------------------

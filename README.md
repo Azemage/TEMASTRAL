@@ -105,7 +105,16 @@ Implémenté :
   natales les plus proches (distance orthodromique), lecture LLM dédiée qui commente les lignes
   proches du lieu choisi (par défaut le lieu de naissance) en s'appuyant sur les significations
   par planète/type de ligne — jamais d'affirmation sur la sécurité/l'économie/la politique du
-  lieu, toujours cadré comme un potentiel symbolique plutôt qu'un verdict. En mode
+  lieu, toujours cadré comme un potentiel symbolique plutôt qu'un verdict. **Personnalisation
+  par croisement avec le thème natal** (`app/core/astrocartography_personalization.py`) : la
+  signification générique de chaque ligne proche n'est qu'un point de départ — elle est
+  enrichie avec (1) la condition natale de la planète (dignité essentielle, qualité de ses
+  aspects natals, rétrogradation), (2) sa présence dans les thèmes confirmés du thème
+  (dispositeur final dominant, maître de l'Ascendant, membre d'un stellium — le signal le plus
+  personnalisant), (3) sa pertinence temporelle actuelle (maître de l'année de profection en
+  cours, période de Libération Zodiacale active sur les lots Fortune/Esprit). Un score de
+  priorité déterministe (somme pondérée des 3 couches, jamais laissé au LLM) trie les lignes ;
+  le prompt développe en détail les plus prioritaires et résume les autres. En mode
   cyclocartographie, une **date arbitraire** peut être choisie (pas seulement aujourd'hui :
   ex. "dans 6 mois je pars à Madrid") — les lignes de transit sont recalculées pour cette date
   et la lecture LLM en tient compte (`as_of_date`). **Prévision multi-années pour un lieu
