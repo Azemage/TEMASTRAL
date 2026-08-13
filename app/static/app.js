@@ -187,7 +187,9 @@ document.getElementById("birth-form").addEventListener("submit", async (e) => {
     document.getElementById("results-section").classList.remove("hidden");
     document.getElementById("reading-section").classList.remove("hidden");
     document.getElementById("astro-section").classList.remove("hidden");
+    document.getElementById("witchy-section").classList.remove("hidden");
     resetAstrocartographyStateForNewChart();
+    resetWitchyCalendarStateForNewChart();
     document.getElementById("results-section").scrollIntoView({ behavior: "smooth" });
   } catch (err) {
     errorEl.textContent = err.message;
@@ -2271,6 +2273,98 @@ document.getElementById("generate-astro-reading-btn").addEventListener("click", 
       astro_focus_longitude: astroFocusLocation ? astroFocusLocation.longitude : undefined,
       astro_focus_label: astroFocusLocation ? astroFocusLocation.label : undefined,
       as_of_date: selectedAstroMode === "transit" ? astroTransitDate || undefined : undefined,
+    },
+  });
+});
+
+// ---------------------------------------------------------------------
+// Calendrier ésotérique : calendrier annuel collectif (lunaisons, éclipses,
+// stations rétrogrades, ingrès de planètes lentes), indépendant du thème natal.
+// ---------------------------------------------------------------------
+let witchyCalendarEvents = [];
+let witchySelectedYear = new Date().getFullYear();
+
+const WITCHY_EVENT_STAR_MAP = { 1: "★☆☆☆☆", 2: "★★☆☆☆", 3: "★★★☆☆", 4: "★★★★☆", 5: "★★★★★" };
+
+function witchyEventLabel(event) {
+  return tf(`witchy_label_${event.event_type}`, {
+    sign: event.sign ? signLabel(event.sign) : "",
+    planet: event.planet ? planetLabel(event.planet) : "",
+  });
+}
+
+function resetWitchyCalendarStateForNewChart() {
+  witchyCalendarEvents = [];
+  witchySelectedYear = new Date().getFullYear();
+  const yearInput = document.getElementById("witchy-year");
+  if (yearInput) yearInput.value = witchySelectedYear;
+  const list = document.getElementById("witchy-events-list");
+  if (list) list.innerHTML = "";
+  const errorEl = document.getElementById("witchy-error");
+  if (errorEl) errorEl.textContent = "";
+  const readingError = document.getElementById("witchy-reading-error");
+  if (readingError) readingError.textContent = "";
+  const readingOutput = document.getElementById("witchy-reading-output");
+  if (readingOutput) readingOutput.innerHTML = "";
+  loadWitchyCalendar();
+}
+
+function renderWitchyEventsList() {
+  const container = document.getElementById("witchy-events-list");
+  if (!container) return;
+  if (witchyCalendarEvents.length === 0) {
+    container.innerHTML = `<p>${t("witchy_no_events")}</p>`;
+    return;
+  }
+  container.innerHTML = `
+    <table class="astro-forecast-table">
+      <tbody>
+        ${witchyCalendarEvents
+          .map(
+            (e) => `
+          <tr>
+            <td>${e.event_date}</td>
+            <td>${escapeHtml(witchyEventLabel(e))}${e.super_moon ? ` <span class="witchy-super-badge">${t("witchy_super_moon_badge")}</span>` : ""}</td>
+            <td>${WITCHY_EVENT_STAR_MAP[e.score] || ""}</td>
+          </tr>`
+          )
+          .join("")}
+      </tbody>
+    </table>`;
+}
+
+async function loadWitchyCalendar() {
+  const errorEl = document.getElementById("witchy-error");
+  const container = document.getElementById("witchy-events-list");
+  errorEl.textContent = "";
+  container.innerHTML = `<p>${t("status_loading_witchy_calendar")}</p>`;
+  try {
+    const res = await fetch(`/api/witchy-calendar?year=${witchySelectedYear}`);
+    if (!res.ok) throw new Error(`${t("error_prefix")} ${res.status}`);
+    const data = await res.json();
+    witchyCalendarEvents = data.events;
+    renderWitchyEventsList();
+  } catch (err) {
+    container.innerHTML = "";
+    errorEl.textContent = `${t("error_loading_witchy_calendar")} ${err.message}`;
+  }
+}
+
+document.getElementById("witchy-load-btn").addEventListener("click", () => {
+  const yearInput = document.getElementById("witchy-year");
+  witchySelectedYear = parseInt(yearInput.value, 10) || new Date().getFullYear();
+  loadWitchyCalendar();
+});
+
+document.getElementById("generate-witchy-reading-btn").addEventListener("click", () => {
+  generateSpecializedReading({
+    btnId: "generate-witchy-reading-btn",
+    errorId: "witchy-reading-error",
+    outputId: "witchy-reading-output",
+    defaultLabel: t("btn_generate_witchy_reading"),
+    requestBody: {
+      reading_type: "witchy_calendar",
+      witchy_calendar_year: witchySelectedYear,
     },
   });
 });

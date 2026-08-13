@@ -378,6 +378,30 @@
       <p id="astro-reading-error" class="error"></p>
       <div id="astro-reading-output" class="reading-output"></div>
     </section>
+
+    <section id="witchy-section" class="card hidden">
+      <h2 data-i18n="witchy_section_title">5. Calendrier ésotérique</h2>
+      <p class="reading-section-intro" data-i18n="witchy_section_intro">
+        Calendrier annuel collectif (le même pour tout le monde cette année-là, indépendant de
+        votre thème natal) : lunaisons, éclipses, stations rétrogrades et changements de signe
+        des planètes lentes.
+      </p>
+
+      <div class="form-row triple">
+        <div>
+          <label for="witchy-year" data-i18n="witchy_year_label">Année</label>
+          <input type="number" id="witchy-year" min="1900" max="2200" />
+        </div>
+      </div>
+      <button type="button" id="witchy-load-btn" data-i18n="btn_load_witchy_calendar">Charger le calendrier</button>
+      <p id="witchy-error" class="error"></p>
+      <div id="witchy-events-list"></div>
+
+      <hr class="reading-subsection-divider" />
+      <button id="generate-witchy-reading-btn" data-i18n="btn_generate_witchy_reading">Générer la lecture du calendrier</button>
+      <p id="witchy-reading-error" class="error"></p>
+      <div id="witchy-reading-output" class="reading-output"></div>
+    </section>
   </main>
 
   <footer>

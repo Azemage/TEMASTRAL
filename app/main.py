@@ -7,7 +7,7 @@ from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
-from app.api import astrocartography, charts, geocode, readings, reference, synastry, timing, zodiacal_releasing
+from app.api import astrocartography, charts, geocode, readings, reference, synastry, timing, witchy_calendar, zodiacal_releasing
 from app.config import get_settings
 from app.database import init_db
 
@@ -44,6 +44,7 @@ app.include_router(timing.router)
 app.include_router(zodiacal_releasing.router)
 app.include_router(synastry.router)
 app.include_router(astrocartography.router)
+app.include_router(witchy_calendar.router)
 
 app.mount("/static", StaticFiles(directory=BASE_DIR / "static"), name="static")
 templates = Jinja2Templates(directory=BASE_DIR / "templates")

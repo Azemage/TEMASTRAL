@@ -783,6 +783,18 @@ th { color: var(--accent-2); }
   white-space: nowrap;
 }
 
+.witchy-super-badge {
+  display: inline-block;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--accent-2);
+  border: 1px solid var(--accent-2);
+  border-radius: 999px;
+  padding: 0.05rem 0.5rem;
+  margin-left: 0.4rem;
+  white-space: nowrap;
+}
+
 .astro-city-detail {
   margin: 0.3rem 0 0;
   font-size: 0.85rem;

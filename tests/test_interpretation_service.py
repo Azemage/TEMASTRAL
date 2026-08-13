@@ -736,6 +736,7 @@ def test_all_reading_type_payloads_are_strictly_json_serializable():
             ),
             None,
         ),
+        (schemas.ReadingRequest(reading_type="witchy_calendar", witchy_calendar_year=2027), None),
     ]
     for request, cb in requests_by_type:
         payload = interpretation_service._build_user_payload(chart, request, chart_b=cb)

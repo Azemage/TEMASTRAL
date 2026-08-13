@@ -1,0 +1,149 @@
+{
+  "description": "Calendrier annuel d'événements astrologiques et saisonniers collectifs (pas propres à un thème natal individuel — voir personnalisation optionnelle en fin de fichier). Combine astrologie mondaine (transits, éclipses) et tradition païenne (Roue de l'Année) pour un ton 'witchy' cohérent.",
+
+  "event_catalog": {
+    "description": "Types d'événements à détecter automatiquement sur l'année, avec poids de base (avant modificateurs).",
+
+    "eclipses": {
+      "poids_base": 10,
+      "detection": "calcul astronomique standard (Swiss Ephemeris fournit les éclipses) — solaires (Nouvelle Lune) et lunaires (Pleine Lune)",
+      "sous_types": {
+        "eclipse_solaire": { "poids_modificateur": "+1 par rapport à lunaire", "meaning": "reset puissant, nouveaux départs amplifiés, portails d'initiation — traditionnellement l'événement le plus chargé du calendrier" },
+        "eclipse_lunaire": { "meaning": "révélation émotionnelle, culmination, dénouement amplifié — ce qui était caché émerge" }
+      },
+      "note_dependance_geographique": "La visibilité locale de l'éclipse (partielle/totale/invisible depuis le lieu de l'utilisateur) peut être calculée et mentionnée — certaines traditions considèrent l'éclipse plus 'active' si visible depuis chez soi, mais l'effet astrologique symbolique reste traditionnellement considéré comme global, pas seulement local. Présenter la visibilité comme une info contextuelle, pas comme condition de validité de l'énergie."
+    },
+
+    "lunaisons": {
+      "poids_base": 5,
+      "detection": "Nouvelle Lune et Pleine Lune mensuelles (conjonction/opposition Soleil-Lune exacte)",
+      "sous_types": {
+        "nouvelle_lune": { "meaning_template": "intention, ensemencement, nouveau départ — coloré par le signe occupé (voir planets_in_signs_full.json, entrée Moon, pour le vocabulaire symbolique du signe)" },
+        "pleine_lune": { "meaning_template": "culmination, révélation, lâcher-prise — coloré par le signe occupé, en tension avec le signe opposé occupé par le Soleil" },
+        "super_lune": { "poids_modificateur": "+2", "meaning": "Pleine ou Nouvelle Lune coïncidant avec le périgée (Lune au plus proche de la Terre) — intensité perçue renforcée, terme popularisé mais réel astronomiquement" }
+      }
+    },
+
+    "stations_retrogrades": {
+      "poids_base": 4,
+      "detection": "jour exact où une planète devient stationnaire avant de repartir rétrograde ou directe (vitesse apparente = 0)",
+      "planetes_concernees": ["Mercury", "Venus", "Mars", "Jupiter", "Saturn", "Uranus", "Neptune", "Pluto"],
+      "poids_modificateur_par_planete": {
+        "Mercury": "+0 (fréquent, 3-4x/an, poids de base suffisant)",
+        "Venus": "+1 (rare, ~18 mois)",
+        "Mars": "+1 (rare, ~2 ans)",
+        "Jupiter_a_Pluton": "+0 (annuel mais lent, peu de changement perceptible au moment précis)"
+      },
+      "meaning_template": "moment de bascule où l'énergie de la planète se retourne — jour sensible pour prendre du recul sur le domaine qu'elle gouverne plutôt que pour agir frontalement"
+    },
+
+    "ingres_planetes_lentes": {
+      "poids_base": 8,
+      "detection": "changement de signe d'une planète lente (Jupiter à Pluton) — événement rare et collectif, marque un changement de génération/d'ambiance de fond",
+      "poids_modificateur": {
+        "Jupiter": "+0 (annuel)",
+        "Saturn": "+1 (tous les ~2,5 ans)",
+        "Uranus_Neptune_Pluton": "+2 (tous les 7 à 20 ans — événement générationnel majeur)"
+      },
+      "meaning_template": "changement de toile de fond collective — la société/l'époque change de ton dans le domaine gouverné par cette planète"
+    },
+
+    "grandes_conjonctions": {
+      "poids_base": 9,
+      "detection": "aspect majeur exact (conjonction, opposition, carré) entre deux planètes lentes (Jupiter à Pluton) — à calculer dynamiquement (orbe < 1°), pas une liste figée puisque les dates varient sur des décennies/siècles",
+      "exemple_reference": "conjonction Jupiter-Saturne (environ tous les 20 ans, dite 'grande conjonction') — la plus connue et la plus attendue par le public",
+      "meaning_template": "convergence rare de deux forces collectives, marque symboliquement un tournant d'époque plutôt qu'un événement personnel"
+    }
+  },
+
+  "scoring_formula": {
+    "description": "Calcul du score final affiché (ex. sur 5 ou en nombre d'étoiles) à partir du poids de base + modificateurs",
+    "formula": "score_brut = poids_base + somme(poids_modificateurs applicables)",
+    "conversion_echelle_5": [
+      { "score_brut_range": "0-4", "note": 2 },
+      { "score_brut_range": "5-7", "note": 3 },
+      { "score_brut_range": "8-9", "note": 4 },
+      { "score_brut_range": ">=10", "note": 5 }
+    ],
+    "note_qualitative": "Cette échelle sert à trier/prioriser l'affichage (voir output_schema), pas à décréter qu'un événement noté 2 est 'sans intérêt' — reformuler toujours en 'intensité collective' plutôt qu'en jugement de valeur."
+  },
+
+  "output_schema": {
+    "example": {
+      "event_date": "2027-04-01",
+      "event_type": "eclipse_solaire",
+      "sign": "Aries",
+      "score": 5,
+      "location_context": {
+        "hemisphere": "nord",
+        "eclipse_visible_locally": true
+      },
+      "brief_description": "texte court généré par le LLM à partir du meaning_template + du signe occupé, ton bref et évocateur adapté au format calendrier (1-3 phrases, pas un développement complet)"
+    }
+  },
+
+  "prompt_instructions_for_brief_descriptions": [
+    "Le texte par événement doit rester COURT (1-3 phrases) — c'est un calendrier scannable, pas une lecture développée. Pour un développement complet d'un événement particulier, renvoyer vers le mode_semaine ou une lecture ciblée plutôt que de tout détailler ici.",
+    "Toujours répondre à 'quelle énergie' ET 'à quoi c'est utile' (ex. rituel, intention, type d'action recommandée) — pas seulement une description astronomique.",
+    "S'autoriser un ton évocateur et pratique (suggestion de petit geste symbolique ou d'intention) plutôt que purement descriptif, cohérent avec le positionnement 'witchy' du calendrier.",
+    "Reprendre les règles de ton déjà établies (pas de fatalisme, tendances non certitudes) même dans un format bref."
+  ],
+
+  "personnalisation_optionnelle": {
+    "description": "Option avancée (V2+) : croiser chaque événement du calendrier avec le thème natal de l'utilisateur pour signaler les événements qui l'affectent personnellement plus fort. Deux mécanismes indépendants, à tester tous les deux pour chaque événement.",
+
+    "mecanisme_1_aspect_natal": {
+      "principe": "Pour un événement ponctuel (lunaison, éclipse, station rétrograde), vérifier si sa position zodiacale exacte forme un aspect serré avec une planète ou un angle du thème natal.",
+      "orbes_recommandes": {
+        "conjonction_opposition": "2°",
+        "carre_trigone_sextile": "1,5°"
+      },
+      "cibles_natales": ["Sun", "Moon", "Mercury", "Venus", "Mars", "Jupiter", "Saturn", "Uranus", "Neptune", "Pluto", "Ascendant", "Midheaven"],
+      "priorite_cibles": "un aspect à un luminaire (Soleil/Lune) ou à l'Ascendant est toujours signalé en priorité par rapport à un aspect à une planète lente natale, plus abstraite pour l'utilisateur"
+    },
+
+    "mecanisme_2_maison_natale": {
+      "principe": "Pour un événement qui dure (ingrès de planète lente, grande conjonction), déterminer dans quelle maison natale tombe sa position — colore un secteur de vie entier pendant toute la durée de l'événement, pas un instant précis.",
+      "applicable_a": ["ingres_planetes_lentes", "grandes_conjonctions"],
+      "non_applicable_a": "lunaisons et stations (trop ponctuelles pour qu'un effet de maison sur la durée ait du sens — utiliser le mécanisme 1 pour celles-ci)"
+    },
+
+    "amplification_par_theme_confirme": {
+      "principe": "Si la planète/l'angle touché par le mécanisme 1, ou le maître de la maison touchée par le mécanisme 2, fait partie des themes_confirmes de la personne (voir strategie_lecture_professionnelle.md), l'impact personnel est encore plus fort — à signaler explicitement dans le texte personnel."
+    },
+
+    "structure_de_sortie": {
+      "principe": "Deux blocs de texte TOUJOURS distincts et empilés, jamais fusionnés en un seul paragraphe : le bloc global (valable pour tout le monde) reste inchangé, le bloc personnel ne s'affiche QUE si un croisement a été détecté.",
+      "schema": {
+        "event_date": "date ISO",
+        "event_type": "ex. pleine_lune",
+        "sign": "Scorpio",
+        "score_collectif": "1-5, voir scoring_formula",
+        "explication_globale": "texte générique déjà spécifié (base_meaning), affiché systématiquement",
+        "impact_personnel": {
+          "detecte": "boolean",
+          "mecanisme": "aspect_natal | maison_natale | les_deux | null si non détecté",
+          "cible_touchee": "ex. Sun natal, ou maison 10",
+          "orbe_ou_maison": "1.2° ou 'maison 10'",
+          "theme_confirme_amplifie": "boolean",
+          "explication_personnelle": "texte généré séparément par le LLM, affiché seulement si detecte=true, voir prompt_instructions ci-dessous"
+        }
+      }
+    },
+
+    "prompt_instructions_bloc_personnel": [
+      "Ne JAMAIS fusionner le bloc personnel dans le texte global — toujours une section visuellement/textuellement distincte, introduite clairement (ex. 'Pour toi en particulier :').",
+      "Le bloc personnel doit expliquer LE LIEN (quelle planète/maison natale est touchée et pourquoi ça change la lecture) avant de développer l'effet — jamais un effet personnel non justifié.",
+      "Si theme_confirme_amplifie est vrai, le mentionner en ouverture du bloc personnel car c'est le signal le plus fort ('cet événement touche justement [thème central de ton thème]').",
+      "Rester bref (1-2 phrases) — même contrainte de concision que le bloc global, ce n'est pas l'endroit pour une lecture complète.",
+      "N'afficher le bloc personnel QUE si un croisement réel a été détecté par le calcul — ne jamais générer un texte personnel de remplissage quand impact_personnel.detecte = false."
+    ]
+  },
+
+  "app_implementation_recommendation": {
+    "mvp": "Lunaisons + Éclipses — couvre déjà le cœur de l'expérience 'witchy calendar' attendue par les utilisateurs de ce type d'app, avec un calcul raisonnable.",
+    "v1": "Ajouter stations rétrogrades et ingrès de planètes lentes.",
+    "v2": "Grandes conjonctions (détection dynamique) + personnalisation optionnelle croisée avec le thème natal.",
+    "calcul_global_partage": "Ce calendrier est LE MÊME pour tous les utilisateurs d'une année donnée (sauf la couche de personnalisation V2+) — calculer une fois par an en amont et mettre en cache, plutôt que recalculer par utilisateur à chaque consultation, sur le même principe que la cyclocartographie."
+  }
+}

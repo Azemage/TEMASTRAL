@@ -83,6 +83,13 @@ def astrocartography_significations() -> dict:
     return _load("astrocartography_significations.json")
 
 
+def witchy_calendar_events() -> dict:
+    """Catalogue d'événements du calendrier ésotérique annuel (poids, gabarits de sens,
+    formule de score) — voir app/core/witchy_calendar.py pour le calcul déterministe des
+    dates et app/services/interpretation_service.py pour la mise en mots par le LLM."""
+    return _load("witchy_calendar_events.json")
+
+
 def world_cities() -> list[dict]:
     """Grandes villes mondiales (Natural Earth 110m populated places, domaine public) —
     capitales et métropoles majeures, utilisées comme bassin de candidats pour la suggestion

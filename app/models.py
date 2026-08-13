@@ -127,6 +127,23 @@ class GlobalTransitLinesCache(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
 
+class GlobalWitchyCalendarCache(Base):
+    """Cache global du calendrier ésotérique annuel (lunaisons, éclipses, stations
+    rétrogrades, ingrès de planètes lentes) : un seul calcul par année civile, partagé par
+    tous les utilisateurs — ce calendrier ne dépend d'aucun thème natal (voir
+    app/core/witchy_calendar.py). Calculé paresseusement à la première requête de l'année
+    plutôt que par une tâche planifiée. Un seul événement calculé une fois par an ne justifie
+    pas une ligne par événement : la liste complète est stockée en un seul bloc JSON."""
+
+    __tablename__ = "global_witchy_calendar_cache"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    year: Mapped[int] = mapped_column(Integer, nullable=False, unique=True)
+    events: Mapped[list] = mapped_column(JSON, nullable=False)
+
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+
+
 class SavedLocation(Base):
     """Lieu sauvegardé/analysé par l'utilisateur (ex. "et si je déménageais à Lisbonne ?").
     Rattaché à la session anonyme (pas de table users dans ce MVP, voir AnonymousSession)."""

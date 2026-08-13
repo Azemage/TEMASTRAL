@@ -865,4 +865,37 @@ const UI_TEXT = {
     en: "Recomputed automatically on every date change: the cities closest to the transit lines (and their crossings) on this specific date.",
     es: "Recalculado automáticamente en cada cambio de fecha: las ciudades más cercanas a las líneas de tránsito (y sus cruces) en esta fecha concreta.",
   },
+
+  witchy_section_title: { fr: "Calendrier ésotérique", en: "Esoteric calendar", es: "Calendario esotérico" },
+  witchy_section_intro: {
+    fr: "Calendrier annuel collectif (le même pour tout le monde cette année-là, indépendant de votre thème natal) : lunaisons, éclipses, stations rétrogrades et changements de signe des planètes lentes.",
+    en: "Collective yearly calendar (the same for everyone that year, independent of your natal chart): lunations, eclipses, retrograde stations and slow-planet sign changes.",
+    es: "Calendario anual colectivo (el mismo para todos ese año, independiente de tu carta natal): lunaciones, eclipses, estaciones retrógradas y cambios de signo de los planetas lentos.",
+  },
+  witchy_year_label: { fr: "Année", en: "Year", es: "Año" },
+  btn_load_witchy_calendar: { fr: "Charger le calendrier", en: "Load calendar", es: "Cargar el calendario" },
+  btn_generate_witchy_reading: {
+    fr: "Générer la lecture du calendrier",
+    en: "Generate calendar reading",
+    es: "Generar la lectura del calendario",
+  },
+  status_loading_witchy_calendar: { fr: "Calcul du calendrier en cours...", en: "Computing calendar...", es: "Calculando el calendario..." },
+  error_loading_witchy_calendar: { fr: "Impossible de charger le calendrier :", en: "Could not load the calendar:", es: "No se pudo cargar el calendario:" },
+  witchy_no_events: { fr: "Aucun événement calculé pour cette année.", en: "No events computed for this year.", es: "Ningún evento calculado para este año." },
+  witchy_super_moon_badge: { fr: "Super Lune", en: "Supermoon", es: "Superluna" },
+  witchy_label_nouvelle_lune: { fr: "Nouvelle Lune en {sign}", en: "New Moon in {sign}", es: "Luna Nueva en {sign}" },
+  witchy_label_pleine_lune: { fr: "Pleine Lune en {sign}", en: "Full Moon in {sign}", es: "Luna Llena en {sign}" },
+  witchy_label_eclipse_solaire: { fr: "Éclipse solaire en {sign}", en: "Solar Eclipse in {sign}", es: "Eclipse solar en {sign}" },
+  witchy_label_eclipse_lunaire: { fr: "Éclipse lunaire en {sign}", en: "Lunar Eclipse in {sign}", es: "Eclipse lunar en {sign}" },
+  witchy_label_station_retrograde: {
+    fr: "{planet} rétrograde en {sign}",
+    en: "{planet} turns retrograde in {sign}",
+    es: "{planet} retrógrado en {sign}",
+  },
+  witchy_label_station_directe: {
+    fr: "{planet} redevient direct en {sign}",
+    en: "{planet} turns direct in {sign}",
+    es: "{planet} se vuelve directo en {sign}",
+  },
+  witchy_label_ingres: { fr: "{planet} entre en {sign}", en: "{planet} enters {sign}", es: "{planet} entra en {sign}" },
 };

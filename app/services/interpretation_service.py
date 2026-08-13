@@ -28,6 +28,7 @@ from app.core.astrocartography_personalization import personalize_nearby_lines
 from app.core.derived_houses import resolve_relation
 from app.core.profections import compute_profection
 from app.core.reference_data import astrocartography_significations, houses_meanings, rulerships
+from app.core.witchy_calendar import compute_witchy_calendar
 from app.core.zodiacal_releasing import FORTUNE_LOT_NAME, SPIRIT_LOT_NAME
 from app.services import astrocartography_service, timing_service
 from app.services.synastry_service import compute_synastry_for_charts
@@ -388,6 +389,52 @@ ni entièrement négatif. Ne fais aucune affirmation sur la sécurité, la polit
 les conditions de vie réelles du lieu. Si `forecast_windows` est vide, dis-le simplement et \
 explique qu'aucune ligne de transit majeure ne vient marquer ce lieu sur la période demandée, \
 plutôt que de forcer une interprétation."""
+
+    return f"""{intro}
+
+{structure}
+
+{guardrails}"""
+
+
+def _witchy_calendar_max_tokens(request: schemas.ReadingRequest) -> int:
+    """Une année complète compte typiquement 45-55 événements (lunaisons, éclipses, stations,
+    ingrès) ; même à quelques dizaines de tokens chacun (blurb bref voulu, voir le prompt), le
+    total reste modeste — un budget fixe généreux couvre confortablement le cas le plus riche."""
+    return 6000
+
+
+def _witchy_calendar_prompt_block(request: schemas.ReadingRequest) -> str:
+    intro = """Cette lecture est un CALENDRIER ÉSOTÉRIQUE ANNUEL au ton "witchy" (astrologie \
+mondaine + tradition païenne), un calendrier collectif valable pour tout le monde cette \
+année-là — PAS une lecture centrée sur le thème natal d'un individu. Tu reçois dans `events` \
+la liste déjà calculée et déjà triée chronologiquement de tous les événements de l'année \
+(`year`) : lunaisons (Nouvelle/Pleine Lune, avec `super_moon` si applicable), éclipses \
+solaires/lunaires, stations rétrogrades/directes de planètes, et ingrès de planètes lentes \
+dans un nouveau signe. Chaque événement porte déjà `event_type`, `planet`, `sign` (signe \
+occupé au moment de l'événement), `meaning_template` (le sens de référence à partir duquel \
+rédiger, jamais à recopier tel quel) et `score` (1 à 5, déjà calculé — ne le recalcule \
+jamais et ne cite jamais ce chiffre brut dans le texte, traduis-le en intensité ressentie)."""
+
+    structure = """FORMAT IMPÉRATIF — c'est un calendrier SCANNABLE, pas une lecture \
+développée : pour CHAQUE événement, un texte COURT de 1 à 3 phrases maximum, jamais plus. \
+Structure la réponse chronologiquement, groupée par mois (## Janvier, ## Février, etc.) pour \
+rester lisible sur une année complète. Pour chaque événement, réponds toujours à DEUX \
+questions en une phrase ou deux : quelle énergie est à l'œuvre, ET à quoi c'est utile \
+concrètement (une intention à poser, un petit rituel, un type d'action ou de recul \
+recommandé) — jamais une description purement astronomique sans application pratique. Les \
+événements dont `score` est le plus élevé (éclipses, super lunes, ingrès de planètes lentes) \
+méritent une phrase de plus que les lunaisons ordinaires ou les stations de Mercure, mais \
+aucun événement ne doit dépasser 3 phrases : pour un développement complet d'un événement \
+particulier, la personne peut demander une lecture ciblée séparée, ce n'est pas le rôle de ce \
+calendrier."""
+
+    guardrails = """Ton évocateur et pratique, cohérent avec le positionnement "witchy" \
+(intentions, rituels, symboles), mais jamais fataliste : reformule toujours en tendance ou \
+énergie disponible, jamais en certitude ("cette période invite à..." plutôt que "il vous \
+arrivera..."). N'invente aucune signification hors de `meaning_template` et du vocabulaire \
+symbolique standard du signe occupé : reste sur la dimension symbolique, jamais de prédiction \
+factuelle ou anxiogène. Si `events` est vide pour l'année demandée, dis-le simplement."""
 
     return f"""{intro}
 
@@ -966,6 +1013,8 @@ Termine toujours par un court paragraphe de synthèse bienveillant et encouragea
         specialized_block = _astrocartography_prompt_block(request)
     elif request.reading_type == "astrocartography_forecast":
         specialized_block = _astrocartography_forecast_prompt_block(request)
+    elif request.reading_type == "witchy_calendar":
+        specialized_block = _witchy_calendar_prompt_block(request)
     else:
         specialized_block = _SPECIALIZED_PROMPT_BLOCKS[request.reading_type]
     return f"""{base}
@@ -1151,6 +1200,14 @@ def _build_user_payload(
             for window in significant_windows
         ]
         payload["total_windows_found"] = len(windows)
+    elif request.reading_type == "witchy_calendar":
+        # Calendrier collectif, indépendant du thème natal (voir app/core/witchy_calendar.py) :
+        # calcul direct plutôt que via le cache partagé de witchy_calendar_service (réservé à
+        # l'endpoint de consultation répétée), négligeable ici (~0.3s) face à la latence de
+        # l'appel LLM qui suit.
+        year = request.witchy_calendar_year or date_type.today().year
+        payload["year"] = year
+        payload["events"] = compute_witchy_calendar(year)
 
     return payload
 
@@ -1176,6 +1233,8 @@ async def generate_reading(
         max_tokens = _astrocartography_max_tokens(request)
     elif request.reading_type == "astrocartography_forecast":
         max_tokens = _astrocartography_forecast_max_tokens(request)
+    elif request.reading_type == "witchy_calendar":
+        max_tokens = _witchy_calendar_max_tokens(request)
     else:
         max_tokens = READING_TYPE_MAX_TOKENS.get(request.reading_type, 2000)
 

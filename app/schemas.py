@@ -410,6 +410,7 @@ class ReadingRequest(BaseModel):
     forecast_start_date: date_type | None = None  # utilisé par 'astrocartography_forecast' ; défaut = aujourd'hui
     forecast_years: int = Field(default=10, ge=1, le=10)  # utilisé par 'astrocartography_forecast'
     forecast_threshold_km: float = 300.0  # utilisé par 'astrocartography_forecast'
+    witchy_calendar_year: int | None = None  # utilisé par 'witchy_calendar' ; défaut = année en cours
 
 
 # ---------------------------------------------------------------------------
@@ -520,3 +521,27 @@ class ReadingResponse(BaseModel):
     created_at: datetime
 
     model_config = {"from_attributes": True}
+
+
+# ---------------------------------------------------------------------------
+# Calendrier ésotérique
+# ---------------------------------------------------------------------------
+class WitchyCalendarEvent(BaseModel):
+    event_date: date_type
+    event_type: str  # 'nouvelle_lune' | 'pleine_lune' | 'eclipse_solaire' | 'eclipse_lunaire' | 'station_retrograde' | 'station_directe' | 'ingres'
+    planet: str | None = None
+    sign: str | None = None
+    score_brut: float
+    score: int = Field(ge=1, le=5)
+    meaning_template: str | None = None
+    # Champs propres à certains types d'événement uniquement (voir app/core/witchy_calendar.py)
+    super_moon: bool | None = None  # lunaisons
+    moon_distance_km: int | None = None  # lunaisons
+    direction: str | None = None  # stations : 'retrograde' | 'direct'
+    from_sign: str | None = None  # ingrès
+    direct: bool | None = None  # ingrès : sens du franchissement (direct vs rétrograde)
+
+
+class WitchyCalendarResponse(BaseModel):
+    year: int
+    events: list[WitchyCalendarEvent]

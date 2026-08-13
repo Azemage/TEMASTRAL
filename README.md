@@ -142,6 +142,22 @@ Implémenté :
   échantillons de latitude consécutifs), pas le calcul astronomique classique par latitude
   d'angularité simultanée — voir `advanced_technique_parans` dans les significations pour la
   distinction
+- Calendrier ésotérique annuel (`app/core/witchy_calendar.py`), collectif et indépendant du
+  thème natal (le même pour tout le monde une année donnée, mis en cache une seule fois par
+  année civile — même principe que les lignes de transit) : lunaisons (Nouvelle/Pleine Lune,
+  avec détection de super lune sous ~360 000 km), éclipses solaires/lunaires (fonctions dédiées
+  de Swiss Ephemeris `sol_eclipse_when_glob`/`lun_eclipse_when`, plus fiables qu'une détection
+  manuelle), stations rétrogrades/directes des 8 planètes concernées, et ingrès de planètes
+  lentes (Jupiter à Pluton) dans un nouveau signe — recherche de racine par bissection sur les
+  fonctions astronomiques concernées (élongation Lune-Soleil, vitesse apparente, longitude),
+  échantillonnée quotidiennement puis affinée. Score de priorité déterministe (poids de base +
+  modificateurs, ex. éclipse solaire/super lune/planète rare en station) converti en note 1-5.
+  Lecture LLM dédiée (`reading_type=witchy_calendar`) au format volontairement scannable (1 à 3
+  phrases par événement, jamais plus), qui répond systématiquement à "quelle énergie" et "à
+  quoi c'est utile" (intention, rituel, type d'action) dans un ton évocateur mais jamais
+  fataliste. Portée de cette version : les grandes conjonctions planétaires et la
+  personnalisation croisée avec le thème natal (V2 du document source) ne sont pas encore
+  implémentées.
 - Lecture interprétée par l'API Anthropic avec **prompt dédié par catégorie** : lecture
   générale (thème de base uniquement — planètes/maisons/aspects/dispositeurs, sans les lots
   ni les maisons dérivées), et six lectures spécialisées (Lots, Maisons dérivées, Timing,
@@ -217,7 +233,7 @@ Principe directeur repris du cahier des charges : tout ce qui est dans `app/core
 | POST | `/api/charts` | Calcule et sauvegarde un thème natal à partir des données de naissance |
 | GET | `/api/charts` | Liste les thèmes de la session courante |
 | GET | `/api/charts/{id}` | Récupère un thème calculé |
-| POST | `/api/charts/{id}/readings` | Génère une lecture interprétée (LLM). `reading_type` = `global`\|`love`\|`career`\|`family`\|`lots`\|`derived_houses`\|`timing`\|`zodiacal_releasing`\|`compatibility`\|`astrocartography`\|`astrocartography_forecast` ; `relation_key` (voir `/api/reference/derived-house-relations`, ou `custom:N1:N2` pour une relation de second ordre composée librement) pour `derived_houses` (repli sur `reference_house` 1-12 si absent), `as_of_date` pour `timing`/`zodiacal_releasing`/`astrocartography` (mode `transit` uniquement — date de la cyclocartographie, défaut aujourd'hui), `timing_horizon` (`week`\|`month`\|`year`, défaut `year`) pour `timing`, `zr_selected_lots`+`zr_mode` (`current`\|`predictive`)+`zr_axis_key` (voir `/api/reference/axes-thematiques-lots`, qualification natale en couche 1 pour les projections 10 ans) pour `zodiacal_releasing`, `chart_b_id`+`relationship_mode` pour `compatibility`, `astro_map_mode` (`natal`\|`transit`)+`astro_focus_latitude`/`astro_focus_longitude`/`astro_focus_label` (défaut : lieu de naissance) pour `astrocartography`, `astro_focus_latitude`/`astro_focus_longitude`/`astro_focus_label`+`forecast_start_date`+`forecast_years` (≤ 10)+`forecast_threshold_km` pour `astrocartography_forecast` |
+| POST | `/api/charts/{id}/readings` | Génère une lecture interprétée (LLM). `reading_type` = `global`\|`love`\|`career`\|`family`\|`lots`\|`derived_houses`\|`timing`\|`zodiacal_releasing`\|`compatibility`\|`astrocartography`\|`astrocartography_forecast`\|`witchy_calendar` ; `relation_key` (voir `/api/reference/derived-house-relations`, ou `custom:N1:N2` pour une relation de second ordre composée librement) pour `derived_houses` (repli sur `reference_house` 1-12 si absent), `as_of_date` pour `timing`/`zodiacal_releasing`/`astrocartography` (mode `transit` uniquement — date de la cyclocartographie, défaut aujourd'hui), `timing_horizon` (`week`\|`month`\|`year`, défaut `year`) pour `timing`, `zr_selected_lots`+`zr_mode` (`current`\|`predictive`)+`zr_axis_key` (voir `/api/reference/axes-thematiques-lots`, qualification natale en couche 1 pour les projections 10 ans) pour `zodiacal_releasing`, `chart_b_id`+`relationship_mode` pour `compatibility`, `astro_map_mode` (`natal`\|`transit`)+`astro_focus_latitude`/`astro_focus_longitude`/`astro_focus_label` (défaut : lieu de naissance) pour `astrocartography`, `astro_focus_latitude`/`astro_focus_longitude`/`astro_focus_label`+`forecast_start_date`+`forecast_years` (≤ 10)+`forecast_threshold_km` pour `astrocartography_forecast`, `witchy_calendar_year` (défaut : année en cours) pour `witchy_calendar` |
 | GET | `/api/charts/{id}/readings` | Liste les lectures déjà générées pour un thème |
 | GET | `/api/charts/{id}/timing?date=YYYY-MM-DD` | Transits actuels de toutes les planètes + profection annuelle, calculés à la demande (non persisté) |
 | GET | `/api/charts/{id}/timing/forecast?date=...&months=12` | Transits à venir sur la période, toutes planètes (pics d'orbe, fenêtres actives, intensité 1-4) |
@@ -233,6 +249,7 @@ Principe directeur repris du cahier des charges : tout ce qui est dans `app/core
 | GET | `/api/charts/{id}/astrocartography/interesting-cities?threshold_km=300&top_n=12` | Villes suggérées automatiquement (mode natal, parmi les grandes villes mondiales), classées par score de proximité aux lignes natales et aux croisements de lignes |
 | GET | `/api/astrocartography/transit/interesting-cities?date=YYYY-MM-DD&threshold_km=300&top_n=5` | Équivalent pour la cyclocartographie : top 5 villes par défaut, basé sur les lignes de transit de la date demandée (défaut aujourd'hui) — recalculé à chaque date différente |
 | GET | `/api/reference/astrocartography-significations` | Significations par planète et type de ligne (ASC/DC/MC/IC) utilisées par le prompt LLM |
+| GET | `/api/witchy-calendar?year=YYYY` | Calendrier ésotérique annuel (lunaisons, éclipses, stations rétrogrades, ingrès de planètes lentes), collectif et mis en cache par année (défaut : année en cours) |
 | GET | `/api/reference/config` | Options de configuration (systèmes de maisons, dispositeurs, points optionnels) |
 | GET | `/api/reference/timezones` | Liste des ~490 fuseaux horaires IANA canoniques |
 | GET | `/api/geocode?query=...` | Recherche ville -> latitude/longitude/fuseau horaire |
