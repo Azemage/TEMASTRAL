@@ -893,7 +893,7 @@ let timingLoadedForChartId = null;
 let currentForecastEvents = [];
 
 function flameBadge(intensity) {
-  return `<span class="intensity-flames" title="${t("th_intensity")} ${intensity}/4">${"🔥".repeat(intensity)}</span>`;
+  return `<span class="intensity-flames" title="${t("th_intensity")} ${intensity}/4">${starRatingHtml(intensity, { max: 4, compact: true, showScore: false })}</span>`;
 }
 
 function renderUpcomingEventsTable(events, minIntensity) {
@@ -1179,22 +1179,39 @@ let selectedCompatMode = "romantic";
 let compatChartBId = null;
 let compatChartsLoadedForChartId = null;
 
-// Composant de jauges de notation (1 à 10) partagé par Compatibilité et Pronostic, pour une
-// identité visuelle cohérente sur tout le site plutôt qu'un système par fonctionnalité.
+// Composant d'étoiles de notation UNIQUE, partagé par TOUTES les évaluations du site
+// (Compatibilité, Pronostic, calendrier ésotérique, intensité des transits, villes suggérées
+// d'astrocartographie) pour une seule identité visuelle de notation sur tout le site — voir
+// .star-rating dans style.css pour les paliers de brillance/taille associés.
+// `score` et `max` peuvent être n'importe quelle échelle : tout est ramené en interne sur 10
+// étoiles pleines/vides, le palier de brillance (1 terne -> 5 doré et lumineux) étant calculé
+// proportionnellement au score plutôt que codé en dur par fonctionnalité.
+function starRatingHtml(score, { max = 10, compact = false, showScore = true } = {}) {
+  if (score == null) return "";
+  const clamped = Math.max(0, Math.min(max, score));
+  const scaledToTen = (clamped / max) * 10;
+  const filled = Math.round(scaledToTen);
+  const tier = Math.max(1, Math.min(5, Math.ceil(scaledToTen / 2) || 1));
+  const stars = Array.from({ length: 10 }, (_, i) => `<span class="star${i < filled ? " filled" : ""}">★</span>`).join("");
+  const roundedScore = Math.round(scaledToTen * 10) / 10;
+  const scoreLabel = showScore ? `<span class="star-rating-score">${roundedScore}/10</span>` : "";
+  return `<span class="star-rating star-rating--tier-${tier}${compact ? " star-rating--compact" : ""}">${stars}</span>${scoreLabel}`;
+}
+
+// Notation par étoiles (1 à 10) partagée par Compatibilité et Pronostic, pour une identité
+// visuelle cohérente sur tout le site plutôt qu'un système par fonctionnalité.
 function renderRatingGauges(title, axes, ratings) {
   if (!ratings) return "";
   const rows = axes
     .map((axis) => {
       const entry = ratings[axis.key];
       if (!entry) return "";
-      const pct = Math.max(0, Math.min(100, Math.round((entry.score / 10) * 100)));
       return `
         <div class="rating-gauge-row">
           <div class="rating-gauge-header">
             <span class="rating-gauge-label">${axis.label}</span>
-            <span class="rating-gauge-score">${entry.score}/10</span>
+            ${starRatingHtml(entry.score, { max: 10 })}
           </div>
-          <div class="rating-gauge-track"><div class="rating-gauge-fill" style="width:${pct}%"></div></div>
           <p class="rating-gauge-justification">${entry.justification}</p>
         </div>`;
     })
@@ -1870,10 +1887,12 @@ function buildAstroMapSVG(lines, savedLocations, interestingCities) {
     });
 
   let markersSvg = "";
+  const citiesMaxScore = Math.max(...(interestingCities || []).map((c) => c.score), 0.0001);
   (interestingCities || []).forEach((c) => {
     const x = astroLonToX(c.longitude, width);
     const y = astroLatToY(c.latitude, height);
-    const tooltip = escapeHtml(`${c.name}, ${c.country} — ${t("astro_score_label")} ${c.score}`);
+    const normalizedScore = Math.round((c.score / citiesMaxScore) * 10 * 10) / 10;
+    const tooltip = escapeHtml(`${c.name}, ${c.country} — ${t("astro_score_label")} ${normalizedScore}/10`);
     markersSvg += `<g class="wheel-hoverable" data-tooltip="${tooltip}"><polygon points="${diamondPoints(x, y, 5)}" fill="#ffd24d" stroke="#12152a" stroke-width="1.2" /></g>`;
   });
   (savedLocations || []).forEach((loc) => {
@@ -2073,6 +2092,10 @@ function renderAstroInterestingCitiesList() {
     container.innerHTML = `<p>${t("astro_no_interesting_cities")}</p>`;
     return;
   }
+  // c.score est un score déterministe RELATIF (sert au tri, pas de plafond fixe) : on le
+  // normalise sur 10 par rapport au maximum de la liste affichée (top 5) pour l'exprimer dans
+  // le même langage visuel d'étoiles que le reste du site.
+  const maxScore = Math.max(...astroInterestingCities.map((c) => c.score), 0.0001);
   container.innerHTML = astroInterestingCities
     .map((c, index) => {
       const linesText = c.nearby_lines
@@ -2086,7 +2109,7 @@ function renderAstroInterestingCitiesList() {
       <div class="astro-location-card${isFocused ? " astro-location-focused" : ""}" data-city-index="${index}">
         <div class="astro-location-header">
           <strong>${escapeHtml(c.name)}, ${escapeHtml(c.country)}</strong>
-          <span class="astro-city-score">${t("astro_score_label")} ${c.score}</span>
+          ${starRatingHtml(c.score, { max: maxScore })}
           ${isFocused ? astroFocusBadgeHtml() : `<button type="button" class="astro-location-focus-btn" data-city-index="${index}">${t("astro_use_for_reading")}</button>`}
         </div>
         ${linesText ? `<p class="astro-city-detail">${escapeHtml(linesText)}</p>` : ""}
@@ -2327,8 +2350,6 @@ document.getElementById("generate-astro-reading-btn").addEventListener("click", 
 let witchyCalendarEvents = [];
 let witchySelectedYear = new Date().getFullYear();
 
-const WITCHY_EVENT_STAR_MAP = { 1: "★☆☆☆☆", 2: "★★☆☆☆", 3: "★★★☆☆", 4: "★★★★☆", 5: "★★★★★" };
-
 function witchyEventLabel(event) {
   return tf(`witchy_label_${event.event_type}`, {
     sign: event.sign ? signLabel(event.sign) : "",
@@ -2376,7 +2397,7 @@ function renderWitchyEventsList() {
           <tr class="witchy-event-row" data-date="${e.event_date}" tabindex="0">
             <td>${e.event_date}</td>
             <td>${escapeHtml(witchyEventLabel(e))}${e.super_moon ? ` <span class="witchy-super-badge">${t("witchy_super_moon_badge")}</span>` : ""}</td>
-            <td>${WITCHY_EVENT_STAR_MAP[e.score] || ""}</td>
+            <td>${starRatingHtml(e.score, { max: 5, compact: true, showScore: false })}</td>
           </tr>`
           )
           .join("")}

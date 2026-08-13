@@ -422,8 +422,73 @@ button:disabled { opacity: 0.6; cursor: wait; }
   }
 }
 
-/* Jauges de notation (1 à 10) : composant partagé par les lectures Compatibilité et
-   Pronostic, pour une identité visuelle cohérente sur tout le site. */
+/* Étoiles de notation (1 à 10) : composant unique partagé par TOUTES les évaluations du site
+   (Compatibilité, Pronostic, calendrier ésotérique, intensité des transits, villes suggérées
+   d'astrocartographie) pour une seule identité visuelle de notation, plutôt qu'un système par
+   fonctionnalité (jauges ici, flammes là, texte brut ailleurs). Le halo/la taille des étoiles
+   grandit avec le palier (tier 1 = terne, tier 5 = doré et lumineux) — voir starRatingHtml()
+   dans app.js, qui calcule le palier à partir du score sur 10.
+*/
+.star-rating {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.05em;
+  line-height: 1;
+  vertical-align: middle;
+}
+
+.star-rating .star {
+  font-size: 1.05rem;
+  color: rgba(255, 255, 255, 0.14);
+  transition: color 0.2s ease, filter 0.2s ease, transform 0.2s ease;
+}
+
+.star-rating .star.filled {
+  color: var(--muted);
+}
+
+.star-rating-score {
+  margin-left: 0.5rem;
+  font-size: 0.85rem;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.star-rating--compact .star {
+  font-size: 0.68rem;
+}
+
+.star-rating--compact .star-rating-score {
+  margin-left: 0.3rem;
+  font-size: 0.75rem;
+}
+
+/* Paliers de brillance : plus la note est haute, plus les étoiles pleines sont grosses et
+   lumineuses (halo doré au maximum) ; en-dessous, elles restent ternes et discrètes. */
+.star-rating--tier-1 .star.filled {
+  color: rgba(255, 255, 255, 0.32);
+}
+
+.star-rating--tier-2 .star.filled {
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.star-rating--tier-3 .star.filled {
+  color: var(--accent-2);
+}
+
+.star-rating--tier-4 .star.filled {
+  color: var(--accent);
+  filter: drop-shadow(0 0 4px rgba(178, 141, 255, 0.55));
+  transform: scale(1.08);
+}
+
+.star-rating--tier-5 .star.filled {
+  color: #ffd24d;
+  filter: drop-shadow(0 0 5px rgba(255, 210, 77, 0.85)) drop-shadow(0 0 11px rgba(255, 210, 77, 0.45));
+  transform: scale(1.18);
+}
+
 .rating-gauges {
   border: 1px solid var(--border);
   border-radius: 8px;
@@ -444,29 +509,11 @@ button:disabled { opacity: 0.6; cursor: wait; }
   display: flex;
   justify-content: space-between;
   align-items: baseline;
-  margin-bottom: 0.3rem;
+  margin-bottom: 0.4rem;
 }
 
 .rating-gauge-label {
   font-weight: 600;
-}
-
-.rating-gauge-score {
-  color: var(--accent-2);
-  font-weight: 700;
-}
-
-.rating-gauge-track {
-  background: rgba(255, 255, 255, 0.08);
-  border-radius: 999px;
-  height: 8px;
-  overflow: hidden;
-}
-
-.rating-gauge-fill {
-  height: 100%;
-  background: linear-gradient(90deg, var(--accent), var(--accent-2));
-  border-radius: 999px;
 }
 
 .rating-gauge-justification {
@@ -818,13 +865,6 @@ th { color: var(--accent-2); }
   padding: 0.25rem 0.6rem;
   font-size: 0.8rem;
   cursor: pointer;
-}
-
-.astro-city-score {
-  font-size: 0.8rem;
-  color: var(--accent);
-  font-weight: 600;
-  white-space: nowrap;
 }
 
 .witchy-super-badge {

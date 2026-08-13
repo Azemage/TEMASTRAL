@@ -128,6 +128,24 @@ COMPATIBILITY_RATING_AXES = {
 
 _RATINGS_JSON_BLOCK_RE = re.compile(r"```json\s*(\{.*?\})\s*```", re.DOTALL)
 
+# Rubrique de calibration partagée par les deux systèmes de notation (compatibilité + pronostic)
+# pour lutter contre le biais de prudence qui pousse un modèle à se réfugier dans 5/10 ou 6/10
+# par défaut dès que le signal n'est pas archi-tranché. Les points d'ancrage explicites (avec la
+# consigne que 5-6 doit rester rare, pas la valeur par défaut) forcent à utiliser tout l'éventail
+# plutôt qu'à aplatir toutes les paires vers le centre.
+_RATING_STRICTNESS_GUIDANCE = """CALIBRATION DE LA NOTE — sois EXIGEANT, pas prudent : n'utilise \
+5 ou 6 que si les données sont VRAIMENT équilibrées ou insuffisantes des deux côtés, jamais par \
+défaut ou par précaution quand tu hésites. Repères (indicatifs, pas une grille rigide) :
+- 1-2 : quasiment aucun signal favorable dans les données, ou friction dominante et répétée
+- 3-4 : signaux plutôt faibles ou contradictoires, en-dessous de la moyenne
+- 5-6 : neutre AUTHENTIQUE — à réserver aux cas où rien ne penche clairement d'un côté ou de \
+l'autre ; si tu peux justifier une pente avec les données fournies, ne mets pas 5-6, assume le \
+score qui reflète cette pente même s'il est tranché
+- 7-8 : plusieurs signaux clairs et convergents
+- 9-10 : convergence exceptionnelle et rare, aussi rare que le 1-2 à l'autre extrémité
+Sur un ensemble de plusieurs axes, il est normal et attendu que les scores varient nettement \
+d'un axe à l'autre plutôt que de tous se regrouper autour du centre."""
+
 
 def _compatibility_ratings_prompt_section(mode: str) -> str:
     axes = COMPATIBILITY_RATING_AXES.get(mode, [])
@@ -148,7 +166,9 @@ Chaque `justification` est une phrase courte (15-25 mots), concrète, qui s'appu
 deux signaux précis déjà présents dans les données (un aspect, un placement de maison...), pas \
 une formule vague ni un simple rappel du score. Ces notes sont une impression interprétative \
 de synthèse, pas un calcul scientifique : ne prétends jamais à une précision qu'elles n'ont \
-pas, mais assume-les pleinement plutôt que de les noyer sous des réserves."""
+pas, mais assume-les pleinement plutôt que de les noyer sous des réserves.
+
+{_RATING_STRICTNESS_GUIDANCE}"""
 
 
 def _sanitize_compatibility_ratings(raw_ratings: dict | None, mode: str) -> dict | None:
@@ -232,7 +252,9 @@ des données (un transit, la profection...), pas une généralité ni un simple 
 Pour l'axe santé, reste impérativement sur une tendance d'énergie générale, jamais un \
 diagnostic ou une prédiction médicale. Ces notes sont une impression interprétative de \
 synthèse, pas un calcul scientifique : assume-les pleinement plutôt que de les noyer sous des \
-réserves."""
+réserves.
+
+{_RATING_STRICTNESS_GUIDANCE}"""
 
 
 def _sanitize_ratings(raw_ratings: dict | None, expected_keys: set[str]) -> dict | None:

@@ -60,13 +60,14 @@ Implémenté :
   compris, pas seulement les lentes) + prévision des transits à venir sur 12 mois (détection
   des pics d'orbe, échantillonnage adapté à la vitesse de chaque planète pour ne manquer aucun
   passage rapide, gère les boucles rétrogrades) + profection annuelle. Chaque aspect/transit
-  porte une note d'intensité (1 à 4 🔥) combinant poids de la planète, dureté de l'aspect et
-  précision de l'orbe ; un filtre d'intensité minimale (3+ flammes par défaut) garde la liste
-  — potentiellement des centaines d'événements une fois la Lune incluse — lisible sans perdre
+  porte une note d'intensité (1 à 4) combinant poids de la planète, dureté de l'aspect et
+  précision de l'orbe, affichée avec le même composant d'étoiles que le reste du site (voir
+  ci-dessous) ; un filtre d'intensité minimale (3+ étoiles par défaut) garde la liste —
+  potentiellement des centaines d'événements une fois la Lune incluse — lisible sans perdre
   l'accès aux transits mineurs. Trois lectures à horizon différent (semaine/mois/année)
   puisent dans les mêmes données mais avec une sélection et une consigne adaptées à l'échelle :
   la semaine garde même les transits mineurs pour rester concrète, l'année privilégie les
-  grands arcs. Chacune se termine par une notation (1 à 10, en jauges) sur cinq sphères de vie
+  grands arcs. Chacune se termine par une notation (1 à 10, en étoiles) sur cinq sphères de vie
   (amour, amitié, professionnel, santé, développement personnel), même mécanisme que la
   notation de compatibilité pour une identité cohérente sur le site
 - Libération zodiacale (Zodiacal Releasing) : phases L1 (plusieurs années) et sous-phases L2
@@ -84,11 +85,19 @@ Implémenté :
   planète), et thème composite (point médian de chaque paire de planètes homologues,
   représentant la relation comme une entité). La lecture dédiée compile ces trois techniques
   en une analyse structurée avec une section recommandations/points de vigilance, et se termine
-  par une notation chiffrée (1 à 10, affichée en jauges) sur 4 axes propres à chaque mode
+  par une notation chiffrée (1 à 10, affichée en étoiles) sur 4 axes propres à chaque mode
   (ex. en amoureux : passion & alchimie, complicité émotionnelle, engagement & durabilité,
   valeurs partagées), générée par le modèle avec une courte justification par axe — une
   impression interprétative de synthèse, pas un score scientifique. Le mode personne/entreprise
   n'est pas encore implémenté (nécessite un thème d'entreprise dédié, cf. section V2 de la spec)
+- **Notation unifiée en étoiles sur tout le site** (`starRatingHtml()` dans `app.js`) : un seul
+  composant visuel pour toutes les évaluations (compatibilité, pronostic, intensité des
+  transits, calendrier ésotérique, villes suggérées d'astrocartographie), chacune ramenée en
+  interne sur une échelle 0-10 puis 5 paliers de brillance/taille — terne et discret en bas de
+  l'échelle, doré et lumineux (halo) au-delà de 8/10 — plutôt qu'un système par fonctionnalité
+  (jauges, flammes, texte brut). Les notations générées par le modèle (compatibilité, pronostic)
+  reçoivent une rubrique de calibration explicite dans le prompt pour éviter le biais de
+  prudence qui pousse un LLM à se réfugier systématiquement autour de 5-6/10
 - Astrocartographie & cyclocartographie, dans une partie séparée du thème natal et de la
   lecture interprétée : projette sur une carte du monde (SVG, projection équirectangulaire,
   contours des terres émergées `app/static/world_land.json`, Natural Earth 110m — domaine
