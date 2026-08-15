@@ -914,6 +914,17 @@ th { color: var(--accent-2); }
   background: var(--surface-alt, rgba(255, 255, 255, 0.04));
 }
 
+.witchy-event-row-selected,
+.witchy-event-row-selected:hover {
+  background: rgba(178, 141, 255, 0.14);
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+
+.witchy-event-row-selected td:first-child {
+  color: var(--accent);
+  font-weight: 700;
+}
+
 .astro-location-delete-btn:hover {
   border-color: #ff5d5d;
   color: #ff5d5d;

@@ -2349,6 +2349,7 @@ document.getElementById("generate-astro-reading-btn").addEventListener("click", 
 // ---------------------------------------------------------------------
 let witchyCalendarEvents = [];
 let witchySelectedYear = new Date().getFullYear();
+let selectedWitchyDayDetailDate = null;
 
 function witchyEventLabel(event) {
   return tf(`witchy_label_${event.event_type}`, {
@@ -2372,6 +2373,7 @@ function resetWitchyCalendarStateForNewChart() {
   if (readingError) readingError.textContent = "";
   const readingOutput = document.getElementById("witchy-reading-output");
   if (readingOutput) readingOutput.innerHTML = "";
+  selectedWitchyDayDetailDate = null;
   const dayDetailDateInput = document.getElementById("witchy-day-detail-date");
   if (dayDetailDateInput) dayDetailDateInput.value = "";
   const dayDetailError = document.getElementById("witchy-day-detail-error");
@@ -2407,6 +2409,8 @@ function renderWitchyEventsList() {
     const activate = () => {
       const dateInput = document.getElementById("witchy-day-detail-date");
       if (dateInput) dateInput.value = row.dataset.date;
+      selectedWitchyDayDetailDate = row.dataset.date;
+      applyWitchySelectedDateHighlight();
       document.getElementById("generate-witchy-day-detail-btn")?.click();
     };
     row.addEventListener("click", activate);
@@ -2416,6 +2420,18 @@ function renderWitchyEventsList() {
         activate();
       }
     });
+  });
+  applyWitchySelectedDateHighlight();
+}
+
+// Met en surbrillance, dans la liste, la ligne correspondant à la date actuellement affichée
+// dans la barre "Carte du jour" — qu'elle vienne d'un clic sur une ligne ou d'une saisie
+// manuelle dans le champ date, pour que les deux façons de choisir une date restent cohérentes.
+function applyWitchySelectedDateHighlight() {
+  const container = document.getElementById("witchy-events-list");
+  if (!container) return;
+  container.querySelectorAll(".witchy-event-row").forEach((row) => {
+    row.classList.toggle("witchy-event-row-selected", row.dataset.date === selectedWitchyDayDetailDate);
   });
 }
 
@@ -2473,4 +2489,9 @@ document.getElementById("generate-witchy-day-detail-btn").addEventListener("clic
       witchy_day_detail_date: dateInput.value,
     },
   });
+});
+
+document.getElementById("witchy-day-detail-date").addEventListener("input", (evt) => {
+  selectedWitchyDayDetailDate = evt.target.value || null;
+  applyWitchySelectedDateHighlight();
 });
