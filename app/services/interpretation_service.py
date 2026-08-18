@@ -35,6 +35,7 @@ from app.core.witchy_calendar import (
     enrich_events_with_contextual_signals,
 )
 from app.core.witchy_calendar_personalization import personalize_day_chart, personalize_witchy_events
+from app.core.weekly_weather import compute_generic_weekly_by_sign, compute_weekly_collective
 from app.core.zodiacal_releasing import FORTUNE_LOT_NAME, SPIRIT_LOT_NAME
 from app.services import astrocartography_service, timing_service
 from app.services.synastry_service import compute_synastry_for_charts
@@ -573,6 +574,103 @@ appuie-toi exclusivement sur les données fournies."""
 {structure}
 
 {guardrails}"""
+
+
+def _weekly_weather_max_tokens(request: schemas.ReadingRequest) -> int:
+    """Deux blocs (climat collectif de la semaine + impact personnel) sur une seule semaine :
+    plus court qu'une lecture annuelle mais plus développé qu'un item du calendrier witchy."""
+    return 4000
+
+
+def _weekly_weather_prompt_block(request: schemas.ReadingRequest) -> str:
+    intro = """Cette lecture est la MÉTÉO ASTROLOGIQUE DE LA SEMAINE (`period_start` à \
+`period_end`, 7 jours). Deux couches TOUJOURS distinctes, dans cet ordre : (1) le CLIMAT \
+COLLECTIF de la semaine (`collective`), valable pour tout le monde, basé sur les positions et \
+mouvements de la Lune, Mercure, Vénus et Mars (les seules planètes pertinentes à cette échelle \
+de temps — les planètes lentes n'y produisent aucun changement notable, donc absentes des \
+données) ; (2) l'IMPACT PERSONNEL sur cette personne précise (`personal_profection` et \
+`personal_highlights`), basé sur son thème natal réel (voir `identity`)."""
+
+    collective_data = """DANS `collective` : `moon_path` (position lunaire jour par jour de la \
+semaine) et `moon_ingresses` (changements de signe lunaires, ~2-3 par semaine — la trame \
+principale de la semaine, donnant une tonalité différente jour après jour) ; `fast_planets` \
+(Mercure/Vénus/Mars : signe de début/fin de semaine, rétrogradation, ingrès éventuel) ; \
+`stations` (rétrogradation qui commence ou se termine dans la semaine pour l'une de ces trois \
+planètes) ; `witchy_events` (lunaisons/éclipses déjà calculées tombant dans la semaine, mêmes \
+champs que le calendrier ésotérique) ; `transit_transit_aspects` (aspects majeurs qui \
+deviennent EXACTS pendant la semaine entre deux de ces 4 planètes rapides — un événement \
+collectif, pas une comparaison au thème natal) ; et `highlights`, la fusion triée par \
+importance (`score`, déjà calculé, ne le recalcule jamais) de tout ce qui précède — utilise \
+cette liste pour savoir sur quoi insister et dans quel ordre, sans jamais citer le chiffre brut \
+dans le texte (traduis-le en intensité ressentie)."""
+
+    personal_data = """DANS le bloc personnel : `personal_profection` (maison et planète \
+maîtresse de l'année de profection en cours) et `personal_highlights` (transits personnels qui \
+culminent ou restent actifs cette semaine précise vers le thème natal réel de cette personne, \
+chacun avec `intensity` 1-4 déjà calculée — mêmes données que le Pronostic hebdomadaire). Si \
+`personal_highlights` est vide, dis-le simplement plutôt que d'inventer un impact personnel de \
+remplissage."""
+
+    structure = """FORMAT : deux sections Markdown clairement séparées (## Climat de la semaine, \
+## Pour toi cette semaine), la première valable pour tout le monde et rédigée sans référence au \
+thème natal, la seconde explicitement personnelle et jamais fusionnée dans la première. \
+Structure la section collective de façon chronologique ou par thème (mouvements lunaires, \
+Mercure/Vénus/Mars, aspects) plutôt qu'une liste plate. Reste concret et actionnable (une \
+intention à poser, un type de journée à privilégier ou à éviter), jamais une description \
+purement astronomique."""
+
+    guardrails = """Ton évocateur et pratique mais jamais fataliste : reformule toujours en \
+tendance ou énergie disponible ("cette semaine invite à..." plutôt que "il vous arrivera..."). \
+N'invente aucune position, aspect ou événement hors des données fournies."""
+
+    return f"""{intro}
+
+{collective_data}
+
+{personal_data}
+
+{structure}
+
+{guardrails}"""
+
+
+def _weekly_weather_by_sign_max_tokens(request: schemas.ReadingRequest) -> int:
+    """12 signes à une phrase courte chacun : format volontairement bref (horoscope de presse
+    classique), même esprit que le calendrier witchy."""
+    return 2200
+
+
+def _weekly_weather_by_sign_prompt_block(request: schemas.ReadingRequest) -> str:
+    intro = """Cette lecture est le FORMAT HOROSCOPE CLASSIQUE PAR SIGNE de la météo de la \
+semaine : une phrase courte par signe (technique GÉNÉRIQUE, indépendante du thème natal réel de \
+qui que ce soit — ne mélange jamais avec `identity`, qui n'a pas sa place ici). Chaque signe est \
+traité comme s'il était lui-même l'Ascendant d'un thème générique (maisons en signes intégraux) \
+: tu reçois dans `by_sign` les 12 signes, chacun avec `generic_house` (1-12, déjà calculée) — la \
+maison générique touchée par l'événement principal de la semaine (`main_event_sign`) pour ce \
+signe précis — et `house_keyword`/`house_themes` (le thème de vie de cette maison)."""
+
+    rules = """RÈGLES IMPÉRATIVES :
+- Pour CHAQUE signe, une seule phrase courte (maximum 2), concrète et actionnable, reliant \
+`house_keyword`/`house_themes` à une tonalité de semaine pour ce signe précis — jamais la \
+mécanique technique elle-même (ne mentionne jamais "maison", "générique", un numéro ou un degré \
+dans le texte visible, seulement ce qui en découle en langage accessible).
+- Varie le VOCABULAIRE d'un signe à l'autre même quand plusieurs signes tombent sur la même \
+maison générique (ça arrivera souvent, structurellement, puisque 12 signes se répartissent sur \
+12 maisons de façon fixe) — jamais deux phrases interchangeables.
+- Le signe où `is_main_event_sign` est vrai doit avoir la formulation la plus marquée de toutes \
+("ta semaine", "directement pour toi") — c'est la maison 1 générique, l'équivalent générique du \
+principe de personnalisation déjà utilisé ailleurs dans l'app.
+- Reste dans les règles de ton déjà établies (pas de fatalisme, tendances non certitudes)."""
+
+    structure = """FORMAT : une ligne par signe (## Bélier, ## Taureau, etc., dans l'ordre du \
+zodiaque), sans développement supplémentaire par signe — c'est un tableau condensé destiné à \
+être scanné ou partagé, pas une lecture développée."""
+
+    return f"""{intro}
+
+{rules}
+
+{structure}"""
 
 
 _TIMING_MAX_TOKENS_BY_HORIZON = {"week": 2200, "month": 2800, "year": 3500}
@@ -1149,6 +1247,10 @@ Termine toujours par un court paragraphe de synthèse bienveillant et encouragea
         specialized_block = _witchy_calendar_prompt_block(request)
     elif request.reading_type == "witchy_day_detail":
         specialized_block = _witchy_day_detail_prompt_block(request)
+    elif request.reading_type == "weekly_weather":
+        specialized_block = _weekly_weather_prompt_block(request)
+    elif request.reading_type == "weekly_weather_by_sign":
+        specialized_block = _weekly_weather_by_sign_prompt_block(request)
     else:
         specialized_block = _SPECIALIZED_PROMPT_BLOCKS[request.reading_type]
     return f"""{base}
@@ -1378,6 +1480,34 @@ def _build_user_payload(
         payload["day_chart"] = day_chart
         payload["evenements_du_calendrier_ce_jour"] = events_this_day
         payload["resonances_personnelles_du_jour"] = personalize_day_chart(day_chart, chart_data)
+    elif request.reading_type == "weekly_weather":
+        # Couche collective (voir app/core/weekly_weather.py) : calcul direct plutôt que via le
+        # cache partagé de weekly_weather_service (réservé à l'endpoint de consultation
+        # répétée, qui dispose d'une session DB) — même principe que witchy_calendar ci-dessus,
+        # négligeable face à la latence de l'appel LLM qui suit.
+        start_date = request.weekly_weather_start_date or date_type.today()
+        collective = compute_weekly_collective(start_date)
+
+        # Couche personnelle : AUCUN nouveau moteur, réutilise directement
+        # timing_service.compute_timing/compute_forecast (déjà spécifiés pour le Pronostic
+        # hebdomadaire) et le même filtrage _select_events_for_horizon("week", ...) que le
+        # bouton "Semaine" du Pronostic — la météo de la semaine et le Pronostic hebdomadaire
+        # partagent donc exactement le même calcul d'impact personnel.
+        timing = timing_service.compute_timing(chart, start_date)
+        forecast = timing_service.compute_forecast(chart, start_date)
+        personal_highlights = _select_events_for_horizon(forecast["events"], "week", start_date)
+
+        payload["identity"] = _identity_context(chart_data)
+        payload["collective"] = collective
+        payload["personal_profection"] = timing["profection"]
+        payload["personal_highlights"] = personal_highlights
+    elif request.reading_type == "weekly_weather_by_sign":
+        # Couche 3 (voir app/core/weekly_weather.py::compute_generic_weekly_by_sign) : technique
+        # générique indépendante du thème natal réel, pas de bloc `identity` ici.
+        start_date = request.weekly_weather_start_date or date_type.today()
+        main_event_sign = compute_weekly_collective(start_date)["main_event"]["sign"]
+        payload["main_event_sign"] = main_event_sign
+        payload["by_sign"] = compute_generic_weekly_by_sign(main_event_sign)
 
     return payload
 
@@ -1407,6 +1537,10 @@ async def generate_reading(
         max_tokens = _witchy_calendar_max_tokens(request)
     elif request.reading_type == "witchy_day_detail":
         max_tokens = _witchy_day_detail_max_tokens(request)
+    elif request.reading_type == "weekly_weather":
+        max_tokens = _weekly_weather_max_tokens(request)
+    elif request.reading_type == "weekly_weather_by_sign":
+        max_tokens = _weekly_weather_by_sign_max_tokens(request)
     else:
         max_tokens = READING_TYPE_MAX_TOKENS.get(request.reading_type, 2000)
 

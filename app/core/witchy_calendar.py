@@ -20,6 +20,7 @@ import swisseph as swe
 from app.core.day_chart import compute_day_chart
 from app.core.ephemeris import CALC_FLAGS, PLANET_IDS
 from app.core.reference_data import witchy_calendar_events
+from app.core.root_finding import bisect_root, scan_zero_crossings
 from app.core.zodiac import SIGNS, sign_and_degree
 
 # Planètes concernées par les stations rétrogrades et les ingrès (voir le document source :
@@ -39,7 +40,6 @@ _AU_TO_KM = 149_597_870.7
 # pour les lunaisons, plusieurs mois pour les stations/ingrès) : aucune occurrence n'est donc
 # manquée entre deux échantillons.
 _SCAN_STEP_DAYS = 1.0
-_BISECTION_ITERATIONS = 30
 
 
 def _longitude(jd_ut: float, planet_id: int) -> float:
@@ -58,36 +58,11 @@ def _distance_km(jd_ut: float, planet_id: int) -> float:
 
 
 def _bisect(f, lo: float, hi: float) -> float:
-    """Racine de `f` (changement de signe) entre `lo` et `hi`, par bissection."""
-    f_lo_negative = f(lo) < 0
-    for _ in range(_BISECTION_ITERATIONS):
-        mid = (lo + hi) / 2
-        if (f(mid) < 0) == f_lo_negative:
-            lo = mid
-        else:
-            hi = mid
-    return (lo + hi) / 2
+    return bisect_root(f, lo, hi)
 
 
 def _scan_zero_crossings(f, start_jd: float, end_jd: float, step: float = _SCAN_STEP_DAYS) -> list[float]:
-    """Jours juliens où `f` change de signe dans [start_jd, end_jd], affinés par bissection."""
-    results: list[float] = []
-    jd = start_jd
-    prev = f(jd)
-    while jd < end_jd:
-        next_jd = min(jd + step, end_jd)
-        curr = f(next_jd)
-        if prev == 0:
-            results.append(jd)
-        elif (prev < 0) != (curr < 0) and abs(curr - prev) < 180:
-            # Le "< 180" exclut les discontinuités de rebouclage (ex. offset qui saute de
-            # +179° à -180° à l'opposé exact de la cible, pour une fonction construite avec un
-            # modulo centré comme les lunaisons) : une vraie racine ne change que d'un pas de
-            # jour, jamais de ~360° d'un coup.
-            results.append(_bisect(f, jd, next_jd))
-        jd = next_jd
-        prev = curr
-    return results
+    return scan_zero_crossings(f, start_jd, end_jd, step)
 
 
 def _score_from_raw(score_brut: float) -> int:

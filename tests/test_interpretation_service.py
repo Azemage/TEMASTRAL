@@ -738,6 +738,8 @@ def test_all_reading_type_payloads_are_strictly_json_serializable():
         ),
         (schemas.ReadingRequest(reading_type="witchy_calendar", witchy_calendar_year=2027), None),
         (schemas.ReadingRequest(reading_type="witchy_day_detail", witchy_day_detail_date=date(2027, 1, 22)), None),
+        (schemas.ReadingRequest(reading_type="weekly_weather", weekly_weather_start_date=date(2027, 2, 3)), None),
+        (schemas.ReadingRequest(reading_type="weekly_weather_by_sign", weekly_weather_start_date=date(2027, 2, 3)), None),
     ]
     for request, cb in requests_by_type:
         payload = interpretation_service._build_user_payload(chart, request, chart_b=cb)

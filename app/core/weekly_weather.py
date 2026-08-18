@@ -1,0 +1,291 @@
+"""Météo astrologique de la semaine — voir app/reference_data (docs sources non copiées telles
+quelles ici, résumées) : echelles_temporelles_lecture.json (mode_semaine) et
+meteo_hebdomadaire_par_signe.md.
+
+Deux couches déterministes, indépendantes du thème natal (le même calcul pour tout le monde une
+semaine donnée, sur le même principe de cache global que le calendrier ésotérique) :
+
+1. `compute_weekly_collective` — Lune (parcours signe par signe + ingrès), Mercure/Vénus/Mars
+   (position de départ/fin, rétrogradation, ingrès), aspects exacts entre ces 4 planètes formés
+   PENDANT la semaine (transit-transit, pas transit-natal), événements du calendrier ésotérique
+   tombant dans la semaine (réutilise directement compute_witchy_calendar/compute_station_events,
+   AUCUN recalcul), et une liste de points forts (`highlights`) notés (même esprit que le score
+   1-5 du calendrier witchy) pour repérer les éléments les plus significatifs de la semaine.
+2. `compute_generic_weekly_by_sign` — le "thème générique par signe" des horoscopes de presse :
+   chaque signe est traité comme son propre Ascendant (maisons en signes intégraux), et la
+   maison générique touchée par l'événement principal de la semaine détermine la tonalité de
+   chaque signe. Réutilise `zodiac.signs_distance` (même formule mod-12 que les maisons
+   dérivées) et `houses_meanings.json` — aucun nouveau moteur de calcul.
+
+La couche PERSONNALISÉE (impact sur le thème natal réel) n'est PAS ici : elle réutilise
+directement `timing_service.compute_timing`/`compute_forecast`, déjà spécifiés pour le Pronostic
+hebdomadaire — voir interpretation_service.py, reading_type='weekly_weather'.
+"""
+
+from __future__ import annotations
+
+from datetime import date as date_type
+from datetime import timedelta
+from itertools import combinations
+
+import swisseph as swe
+
+from app.core import ephemeris
+from app.core.aspects import angular_separation
+from app.core.reference_data import houses_meanings
+from app.core.root_finding import scan_zero_crossings
+from app.core.witchy_calendar import STATION_PLANETS, compute_station_events, compute_witchy_calendar
+from app.core.zodiac import SIGNS, SIGNS_FR, sign_and_degree, signs_distance
+
+MOON_PLANETS = ["Moon"]
+FAST_PLANETS = ["Mercury", "Venus", "Mars"]
+WEEK_DAYS = 7
+
+# Poids heuristiques (mêmes ordres de grandeur que le calendrier witchy, mais propres à
+# l'échelle hebdomadaire) : un ingrès lunaire est fréquent (~3/semaine) donc modeste, un ingrès
+# de planète rapide est plus rare donc plus notable. Les stations réutilisent directement le
+# score déjà calculé par compute_station_events (catalogue witchy), aucune valeur nouvelle.
+_MOON_INGRESS_SCORE = 2
+_FAST_INGRESS_SCORE = 3
+_ASPECT_TYPE_SCORE = {"conjunction": 3, "opposition": 3, "square": 3, "trine": 2, "sextile": 2}
+
+_ASPECT_TARGETS = {
+    "conjunction": [0.0],
+    "sextile": [60.0, 300.0],
+    "square": [90.0, 270.0],
+    "trine": [120.0, 240.0],
+    "opposition": [180.0],
+}
+_ASPECT_TYPE_FR = {
+    "conjunction": "conjonction", "sextile": "sextile", "square": "carré",
+    "trine": "trigone", "opposition": "opposition",
+}
+_ASPECT_SCAN_STEP_DAYS = 0.5
+
+
+def _jd_at_noon(d: date_type) -> float:
+    return ephemeris.jd_ut_for_date_utc_noon(d.isoformat())
+
+
+def _longitude(jd_ut: float, planet_id: int) -> float:
+    return ephemeris.calc_planet(jd_ut, planet_id).longitude % 360
+
+
+def _position_dict(name: str, jd_ut: float) -> dict:
+    raw = ephemeris.calc_planet(jd_ut, ephemeris.PLANET_IDS[name])
+    sign, degree = sign_and_degree(raw.longitude)
+    return {
+        "name": name,
+        "sign": sign,
+        "sign_fr": SIGNS_FR[sign],
+        "degree": round(degree, 2),
+        "absolute_longitude": round(raw.longitude, 4),
+        "retrograde": raw.speed_longitude < 0,
+    }
+
+
+def _week_dates(start_date: date_type) -> list[date_type]:
+    return [start_date + timedelta(days=i) for i in range(WEEK_DAYS)]
+
+
+def _compute_moon_path(dates: list[date_type]) -> tuple[list[dict], list[dict]]:
+    """Position lunaire pour chaque jour de la semaine, et les ingrès (changements de signe)
+    détectés entre deux jours consécutifs — granularité journalière, cohérente avec l'échelle
+    'météo' de la fonctionnalité (pas besoin de l'instant exact à la minute près)."""
+    path = [_position_dict("Moon", _jd_at_noon(d)) | {"date": d.isoformat()} for d in dates]
+    ingresses = []
+    for prev, curr in zip(path, path[1:]):
+        if prev["sign"] != curr["sign"]:
+            ingresses.append({"date": curr["date"], "from_sign": prev["sign"], "to_sign": curr["sign"]})
+    return path, ingresses
+
+
+def _compute_fast_planets(dates: list[date_type]) -> list[dict]:
+    """Pour Mercure/Vénus/Mars : position de début/fin de semaine, rétrogradation, et ingrès
+    éventuel détecté par comparaison jour par jour (comme pour la Lune, granularité journalière
+    suffisante — ces planètes ne peuvent pas changer de signe deux fois dans la même semaine)."""
+    results = []
+    for planet in FAST_PLANETS:
+        daily = [_position_dict(planet, _jd_at_noon(d)) for d in dates]
+        ingress = None
+        for i in range(1, len(daily)):
+            prev, curr = daily[i - 1], daily[i]
+            if prev["sign"] != curr["sign"]:
+                ingress = {"date": dates[i].isoformat(), "from_sign": prev["sign"], "to_sign": curr["sign"]}
+                break
+        start, end = daily[0], daily[-1]
+        results.append(
+            {
+                "name": planet,
+                "sign_start": start["sign"],
+                "degree_start": start["degree"],
+                "retrograde_start": start["retrograde"],
+                "sign_end": end["sign"],
+                "degree_end": end["degree"],
+                "retrograde_end": end["retrograde"],
+                "ingress": ingress,
+            }
+        )
+    return results
+
+
+def _compute_exact_transit_transit_aspects(start_jd: float, end_jd: float) -> list[dict]:
+    """Aspects majeurs qui deviennent EXACTS (orbe = 0, croisement détecté) entre deux des 4
+    planètes rapides pendant la semaine — transit-transit, pas transit-natal (voir
+    enrichissement_contextuel_mode_apercu du calendrier witchy pour le même principe appliqué
+    ailleurs). Fenêtre courte (7 jours) : coût de calcul négligeable même avec les 6 paires."""
+    events = []
+    planets = MOON_PLANETS + FAST_PLANETS
+    for planet_a, planet_b in combinations(planets, 2):
+        id_a, id_b = ephemeris.PLANET_IDS[planet_a], ephemeris.PLANET_IDS[planet_b]
+
+        def directed_diff(t: float, a=id_a, b=id_b) -> float:
+            return (_longitude(t, b) - _longitude(t, a)) % 360
+
+        for aspect_type, targets in _ASPECT_TARGETS.items():
+            for target in targets:
+
+                def f(t, tgt=target, dd=directed_diff):
+                    return ((dd(t) - tgt + 180) % 360) - 180
+
+                for jd in scan_zero_crossings(f, start_jd, end_jd, step=_ASPECT_SCAN_STEP_DAYS):
+                    year, month, day, _hour = swe.revjul(jd)
+                    events.append(
+                        {
+                            "date": f"{year:04d}-{month:02d}-{day:02d}",
+                            "planet_a": planet_a,
+                            "planet_b": planet_b,
+                            "aspect_type": aspect_type,
+                            "aspect_type_fr": _ASPECT_TYPE_FR[aspect_type],
+                            "score": _ASPECT_TYPE_SCORE[aspect_type],
+                        }
+                    )
+    events.sort(key=lambda e: e["date"])
+    return events
+
+
+def _witchy_events_in_range(start_date: date_type, end_date: date_type) -> list[dict]:
+    """Événements du calendrier ésotérique déjà calculés (compute_witchy_calendar, AUCUN
+    recalcul) dont la date tombe dans la semaine — gère la semaine à cheval sur deux années."""
+    years = {start_date.year, end_date.year}
+    all_events = [e for year in years for e in compute_witchy_calendar(year)]
+    start_iso, end_iso = start_date.isoformat(), end_date.isoformat()
+    return sorted((e for e in all_events if start_iso <= e["event_date"] <= end_iso), key=lambda e: e["event_date"])
+
+
+def _fast_station_events(start_date: date_type, end_date: date_type) -> list[dict]:
+    """Stations rétrogrades/directes de Mercure/Vénus/Mars dans la semaine — réutilise
+    compute_station_events (calendrier witchy) tel quel, filtré aux 3 planètes rapides et à la
+    fenêtre (le score déjà calculé par le catalogue witchy est repris sans modification)."""
+    start_jd = _jd_at_noon(start_date)
+    end_jd = _jd_at_noon(end_date) + 1
+    all_stations = compute_station_events(start_jd, end_jd)
+    return [e for e in all_stations if e["planet"] in FAST_PLANETS and e["planet"] in STATION_PLANETS]
+
+
+def _assemble_highlights(
+    moon_ingresses: list[dict],
+    fast_planets: list[dict],
+    stations: list[dict],
+    witchy_events: list[dict],
+    aspects: list[dict],
+) -> list[dict]:
+    highlights: list[dict] = []
+    for ingress in moon_ingresses:
+        highlights.append(
+            {
+                "date": ingress["date"], "kind": "ingres_lune", "planet": "Moon",
+                "sign": ingress["to_sign"], "from_sign": ingress["from_sign"], "score": _MOON_INGRESS_SCORE,
+            }
+        )
+    for planet in fast_planets:
+        if planet["ingress"]:
+            highlights.append(
+                {
+                    "date": planet["ingress"]["date"], "kind": "ingres_rapide", "planet": planet["name"],
+                    "sign": planet["ingress"]["to_sign"], "from_sign": planet["ingress"]["from_sign"],
+                    "score": _FAST_INGRESS_SCORE,
+                }
+            )
+    for station in stations:
+        highlights.append(
+            {
+                "date": station["event_date"], "kind": "station", "planet": station["planet"],
+                "sign": station["sign"], "direction": station["direction"],
+                "meaning_template": station["meaning_template"], "score": station["score"],
+            }
+        )
+    for event in witchy_events:
+        highlights.append(
+            {
+                "date": event["event_date"], "kind": event["event_type"], "planet": event.get("planet"),
+                "sign": event.get("sign"), "meaning_template": event.get("meaning_template"),
+                "score": event["score"],
+            }
+        )
+    for aspect in aspects:
+        highlights.append(
+            {
+                "date": aspect["date"], "kind": "aspect_exact", "planet": aspect["planet_a"],
+                "planet_b": aspect["planet_b"], "aspect_type": aspect["aspect_type"],
+                "aspect_type_fr": aspect["aspect_type_fr"], "sign": None, "score": aspect["score"],
+            }
+        )
+    highlights.sort(key=lambda h: (-h["score"], h["date"]))
+    return highlights
+
+
+def compute_weekly_collective(start_date: date_type) -> dict:
+    """Point d'entrée principal : toute la couche collective (indépendante du thème natal) de
+    la météo de la semaine débutant à `start_date` (7 jours, start_date inclus)."""
+    dates = _week_dates(start_date)
+    end_date = dates[-1]
+    start_jd, end_jd = _jd_at_noon(start_date), _jd_at_noon(end_date)
+
+    moon_path, moon_ingresses = _compute_moon_path(dates)
+    fast_planets = _compute_fast_planets(dates)
+    stations = _fast_station_events(start_date, end_date)
+    witchy_events = _witchy_events_in_range(start_date, end_date)
+    aspects = _compute_exact_transit_transit_aspects(start_jd, end_jd)
+    highlights = _assemble_highlights(moon_ingresses, fast_planets, stations, witchy_events, aspects)
+
+    main_event = next((h for h in highlights if h.get("sign")), None)
+    if main_event is None:
+        main_event = {"kind": "lune_transit", "planet": "Moon", "sign": moon_path[0]["sign"], "score": 0}
+
+    return {
+        "period_start": start_date.isoformat(),
+        "period_end": end_date.isoformat(),
+        "moon_path": moon_path,
+        "moon_ingresses": moon_ingresses,
+        "fast_planets": fast_planets,
+        "stations": stations,
+        "witchy_events": witchy_events,
+        "transit_transit_aspects": aspects,
+        "highlights": highlights,
+        "main_event": {"kind": main_event["kind"], "planet": main_event.get("planet"), "sign": main_event["sign"]},
+    }
+
+
+def compute_generic_weekly_by_sign(main_event_sign: str) -> list[dict]:
+    """Couche 3 (voir meteo_hebdomadaire_par_signe.md) : pour chacun des 12 signes traité comme
+    son propre Ascendant générique, la maison générique (signes intégraux) touchée par le signe
+    de l'événement principal de la semaine, avec le thème de vie associé (houses_meanings.json).
+    Aucun nouveau moteur : `signs_distance` implémente déjà exactement la formule mod-12 requise
+    (même principe que les maisons dérivées, voir derived_houses.py)."""
+    houses_by_number = {h["number"]: h for h in houses_meanings()["houses"]}
+    result = []
+    for sign in SIGNS:
+        generic_house = signs_distance(sign, main_event_sign)
+        house = houses_by_number[generic_house]
+        result.append(
+            {
+                "sign": sign,
+                "sign_fr": SIGNS_FR[sign],
+                "generic_house": generic_house,
+                "house_keyword": house["keyword"],
+                "house_themes": house["themes"],
+                "is_main_event_sign": sign == main_event_sign,
+            }
+        )
+    return result

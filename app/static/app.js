@@ -186,12 +186,13 @@ document.getElementById("birth-form").addEventListener("submit", async (e) => {
     renderChart(currentChart);
     document.getElementById("results-section").classList.remove("hidden");
     document.getElementById("section-toggle-row").classList.remove("hidden");
-    // Les 3 sections restent repliées par défaut (allège l'affichage initial) : seuls les
+    // Les sections restent repliées par défaut (allège l'affichage initial) : seuls les
     // boutons pour les révéler à la demande sont montrés, voir écouteurs .section-toggle-btn.
-    ["reading-section", "astro-section", "witchy-section"].forEach((id) => document.getElementById(id).classList.add("hidden"));
+    ["reading-section", "astro-section", "witchy-section", "weekly-weather-section"].forEach((id) => document.getElementById(id).classList.add("hidden"));
     document.querySelectorAll(".section-toggle-btn").forEach((btn) => btn.classList.remove("active"));
     resetAstrocartographyStateForNewChart();
     resetWitchyCalendarStateForNewChart();
+    resetWeeklyWeatherStateForNewChart();
     document.getElementById("results-section").scrollIntoView({ behavior: "smooth" });
   } catch (err) {
     errorEl.textContent = err.message;
@@ -2501,4 +2502,197 @@ document.getElementById("generate-witchy-day-detail-btn").addEventListener("clic
 document.getElementById("witchy-day-detail-date").addEventListener("input", (evt) => {
   selectedWitchyDayDetailDate = evt.target.value || null;
   applyWitchySelectedDateHighlight();
+});
+
+// ---------------------------------------------------------------------
+// Météo de la semaine : couche collective (Lune/Mercure/Vénus/Mars, indépendante du thème
+// natal) + impact personnel (réutilise le Pronostic) + météo par signe (12 signes, technique
+// générique — voir app/core/weekly_weather.py).
+// ---------------------------------------------------------------------
+let weeklyWeatherData = null;
+let weeklyWeatherStartDate = null;
+
+function todayIsoDate() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function resetWeeklyWeatherStateForNewChart() {
+  weeklyWeatherData = null;
+  weeklyWeatherStartDate = null;
+  const dateInput = document.getElementById("weekly-weather-start-date");
+  if (dateInput) dateInput.value = "";
+  ["weekly-weather-highlights", "weekly-weather-planets", "weekly-weather-aspects", "weekly-weather-reading-output", "weekly-weather-by-sign-output"].forEach(
+    (id) => {
+      const el = document.getElementById(id);
+      if (el) el.innerHTML = "";
+    }
+  );
+  ["weekly-weather-error", "weekly-weather-reading-error", "weekly-weather-by-sign-error"].forEach((id) => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = "";
+  });
+}
+
+function weeklyWeatherHighlightLabel(h) {
+  if (h.kind === "aspect_exact") {
+    return tf("weekly_weather_highlight_aspect", {
+      planetA: planetLabel(h.planet),
+      planetB: planetLabel(h.planet_b),
+      aspect: aspectTypeLabel(h.aspect_type),
+    });
+  }
+  if (h.kind === "ingres_lune" || h.kind === "ingres_rapide") {
+    return tf("weekly_weather_highlight_ingress", { planet: planetLabel(h.planet), sign: signLabel(h.sign) });
+  }
+  if (h.kind === "station") {
+    const eventType = h.direction === "retrograde" ? "station_retrograde" : "station_directe";
+    return witchyEventLabel({ event_type: eventType, planet: h.planet, sign: h.sign });
+  }
+  // Événements du calendrier ésotérique (lunaisons, éclipses, ingrès de planètes lentes,
+  // grandes conjonctions) : `kind` porte alors directement l'`event_type` du calendrier witchy
+  // (voir app/core/weekly_weather.py) — mêmes libellés déjà définis, réutilisés tels quels.
+  return witchyEventLabel({ event_type: h.kind, planet: h.planet, sign: h.sign, planet_b: h.planet_b, aspect_type: h.aspect_type });
+}
+
+function renderWeeklyWeatherHighlights() {
+  const container = document.getElementById("weekly-weather-highlights");
+  if (!container || !weeklyWeatherData) return;
+  const highlights = weeklyWeatherData.highlights;
+  if (highlights.length === 0) {
+    container.innerHTML = `<h3>${t("weekly_weather_highlights_title")}</h3><p>${t("weekly_weather_no_highlights")}</p>`;
+    return;
+  }
+  container.innerHTML = `
+    <h3>${t("weekly_weather_highlights_title")}</h3>
+    <table class="astro-forecast-table">
+      <tbody>
+        ${highlights
+          .map(
+            (h) => `
+          <tr>
+            <td>${h.date}</td>
+            <td>${escapeHtml(weeklyWeatherHighlightLabel(h))}</td>
+            <td>${starRatingHtml(h.score, { max: 5, compact: true, showScore: false })}</td>
+          </tr>`
+          )
+          .join("")}
+      </tbody>
+    </table>`;
+}
+
+function renderWeeklyWeatherPlanets() {
+  const container = document.getElementById("weekly-weather-planets");
+  if (!container || !weeklyWeatherData) return;
+  const moon = weeklyWeatherData.moon_path;
+  const moonStart = moon[0];
+  const moonEnd = moon[moon.length - 1];
+  const moonMovement =
+    weeklyWeatherData.moon_ingresses.map((i) => tf("weekly_weather_ingress_note", { date: i.date, sign: signLabel(i.to_sign) })).join(" · ") || "—";
+  const fastRows = weeklyWeatherData.fast_planets
+    .map((p) => {
+      const retro = p.retrograde_start || p.retrograde_end ? ` <span class="retro">${t("retrograde")}</span>` : "";
+      const movement = p.ingress ? tf("weekly_weather_ingress_note", { date: p.ingress.date, sign: signLabel(p.ingress.to_sign) }) : "—";
+      return `
+        <tr>
+          <td>${planetLabel(p.name)}${retro}</td>
+          <td>${signLabel(p.sign_start)} ${p.degree_start}°</td>
+          <td>${signLabel(p.sign_end)} ${p.degree_end}°</td>
+          <td>${movement}</td>
+        </tr>`;
+    })
+    .join("");
+  container.innerHTML = `
+    <h3>${t("weekly_weather_planets_title")}</h3>
+    <table class="astro-forecast-table">
+      <thead>
+        <tr>
+          <th>${t("th_transit")}</th>
+          <th>${t("weekly_weather_th_start")}</th>
+          <th>${t("weekly_weather_th_end")}</th>
+          <th>${t("weekly_weather_th_movement")}</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>${planetLabel("Moon")}</td>
+          <td>${signLabel(moonStart.sign)} ${moonStart.degree}°</td>
+          <td>${signLabel(moonEnd.sign)} ${moonEnd.degree}°</td>
+          <td>${moonMovement}</td>
+        </tr>
+        ${fastRows}
+      </tbody>
+    </table>`;
+}
+
+function renderWeeklyWeatherAspects() {
+  const container = document.getElementById("weekly-weather-aspects");
+  if (!container || !weeklyWeatherData) return;
+  const aspects = weeklyWeatherData.transit_transit_aspects;
+  if (aspects.length === 0) {
+    container.innerHTML = "";
+    return;
+  }
+  container.innerHTML = `
+    <h3>${t("weekly_weather_aspects_title")}</h3>
+    <table class="astro-forecast-table">
+      <tbody>
+        ${aspects
+          .map(
+            (a) => `
+          <tr>
+            <td>${a.date}</td>
+            <td>${planetLabel(a.planet_a)} ${aspectTypeLabel(a.aspect_type)} ${planetLabel(a.planet_b)}</td>
+          </tr>`
+          )
+          .join("")}
+      </tbody>
+    </table>`;
+}
+
+async function loadWeeklyWeather() {
+  const errorEl = document.getElementById("weekly-weather-error");
+  errorEl.textContent = "";
+  try {
+    const res = await fetch(`/api/weekly-weather?start_date=${weeklyWeatherStartDate}`);
+    if (!res.ok) throw new Error(`${t("error_prefix")} ${res.status}`);
+    weeklyWeatherData = await res.json();
+    renderWeeklyWeatherHighlights();
+    renderWeeklyWeatherPlanets();
+    renderWeeklyWeatherAspects();
+  } catch (err) {
+    errorEl.textContent = `${t("error_loading_weekly_weather")} ${err.message}`;
+  }
+}
+
+document.getElementById("weekly-weather-load-btn").addEventListener("click", () => {
+  const dateInput = document.getElementById("weekly-weather-start-date");
+  weeklyWeatherStartDate = dateInput.value || todayIsoDate();
+  dateInput.value = weeklyWeatherStartDate;
+  loadWeeklyWeather();
+});
+
+document.getElementById("generate-weekly-weather-reading-btn").addEventListener("click", () => {
+  generateSpecializedReading({
+    btnId: "generate-weekly-weather-reading-btn",
+    errorId: "weekly-weather-reading-error",
+    outputId: "weekly-weather-reading-output",
+    defaultLabel: t("btn_generate_weekly_weather_reading"),
+    requestBody: {
+      reading_type: "weekly_weather",
+      weekly_weather_start_date: weeklyWeatherStartDate || todayIsoDate(),
+    },
+  });
+});
+
+document.getElementById("generate-weekly-weather-by-sign-btn").addEventListener("click", () => {
+  generateSpecializedReading({
+    btnId: "generate-weekly-weather-by-sign-btn",
+    errorId: "weekly-weather-by-sign-error",
+    outputId: "weekly-weather-by-sign-output",
+    defaultLabel: t("btn_generate_weekly_weather_by_sign"),
+    requestBody: {
+      reading_type: "weekly_weather_by_sign",
+      weekly_weather_start_date: weeklyWeatherStartDate || todayIsoDate(),
+    },
+  });
 });

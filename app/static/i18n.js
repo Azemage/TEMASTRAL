@@ -926,4 +926,61 @@ const UI_TEXT = {
     en: "{planet} {aspect} {planetB} in {sign}",
     es: "{planet} {aspect} {planetB} en {sign}",
   },
+
+  // Météo de la semaine
+  weekly_weather_section_title: { fr: "6. Météo de la semaine", en: "6. Weekly weather", es: "6. Meteorología de la semana" },
+  weekly_weather_section_intro: {
+    fr: "Météo astrologique collective de la semaine (Lune, Mercure, Vénus, Mars — les seules planètes pertinentes à cette échelle), indépendante de votre thème natal, puis son impact sur vous en particulier.",
+    en: "Collective astrological weather for the week (Moon, Mercury, Venus, Mars — the only planets relevant at this timescale), independent of your natal chart, then its personal impact on you.",
+    es: "Meteorología astrológica colectiva de la semana (Luna, Mercurio, Venus, Marte — los únicos planetas relevantes a esta escala), independiente de tu carta natal, y luego su impacto personal en ti.",
+  },
+  weekly_weather_start_date_label: { fr: "Semaine à partir du", en: "Week starting", es: "Semana a partir del" },
+  btn_load_weekly_weather: { fr: "Charger la météo", en: "Load weather", es: "Cargar la meteorología" },
+  error_loading_weekly_weather: {
+    fr: "Impossible de charger la météo de la semaine :",
+    en: "Could not load the weekly weather:",
+    es: "No se pudo cargar la meteorología de la semana:",
+  },
+  weekly_weather_highlights_title: { fr: "Points clés de la semaine", en: "Key points of the week", es: "Puntos clave de la semana" },
+  weekly_weather_no_highlights: {
+    fr: "Aucun point marquant détecté cette semaine.",
+    en: "No notable highlight detected this week.",
+    es: "Ningún punto destacado detectado esta semana.",
+  },
+  weekly_weather_planets_title: { fr: "Planètes de la semaine", en: "Planets of the week", es: "Planetas de la semana" },
+  weekly_weather_th_start: { fr: "Début de semaine", en: "Start of week", es: "Inicio de semana" },
+  weekly_weather_th_end: { fr: "Fin de semaine", en: "End of week", es: "Fin de semana" },
+  weekly_weather_th_movement: { fr: "Mouvement", en: "Movement", es: "Movimiento" },
+  weekly_weather_ingress_note: { fr: "entre en {sign} le {date}", en: "enters {sign} on {date}", es: "entra en {sign} el {date}" },
+  weekly_weather_aspects_title: {
+    fr: "Aspects entre planètes rapides cette semaine",
+    en: "Aspects between fast planets this week",
+    es: "Aspectos entre planetas rápidos esta semana",
+  },
+  weekly_weather_highlight_aspect: {
+    fr: "{planetA} {aspect} {planetB}",
+    en: "{planetA} {aspect} {planetB}",
+    es: "{planetA} {aspect} {planetB}",
+  },
+  weekly_weather_highlight_ingress: {
+    fr: "{planet} entre en {sign}",
+    en: "{planet} enters {sign}",
+    es: "{planet} entra en {sign}",
+  },
+  btn_generate_weekly_weather_reading: {
+    fr: "Générer la lecture de la semaine",
+    en: "Generate weekly reading",
+    es: "Generar la lectura de la semana",
+  },
+  weekly_weather_by_sign_title: { fr: "Météo des 12 signes", en: "Weather for all 12 signs", es: "Meteorología de los 12 signos" },
+  weekly_weather_by_sign_intro: {
+    fr: "Format horoscope classique : une tonalité générique par signe pour la semaine, technique indépendante de votre thème natal réel (voir votre lecture personnelle ci-dessus).",
+    en: "Classic horoscope format: a generic tone per sign for the week, a technique independent of your real natal chart (see your personal reading above).",
+    es: "Formato de horóscopo clásico: un tono genérico por signo para la semana, técnica independiente de tu carta natal real (ver tu lectura personal arriba).",
+  },
+  btn_generate_weekly_weather_by_sign: {
+    fr: "Voir la météo des 12 signes",
+    en: "View weather for all 12 signs",
+    es: "Ver la meteorología de los 12 signos",
+  },
 };

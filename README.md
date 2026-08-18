@@ -199,6 +199,25 @@ Implémenté :
   via `personalize_day_chart`, qui généralise le mécanisme d'aspect natal à chaque planète de la
   carte du jour (pas seulement à l'événement principal) pour signaler les "résonances
   personnelles" de la journée.
+- Météo de la semaine (`app/core/weekly_weather.py`), collective et mise en cache une fois par
+  semaine (même principe que le calendrier witchy) : parcours jour par jour de la Lune, Mercure,
+  Vénus et Mars (les seules planètes pertinentes à l'échelle d'une semaine — les planètes lentes
+  n'y produisent aucun changement notable), ingrès détectés par comparaison quotidienne,
+  rétrogradations (réutilise directement `compute_station_events` du calendrier witchy, filtré
+  aux 3 planètes rapides), événements du calendrier ésotérique tombant dans la semaine (aucun
+  recalcul), et aspects majeurs entre ces 4 planètes qui deviennent EXACTS pendant la semaine
+  (transit-transit, recherche de racine par bissection extraite en module partagé
+  `app/core/root_finding.py`, réutilisé aussi par `witchy_calendar.py`). Tous ces éléments sont
+  fusionnés en une liste de **points clés notés** (même esprit que le score du calendrier witchy,
+  affichés avec le composant d'étoiles unifié du site) pour prioriser ce qui compte le plus dans
+  la semaine. Deux lectures LLM : `reading_type=weekly_weather` (climat collectif + impact
+  personnel, ce dernier réutilisant tel quel `timing_service.compute_timing`/`compute_forecast`
+  déjà spécifiés pour le Pronostic hebdomadaire — même calcul, pas de doublon) ; et
+  `reading_type=weekly_weather_by_sign`, le format "horoscope de presse" classique — chaque
+  signe traité comme son propre Ascendant générique (maisons en signes intégraux), la maison
+  générique touchée par le signe de l'événement principal de la semaine déterminée par
+  `zodiac.signs_distance` (déjà existante, même formule mod-12 que les maisons dérivées),
+  entièrement indépendant du thème natal réel de l'utilisateur.
 - Lecture interprétée par l'API Anthropic avec **prompt dédié par catégorie** : lecture
   générale (thème de base uniquement — planètes/maisons/aspects/dispositeurs, sans les lots
   ni les maisons dérivées), et six lectures spécialisées (Lots, Maisons dérivées, Timing,
@@ -291,6 +310,8 @@ Principe directeur repris du cahier des charges : tout ce qui est dans `app/core
 | GET | `/api/astrocartography/transit/interesting-cities?date=YYYY-MM-DD&threshold_km=300&top_n=5` | Équivalent pour la cyclocartographie : top 5 villes par défaut, basé sur les lignes de transit de la date demandée (défaut aujourd'hui) — recalculé à chaque date différente |
 | GET | `/api/reference/astrocartography-significations` | Significations par planète et type de ligne (ASC/DC/MC/IC) utilisées par le prompt LLM |
 | GET | `/api/witchy-calendar?year=YYYY` | Calendrier ésotérique annuel (lunaisons, éclipses, stations rétrogrades, ingrès de planètes lentes), collectif et mis en cache par année (défaut : année en cours) |
+| GET | `/api/weekly-weather?start_date=YYYY-MM-DD` | Couche collective de la météo de la semaine (Lune/Mercure/Vénus/Mars, événements du calendrier witchy dans la semaine, points clés notés), mise en cache par semaine (défaut : aujourd'hui) |
+| GET | `/api/weekly-weather/by-sign?start_date=YYYY-MM-DD` | Mapping générique maison/signe (technique "horoscope de presse") pour les 12 signes, basé sur le signe de l'événement principal de la semaine |
 | GET | `/api/reference/config` | Options de configuration (systèmes de maisons, dispositeurs, points optionnels) |
 | GET | `/api/reference/timezones` | Liste des ~490 fuseaux horaires IANA canoniques |
 | GET | `/api/geocode?query=...` | Recherche ville -> latitude/longitude/fuseau horaire |

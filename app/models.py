@@ -144,6 +144,22 @@ class GlobalWitchyCalendarCache(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
 
+class GlobalWeeklyWeatherCache(Base):
+    """Cache global de la couche collective de la météo hebdomadaire (Lune, Mercure/Vénus/Mars,
+    aspects transit-transit, événements du calendrier witchy dans la semaine, highlights notés) :
+    un seul calcul par semaine (identifiée par sa date de début), partagé par tous les
+    utilisateurs — indépendant de tout thème natal (voir app/core/weekly_weather.py). Même
+    principe de cache paresseux que le calendrier ésotérique annuel."""
+
+    __tablename__ = "global_weekly_weather_cache"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    period_start: Mapped[date_type] = mapped_column(Date, nullable=False, unique=True)
+    collective_data: Mapped[dict] = mapped_column(JSON, nullable=False)
+
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+
+
 class SavedLocation(Base):
     """Lieu sauvegardé/analysé par l'utilisateur (ex. "et si je déménageais à Lisbonne ?").
     Rattaché à la session anonyme (pas de table users dans ce MVP, voir AnonymousSession)."""

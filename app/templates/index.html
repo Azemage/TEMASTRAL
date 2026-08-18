@@ -131,6 +131,7 @@
       <button type="button" class="section-toggle-btn" data-target="reading-section" data-i18n="section3_title">3. Lecture interprétée</button>
       <button type="button" class="section-toggle-btn" data-target="astro-section" data-i18n="astro_section_title">4. Astrocartographie</button>
       <button type="button" class="section-toggle-btn" data-target="witchy-section" data-i18n="witchy_section_title">5. Calendrier ésotérique</button>
+      <button type="button" class="section-toggle-btn" data-target="weekly-weather-section" data-i18n="weekly_weather_section_title">6. Météo de la semaine</button>
     </div>
 
     <section id="reading-section" class="card hidden">
@@ -425,6 +426,43 @@
       <button id="generate-witchy-day-detail-btn" data-i18n="btn_generate_witchy_day_detail">Voir la carte du jour</button>
       <p id="witchy-day-detail-error" class="error"></p>
       <div id="witchy-day-detail-output" class="reading-output"></div>
+    </section>
+
+    <section id="weekly-weather-section" class="card hidden">
+      <h2 data-i18n="weekly_weather_section_title">6. Météo de la semaine</h2>
+      <p class="reading-section-intro" data-i18n="weekly_weather_section_intro">
+        Météo astrologique collective de la semaine (Lune, Mercure, Vénus, Mars — les seules
+        planètes pertinentes à cette échelle), indépendante de votre thème natal, puis son
+        impact sur vous en particulier.
+      </p>
+
+      <div class="form-row triple">
+        <div>
+          <label for="weekly-weather-start-date" data-i18n="weekly_weather_start_date_label">Semaine à partir du</label>
+          <input type="date" id="weekly-weather-start-date" />
+        </div>
+      </div>
+      <button type="button" id="weekly-weather-load-btn" data-i18n="btn_load_weekly_weather">Charger la météo</button>
+      <p id="weekly-weather-error" class="error"></p>
+
+      <div id="weekly-weather-highlights"></div>
+      <div id="weekly-weather-planets"></div>
+      <div id="weekly-weather-aspects"></div>
+
+      <hr class="reading-subsection-divider" />
+      <button id="generate-weekly-weather-reading-btn" data-i18n="btn_generate_weekly_weather_reading">Générer la lecture de la semaine</button>
+      <p id="weekly-weather-reading-error" class="error"></p>
+      <div id="weekly-weather-reading-output" class="reading-output"></div>
+
+      <hr class="reading-subsection-divider" />
+      <h3 data-i18n="weekly_weather_by_sign_title">Météo des 12 signes</h3>
+      <p class="reading-section-intro" data-i18n="weekly_weather_by_sign_intro">
+        Format horoscope classique : une tonalité générique par signe pour la semaine, technique
+        indépendante de votre thème natal réel (voir votre lecture personnelle ci-dessus).
+      </p>
+      <button id="generate-weekly-weather-by-sign-btn" data-i18n="btn_generate_weekly_weather_by_sign">Voir la météo des 12 signes</button>
+      <p id="weekly-weather-by-sign-error" class="error"></p>
+      <div id="weekly-weather-by-sign-output" class="reading-output"></div>
     </section>
   </main>
 

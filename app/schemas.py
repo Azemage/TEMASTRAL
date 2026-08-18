@@ -389,7 +389,7 @@ class NatalChartResponse(BaseModel):
 # Interprétation LLM (cf. cahier des charges, section 4.7)
 # ---------------------------------------------------------------------------
 class ReadingRequest(BaseModel):
-    reading_type: str = "global"  # 'global' | 'love' | 'career' | 'family' | 'lots' | 'derived_houses' | 'timing' | 'zodiacal_releasing' | 'compatibility' | 'astrocartography' | 'astrocartography_forecast' | 'witchy_calendar' | 'witchy_day_detail'
+    reading_type: str = "global"  # 'global' | 'love' | 'career' | 'family' | 'lots' | 'derived_houses' | 'timing' | 'zodiacal_releasing' | 'compatibility' | 'astrocartography' | 'astrocartography_forecast' | 'witchy_calendar' | 'witchy_day_detail' | 'weekly_weather' | 'weekly_weather_by_sign'
     focus_areas: list[str] = Field(default_factory=lambda: ["general"])
     level: str = "débutant"
     tone: str = "accessible et bienveillant"
@@ -412,6 +412,7 @@ class ReadingRequest(BaseModel):
     forecast_threshold_km: float = 300.0  # utilisé par 'astrocartography_forecast'
     witchy_calendar_year: int | None = None  # utilisé par 'witchy_calendar' ; défaut = année en cours
     witchy_day_detail_date: date_type | None = None  # utilisé par 'witchy_day_detail' (mode_detail_journee) ; défaut = aujourd'hui
+    weekly_weather_start_date: date_type | None = None  # utilisé par 'weekly_weather'/'weekly_weather_by_sign' ; défaut = aujourd'hui
 
 
 # ---------------------------------------------------------------------------
@@ -550,3 +551,83 @@ class WitchyCalendarEvent(BaseModel):
 class WitchyCalendarResponse(BaseModel):
     year: int
     events: list[WitchyCalendarEvent]
+
+
+# ---------------------------------------------------------------------------
+# Météo de la semaine
+# ---------------------------------------------------------------------------
+class WeeklyWeatherPlanetPosition(BaseModel):
+    name: str
+    sign: str
+    sign_fr: str
+    degree: float
+    absolute_longitude: float
+    retrograde: bool
+    date: str | None = None  # présent uniquement pour moon_path (un par jour de la semaine)
+
+
+class WeeklyWeatherFastPlanet(BaseModel):
+    name: str
+    sign_start: str
+    degree_start: float
+    retrograde_start: bool
+    sign_end: str
+    degree_end: float
+    retrograde_end: bool
+    ingress: dict | None = None  # {"date","from_sign","to_sign"} si un changement de signe a lieu dans la semaine
+
+
+class WeeklyWeatherAspect(BaseModel):
+    date: str
+    planet_a: str
+    planet_b: str
+    aspect_type: str
+    aspect_type_fr: str
+    score: int
+
+
+class WeeklyWeatherHighlight(BaseModel):
+    date: str
+    kind: str  # 'ingres_lune' | 'ingres_rapide' | 'station' | 'aspect_exact' | un event_type du calendrier witchy
+    planet: str | None = None
+    planet_b: str | None = None
+    sign: str | None = None
+    from_sign: str | None = None
+    aspect_type: str | None = None
+    aspect_type_fr: str | None = None
+    direction: str | None = None
+    meaning_template: str | None = None
+    score: int
+
+
+class WeeklyWeatherMainEvent(BaseModel):
+    kind: str
+    planet: str | None = None
+    sign: str
+
+
+class WeeklyWeatherResponse(BaseModel):
+    period_start: date_type
+    period_end: date_type
+    moon_path: list[WeeklyWeatherPlanetPosition]
+    moon_ingresses: list[dict]
+    fast_planets: list[WeeklyWeatherFastPlanet]
+    stations: list[dict]
+    witchy_events: list[dict]
+    transit_transit_aspects: list[WeeklyWeatherAspect]
+    highlights: list[WeeklyWeatherHighlight]
+    main_event: WeeklyWeatherMainEvent
+
+
+class WeeklyWeatherBySignEntry(BaseModel):
+    sign: str
+    sign_fr: str
+    generic_house: int
+    house_keyword: str
+    house_themes: list[str]
+    is_main_event_sign: bool
+
+
+class WeeklyWeatherBySignResponse(BaseModel):
+    main_event_sign: str
+    by_sign: list[WeeklyWeatherBySignEntry]
