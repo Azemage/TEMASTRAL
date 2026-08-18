@@ -1182,20 +1182,27 @@ let compatChartsLoadedForChartId = null;
 // Composant d'étoiles de notation UNIQUE, partagé par TOUTES les évaluations du site
 // (Compatibilité, Pronostic, calendrier ésotérique, intensité des transits, villes suggérées
 // d'astrocartographie) pour une seule identité visuelle de notation sur tout le site — voir
-// .star-rating dans style.css pour les paliers de brillance/taille associés.
-// `score` et `max` peuvent être n'importe quelle échelle : tout est ramené en interne sur 10
-// étoiles pleines/vides, le palier de brillance (1 terne -> 5 doré et lumineux) étant calculé
-// proportionnellement au score plutôt que codé en dur par fonctionnalité.
+// .star-rating dans style.css pour les paliers de brillance/halo associés.
+// `score` et `max` peuvent être n'importe quelle échelle : tout est ramené en interne sur 5
+// étoiles à remplissage continu (classique système "5 étoiles"), le palier de brillance
+// (1 terne -> 5 doré et lumineux) étant calculé proportionnellement au score plutôt que codé
+// en dur par fonctionnalité.
+const STAR_RATING_GLYPHS = "★★★★★";
+
 function starRatingHtml(score, { max = 10, compact = false, showScore = true } = {}) {
   if (score == null) return "";
   const clamped = Math.max(0, Math.min(max, score));
   const scaledToTen = (clamped / max) * 10;
-  const filled = Math.round(scaledToTen);
+  const fillPct = Math.max(0, Math.min(100, (scaledToTen / 10) * 100));
   const tier = Math.max(1, Math.min(5, Math.ceil(scaledToTen / 2) || 1));
-  const stars = Array.from({ length: 10 }, (_, i) => `<span class="star${i < filled ? " filled" : ""}">★</span>`).join("");
-  const roundedScore = Math.round(scaledToTen * 10) / 10;
-  const scoreLabel = showScore ? `<span class="star-rating-score">${roundedScore}/10</span>` : "";
-  return `<span class="star-rating star-rating--tier-${tier}${compact ? " star-rating--compact" : ""}">${stars}</span>${scoreLabel}`;
+  const scoreOutOfFive = Math.round((scaledToTen / 2) * 2) / 2; // arrondi au 0,5 le plus proche
+  const scoreLabel = showScore ? `<span class="star-rating-score">${scoreOutOfFive}/5</span>` : "";
+  return `<span class="star-rating star-rating--tier-${tier}${compact ? " star-rating--compact" : ""}">
+    <span class="star-rating-stack">
+      <span class="star-rating-bg">${STAR_RATING_GLYPHS}</span>
+      <span class="star-rating-fg" style="width:${fillPct}%">${STAR_RATING_GLYPHS}</span>
+    </span>${scoreLabel}
+  </span>`;
 }
 
 // Notation par étoiles (1 à 10) partagée par Compatibilité et Pronostic, pour une identité

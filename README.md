@@ -90,11 +90,13 @@ Implémenté :
   valeurs partagées), générée par le modèle avec une courte justification par axe — une
   impression interprétative de synthèse, pas un score scientifique. Le mode personne/entreprise
   n'est pas encore implémenté (nécessite un thème d'entreprise dédié, cf. section V2 de la spec)
-- **Notation unifiée en étoiles sur tout le site** (`starRatingHtml()` dans `app.js`) : un seul
+- **Notation unifiée en 5 étoiles sur tout le site** (`starRatingHtml()` dans `app.js`) : un seul
   composant visuel pour toutes les évaluations (compatibilité, pronostic, intensité des
   transits, calendrier ésotérique, villes suggérées d'astrocartographie), chacune ramenée en
-  interne sur une échelle 0-10 puis 5 paliers de brillance/taille — terne et discret en bas de
-  l'échelle, doré et lumineux (halo) au-delà de 8/10 — plutôt qu'un système par fonctionnalité
+  interne sur une échelle 0-10 puis affichée en 5 étoiles à remplissage continu (technique CSS
+  classique : étoiles pleines superposées et rognées en largeur sur les étoiles ternes de fond,
+  pas seulement des paliers demi-étoile) avec 5 paliers de brillance — terne et discret en bas
+  de l'échelle, doré et lumineux (halo) au-delà de 8/10 — plutôt qu'un système par fonctionnalité
   (jauges, flammes, texte brut). Les notations générées par le modèle (compatibilité, pronostic)
   reçoivent une rubrique de calibration explicite dans le prompt pour éviter le biais de
   prudence qui pousse un LLM à se réfugier systématiquement autour de 5-6/10
