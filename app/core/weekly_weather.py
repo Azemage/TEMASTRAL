@@ -32,7 +32,7 @@ import swisseph as swe
 
 from app.core import ephemeris
 from app.core.aspects import angular_separation
-from app.core.reference_data import houses_meanings
+from app.core.reference_data import aspects_reference, houses_meanings
 from app.core.root_finding import scan_zero_crossings
 from app.core.witchy_calendar import STATION_PLANETS, compute_station_events, compute_witchy_calendar
 from app.core.zodiac import SIGNS, SIGNS_FR, sign_and_degree, signs_distance
@@ -267,12 +267,36 @@ def compute_weekly_collective(start_date: date_type) -> dict:
     }
 
 
+_HOUSE_ASPECT_NATURE_SCORE = {
+    "harmonieux": 5,  # sextile/trigone (maisons 3/5/9/11) — le lien le plus fluide
+    "variable": 4,  # conjonction (maison 1) — "sous les projecteurs", énergie forte mais neutre
+    "tendu": 3,  # carré/opposition (maisons 4/7/10) — actif mais avec friction
+    "mineur": 3,  # semi-sextile (maisons 2/12) — lien discret, ni facile ni difficile
+    "mineur inconfortable": 2,  # quinconce (maisons 6/8) — ajustement, le lien le plus faible
+}
+
+
+def _house_score(generic_house: int) -> int:
+    """Note 1-5 d'une maison générique, PAS une nouvelle doctrine : relit simplement la maison
+    comme l'aspect qu'elle représente structurellement depuis la maison 1 (maison N = (N-1)*30°),
+    et réutilise le champ `nature` déjà défini pour cet aspect dans aspects.json (harmonieux =
+    trigone/sextile, tendu = carré/opposition, mineur inconfortable = quinconce...) — même
+    vocabulaire que partout ailleurs dans l'app, aucune notion nouvelle introduite."""
+    angle = (generic_house - 1) * 30
+    separation = angle if angle <= 180 else 360 - angle
+    ref = aspects_reference()
+    aspect_def = next(a for a in ref["major_aspects"] + ref["minor_aspects"] if a["angle"] == separation)
+    return _HOUSE_ASPECT_NATURE_SCORE[aspect_def["nature"]]
+
+
 def compute_generic_weekly_by_sign(main_event_sign: str) -> list[dict]:
     """Couche 3 (voir meteo_hebdomadaire_par_signe.md) : pour chacun des 12 signes traité comme
     son propre Ascendant générique, la maison générique (signes intégraux) touchée par le signe
-    de l'événement principal de la semaine, avec le thème de vie associé (houses_meanings.json).
-    Aucun nouveau moteur : `signs_distance` implémente déjà exactement la formule mod-12 requise
-    (même principe que les maisons dérivées, voir derived_houses.py)."""
+    de l'événement principal de la semaine, avec le thème de vie associé (houses_meanings.json)
+    et une note déterministe 1-5 (voir `_house_score`) permettant de comparer les 12 signes entre
+    eux. Aucun nouveau moteur pour la maison elle-même : `signs_distance` implémente déjà
+    exactement la formule mod-12 requise (même principe que les maisons dérivées, voir
+    derived_houses.py)."""
     houses_by_number = {h["number"]: h for h in houses_meanings()["houses"]}
     result = []
     for sign in SIGNS:
@@ -286,6 +310,7 @@ def compute_generic_weekly_by_sign(main_event_sign: str) -> list[dict]:
                 "house_keyword": house["keyword"],
                 "house_themes": house["themes"],
                 "is_main_event_sign": sign == main_event_sign,
+                "score": _house_score(generic_house),
             }
         )
     return result

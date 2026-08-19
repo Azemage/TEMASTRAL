@@ -4,7 +4,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from app.core.root_finding import bisect_root, scan_zero_crossings
-from app.core.weekly_weather import compute_generic_weekly_by_sign, compute_weekly_collective
+from app.core.weekly_weather import _house_score, compute_generic_weekly_by_sign, compute_weekly_collective
 from app.database import SessionLocal
 from app.main import app
 from app.models import GlobalWeeklyWeatherCache
@@ -153,6 +153,28 @@ def test_compute_generic_weekly_by_sign_covers_all_twelve_signs_exactly_once_per
     by_sign = compute_generic_weekly_by_sign("Leo")
     assert len(by_sign) == 12
     assert sorted(row["generic_house"] for row in by_sign) == list(range(1, 13))
+
+
+def test_house_score_reuses_aspect_nature_and_is_within_1_to_5():
+    # Maisons 5/9 (trigone, harmonieux) doivent être notées au-dessus des maisons 6/8
+    # (quinconce, mineur inconfortable) — le même vocabulaire "nature" que aspects.json.
+    assert _house_score(5) == 5
+    assert _house_score(9) == 5
+    assert _house_score(6) == 2
+    assert _house_score(8) == 2
+    assert _house_score(1) == 4  # conjonction : énergie forte mais neutre ("variable")
+    for house in range(1, 13):
+        assert 1 <= _house_score(house) <= 5
+
+
+def test_compute_generic_weekly_by_sign_scores_differentiate_signs():
+    """La note doit varier d'un signe à l'autre (pas une valeur plate) pour permettre de
+    comparer quel signe s'en sort le mieux ou le moins bien cette semaine-là."""
+    by_sign = compute_generic_weekly_by_sign("Scorpio")
+    scores = {row["sign"]: row["score"] for row in by_sign}
+    assert len(set(scores.values())) > 1
+    assert scores["Scorpio"] == 4  # maison 1 générique, is_main_event_sign
+    assert all(1 <= s <= 5 for s in scores.values())
 
 
 # ---------------------------------------------------------------------------

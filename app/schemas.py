@@ -626,6 +626,7 @@ class WeeklyWeatherBySignEntry(BaseModel):
     house_keyword: str
     house_themes: list[str]
     is_main_event_sign: bool
+    score: int = Field(ge=1, le=5)
 
 
 class WeeklyWeatherBySignResponse(BaseModel):

@@ -983,4 +983,9 @@ const UI_TEXT = {
     en: "View weather for all 12 signs",
     es: "Ver la meteorología de los 12 signos",
   },
+  weekly_weather_main_event_sign_badge: {
+    fr: "Événement principal",
+    en: "Main event",
+    es: "Evento principal",
+  },
 };

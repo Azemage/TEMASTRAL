@@ -213,11 +213,18 @@ Implémenté :
   la semaine. Deux lectures LLM : `reading_type=weekly_weather` (climat collectif + impact
   personnel, ce dernier réutilisant tel quel `timing_service.compute_timing`/`compute_forecast`
   déjà spécifiés pour le Pronostic hebdomadaire — même calcul, pas de doublon) ; et
-  `reading_type=weekly_weather_by_sign`, le format "horoscope de presse" classique — chaque
-  signe traité comme son propre Ascendant générique (maisons en signes intégraux), la maison
-  générique touchée par le signe de l'événement principal de la semaine déterminée par
-  `zodiac.signs_distance` (déjà existante, même formule mod-12 que les maisons dérivées),
-  entièrement indépendant du thème natal réel de l'utilisateur.
+  `reading_type=weekly_weather_by_sign`, le format "horoscope de presse" classique (un
+  paragraphe de 2 à 4 phrases par signe, pas une simple ligne) — chaque signe traité comme son
+  propre Ascendant générique (maisons en signes intégraux), la maison générique touchée par le
+  signe de l'événement principal de la semaine déterminée par `zodiac.signs_distance` (déjà
+  existante, même formule mod-12 que les maisons dérivées), entièrement indépendant du thème
+  natal réel de l'utilisateur. Chaque signe reçoit aussi une **note déterministe 1-5** (affichée
+  en étoiles, triée du signe le mieux loti au plus discret) : la maison générique est relue comme
+  l'aspect qu'elle représente structurellement depuis la maison 1 (maison N = (N-1)×30°), et
+  réutilise le champ `nature` déjà défini pour cet aspect dans `aspects.json` (trigone/sextile
+  "harmonieux" notés haut, quinconce "mineur inconfortable" noté bas) — même vocabulaire que
+  partout ailleurs dans l'app, aucune doctrine nouvelle introduite, et la note n'entre jamais
+  dans le texte généré par le LLM (qui ne fait qu'en adapter le ton).
 - Lecture interprétée par l'API Anthropic avec **prompt dédié par catégorie** : lecture
   générale (thème de base uniquement — planètes/maisons/aspects/dispositeurs, sans les lots
   ni les maisons dérivées), et six lectures spécialisées (Lots, Maisons dérivées, Timing,

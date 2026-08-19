@@ -2516,17 +2516,25 @@ function todayIsoDate() {
   return new Date().toISOString().slice(0, 10);
 }
 
+let weeklyWeatherBySignData = null;
+
 function resetWeeklyWeatherStateForNewChart() {
   weeklyWeatherData = null;
+  weeklyWeatherBySignData = null;
   weeklyWeatherStartDate = null;
   const dateInput = document.getElementById("weekly-weather-start-date");
   if (dateInput) dateInput.value = "";
-  ["weekly-weather-highlights", "weekly-weather-planets", "weekly-weather-aspects", "weekly-weather-reading-output", "weekly-weather-by-sign-output"].forEach(
-    (id) => {
-      const el = document.getElementById(id);
-      if (el) el.innerHTML = "";
-    }
-  );
+  [
+    "weekly-weather-highlights",
+    "weekly-weather-planets",
+    "weekly-weather-aspects",
+    "weekly-weather-reading-output",
+    "weekly-weather-by-sign-scores",
+    "weekly-weather-by-sign-output",
+  ].forEach((id) => {
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = "";
+  });
   ["weekly-weather-error", "weekly-weather-reading-error", "weekly-weather-by-sign-error"].forEach((id) => {
     const el = document.getElementById(id);
     if (el) el.textContent = "";
@@ -2649,16 +2657,42 @@ function renderWeeklyWeatherAspects() {
     </table>`;
 }
 
+function renderWeeklyWeatherBySignScores() {
+  const container = document.getElementById("weekly-weather-by-sign-scores");
+  if (!container || !weeklyWeatherBySignData) return;
+  const rows = [...weeklyWeatherBySignData.by_sign].sort((a, b) => b.score - a.score);
+  container.innerHTML = `
+    <table class="astro-forecast-table">
+      <tbody>
+        ${rows
+          .map(
+            (row) => `
+          <tr${row.is_main_event_sign ? ' class="weekly-weather-main-sign-row"' : ""}>
+            <td>${signLabel(row.sign)}${row.is_main_event_sign ? ` <span class="astro-focus-badge">${t("weekly_weather_main_event_sign_badge")}</span>` : ""}</td>
+            <td>${starRatingHtml(row.score, { max: 5, compact: true, showScore: false })}</td>
+          </tr>`
+          )
+          .join("")}
+      </tbody>
+    </table>`;
+}
+
 async function loadWeeklyWeather() {
   const errorEl = document.getElementById("weekly-weather-error");
   errorEl.textContent = "";
   try {
-    const res = await fetch(`/api/weekly-weather?start_date=${weeklyWeatherStartDate}`);
-    if (!res.ok) throw new Error(`${t("error_prefix")} ${res.status}`);
-    weeklyWeatherData = await res.json();
+    const [collectiveRes, bySignRes] = await Promise.all([
+      fetch(`/api/weekly-weather?start_date=${weeklyWeatherStartDate}`),
+      fetch(`/api/weekly-weather/by-sign?start_date=${weeklyWeatherStartDate}`),
+    ]);
+    if (!collectiveRes.ok) throw new Error(`${t("error_prefix")} ${collectiveRes.status}`);
+    if (!bySignRes.ok) throw new Error(`${t("error_prefix")} ${bySignRes.status}`);
+    weeklyWeatherData = await collectiveRes.json();
+    weeklyWeatherBySignData = await bySignRes.json();
     renderWeeklyWeatherHighlights();
     renderWeeklyWeatherPlanets();
     renderWeeklyWeatherAspects();
+    renderWeeklyWeatherBySignScores();
   } catch (err) {
     errorEl.textContent = `${t("error_loading_weekly_weather")} ${err.message}`;
   }

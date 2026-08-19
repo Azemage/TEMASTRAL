@@ -951,6 +951,15 @@ th { color: var(--accent-2); }
   font-weight: 700;
 }
 
+.weekly-weather-main-sign-row {
+  background: rgba(255, 210, 77, 0.1);
+  box-shadow: inset 3px 0 0 #ffd24d;
+}
+
+.weekly-weather-main-sign-row td:first-child {
+  font-weight: 700;
+}
+
 .astro-location-delete-btn:hover {
   border-color: #ff5d5d;
   color: #ff5d5d;

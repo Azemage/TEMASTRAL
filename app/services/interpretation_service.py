@@ -635,38 +635,49 @@ N'invente aucune position, aspect ou événement hors des données fournies."""
 
 
 def _weekly_weather_by_sign_max_tokens(request: schemas.ReadingRequest) -> int:
-    """12 signes à une phrase courte chacun : format volontairement bref (horoscope de presse
-    classique), même esprit que le calendrier witchy."""
-    return 2200
+    """12 signes, chacun avec un petit paragraphe (pas juste une phrase) : format horoscope de
+    presse mais plus développé que le calendrier witchy, qui reste volontairement bref."""
+    return 3600
 
 
 def _weekly_weather_by_sign_prompt_block(request: schemas.ReadingRequest) -> str:
     intro = """Cette lecture est le FORMAT HOROSCOPE CLASSIQUE PAR SIGNE de la météo de la \
-semaine : une phrase courte par signe (technique GÉNÉRIQUE, indépendante du thème natal réel de \
-qui que ce soit — ne mélange jamais avec `identity`, qui n'a pas sa place ici). Chaque signe est \
-traité comme s'il était lui-même l'Ascendant d'un thème générique (maisons en signes intégraux) \
-: tu reçois dans `by_sign` les 12 signes, chacun avec `generic_house` (1-12, déjà calculée) — la \
+semaine : un résumé par signe (technique GÉNÉRIQUE, indépendante du thème natal réel de qui que \
+ce soit — ne mélange jamais avec `identity`, qui n'a pas sa place ici). Chaque signe est traité \
+comme s'il était lui-même l'Ascendant d'un thème générique (maisons en signes intégraux) : tu \
+reçois dans `by_sign` les 12 signes, chacun avec `generic_house` (1-12, déjà calculée) — la \
 maison générique touchée par l'événement principal de la semaine (`main_event_sign`) pour ce \
-signe précis — et `house_keyword`/`house_themes` (le thème de vie de cette maison)."""
+signe précis —, `house_keyword`/`house_themes` (le thème de vie de cette maison), et `score` \
+(1 à 5, déjà calculé, voir ci-dessous)."""
+
+    scoring = """SCORE — chaque signe porte un `score` de 1 (lien le plus ténu/discret cette \
+semaine) à 5 (lien le plus porteur) : NE LE RECALCULE JAMAIS, ne le cite JAMAIS tel quel dans le \
+texte (pas de chiffre, pas de "note", pas de "sur 5") — traduis-le uniquement en TON. Un score \
+élevé mérite un ton plus enthousiaste et porteur, un score bas un ton plus doux et posé (jamais \
+alarmiste ni négatif : même un score de 1 reste une tendance discrète, jamais une "mauvaise \
+semaine"). Un score ne juge jamais la valeur du signe lui-même, seulement l'intensité du lien \
+avec l'événement de cette semaine précise — ça change à chaque semaine."""
 
     rules = """RÈGLES IMPÉRATIVES :
-- Pour CHAQUE signe, une seule phrase courte (maximum 2), concrète et actionnable, reliant \
-`house_keyword`/`house_themes` à une tonalité de semaine pour ce signe précis — jamais la \
-mécanique technique elle-même (ne mentionne jamais "maison", "générique", un numéro ou un degré \
-dans le texte visible, seulement ce qui en découle en langage accessible).
+- Pour CHAQUE signe, un court paragraphe (2 à 4 phrases, pas plus), concret et actionnable, \
+reliant `house_keyword`/`house_themes` à une tonalité de semaine pour ce signe précis — jamais \
+la mécanique technique elle-même (ne mentionne jamais "maison", "générique", un numéro ou un \
+degré dans le texte visible, seulement ce qui en découle en langage accessible).
 - Varie le VOCABULAIRE d'un signe à l'autre même quand plusieurs signes tombent sur la même \
 maison générique (ça arrivera souvent, structurellement, puisque 12 signes se répartissent sur \
-12 maisons de façon fixe) — jamais deux phrases interchangeables.
+12 maisons de façon fixe) — jamais deux paragraphes interchangeables.
 - Le signe où `is_main_event_sign` est vrai doit avoir la formulation la plus marquée de toutes \
 ("ta semaine", "directement pour toi") — c'est la maison 1 générique, l'équivalent générique du \
 principe de personnalisation déjà utilisé ailleurs dans l'app.
 - Reste dans les règles de ton déjà établies (pas de fatalisme, tendances non certitudes)."""
 
-    structure = """FORMAT : une ligne par signe (## Bélier, ## Taureau, etc., dans l'ordre du \
-zodiaque), sans développement supplémentaire par signe — c'est un tableau condensé destiné à \
-être scanné ou partagé, pas une lecture développée."""
+    structure = """FORMAT : un titre par signe (## Bélier, ## Taureau, etc., dans l'ordre du \
+zodiaque) suivi de son paragraphe — un horoscope de presse développé, pas une liste télégraphique \
+d'une ligne, mais toujours scannable signe par signe."""
 
     return f"""{intro}
+
+{scoring}
 
 {rules}
 
