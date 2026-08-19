@@ -384,7 +384,7 @@ function buildWheelSVG(data, { showMinorAspects }) {
     );
 
     planetsSvg += `<line x1="${tickInner.x.toFixed(2)}" y1="${tickInner.y.toFixed(2)}" x2="${tickOuter.x.toFixed(2)}" y2="${tickOuter.y.toFixed(2)}" stroke="#4a4d6c" stroke-width="0.75" stroke-dasharray="2,2" />`;
-    planetsSvg += `<g class="wheel-hoverable" data-tooltip="${planetTooltip}">`;
+    planetsSvg += `<g class="wheel-hoverable wheel-planet-glyph${planet.retrograde ? " is-retrograde" : ""}" data-tooltip="${planetTooltip}">`;
     planetsSvg += `<circle cx="${glyphPos.x.toFixed(2)}" cy="${glyphPos.y.toFixed(2)}" r="16" fill="transparent" pointer-events="all" />`;
     planetsSvg += `<circle cx="${glyphPos.x.toFixed(2)}" cy="${glyphPos.y.toFixed(2)}" r="11" fill="#1a1e33" stroke="${planet.retrograde ? "#ff8080" : "#b28dff"}" stroke-width="1.5" />`;
     planetsSvg += `<text x="${glyphPos.x.toFixed(2)}" y="${glyphPos.y.toFixed(2)}" class="wheel-planet-symbol" text-anchor="middle" dominant-baseline="middle">${PLANET_SYMBOLS[planet.name] || "•"}</text>`;
@@ -405,7 +405,7 @@ function buildWheelSVG(data, { showMinorAspects }) {
     );
     aspectsSvg += `<g class="wheel-hoverable" data-tooltip="${aspectTooltip}">`;
     aspectsSvg += `<line x1="${p1.x.toFixed(2)}" y1="${p1.y.toFixed(2)}" x2="${p2.x.toFixed(2)}" y2="${p2.y.toFixed(2)}" stroke="transparent" stroke-width="10" pointer-events="all" />`;
-    aspectsSvg += `<line x1="${p1.x.toFixed(2)}" y1="${p1.y.toFixed(2)}" x2="${p2.x.toFixed(2)}" y2="${p2.y.toFixed(2)}" stroke="${color}" stroke-width="${isMajor ? 1.4 : 0.9}" stroke-opacity="0.75" ${isMajor ? "" : 'stroke-dasharray="3,3"'} pointer-events="none" />`;
+    aspectsSvg += `<line x1="${p1.x.toFixed(2)}" y1="${p1.y.toFixed(2)}" x2="${p2.x.toFixed(2)}" y2="${p2.y.toFixed(2)}" stroke="${color}" stroke-width="${isMajor ? 1.4 : 0.9}" stroke-opacity="0.75" ${isMajor ? "" : 'stroke-dasharray="3,3"'} pointer-events="none" style="filter:drop-shadow(0 0 ${isMajor ? 3 : 1.5}px ${color})" />`;
     aspectsSvg += `</g>`;
   });
 

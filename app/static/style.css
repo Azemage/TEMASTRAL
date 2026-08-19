@@ -1,20 +1,33 @@
 :root {
-  --bg: #0f1220;
+  --bg: #0a0c1e;
+  --bg-2: #171b3f;
   --card-bg: #1a1e33;
-  --text: #e8e8f0;
+  --card-bg-glass: rgba(19, 22, 46, 0.88);
+  --card-edge-glow: rgba(178, 141, 255, 0.28);
+  --text: #eeecfb;
   --muted: #9a9cbd;
   --accent: #b28dff;
   --accent-2: #6ee7d9;
+  --gold: #ffd24d;
   --border: #2c2f4a;
   --danger: #ff8080;
+  --display-font: "Unbounded", "Segoe UI", system-ui, sans-serif;
+  --body-font: "Manrope", "Segoe UI", system-ui, sans-serif;
+  --data-font: "Space Mono", ui-monospace, "SFMono-Regular", monospace;
 }
 
 * { box-sizing: border-box; }
 
 body {
   margin: 0;
-  font-family: "Segoe UI", system-ui, sans-serif;
-  background: radial-gradient(circle at top, #1a1e33 0%, #0f1220 60%);
+  font-family: var(--body-font);
+  /* Fond "nébuleuse" : deux halos violet/teal doux au-dessus du dégradé sombre déjà en place,
+     plutôt qu'un simple aplat — voir la piste "néon cosmique enrichi" du comparatif de styles. */
+  background:
+    radial-gradient(ellipse 800px 460px at -6% -10%, rgba(178, 141, 255, 0.13), transparent 58%),
+    radial-gradient(ellipse 700px 420px at 106% 12%, rgba(110, 231, 217, 0.08), transparent 55%),
+    radial-gradient(circle at top, var(--bg-2) 0%, var(--bg) 60%);
+  background-attachment: fixed;
   color: var(--text);
   line-height: 1.5;
 }
@@ -26,12 +39,24 @@ body {
 
 .app-header h1 {
   margin: 0;
-  font-size: 2rem;
+  font-family: var(--display-font);
+  font-weight: 800;
+  font-size: 2.1rem;
+  letter-spacing: 0.01em;
   background: linear-gradient(90deg, var(--accent), var(--accent-2));
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
+  filter: drop-shadow(0 0 18px rgba(178, 141, 255, 0.35));
 }
+
+h2, h3 {
+  font-family: var(--display-font);
+  letter-spacing: 0.01em;
+}
+
+h2 { font-weight: 600; }
+h3 { font-weight: 600; font-size: 1.05rem; }
 
 .app-header p {
   color: var(--muted);
@@ -86,10 +111,13 @@ main {
 }
 
 .card {
-  background: var(--card-bg);
-  border: 1px solid var(--border);
-  border-radius: 12px;
+  background: var(--card-bg-glass);
+  border: 1px solid var(--card-edge-glow);
+  border-radius: 16px;
   padding: 1.5rem;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  box-shadow: 0 24px 60px -32px rgba(178, 141, 255, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 
 .card h2 {
@@ -166,11 +194,19 @@ details summary { cursor: pointer; color: var(--accent-2); margin-bottom: 0.75re
 button {
   background: linear-gradient(90deg, var(--accent), var(--accent-2));
   color: #10121f;
-  font-weight: 600;
+  font-family: var(--body-font);
+  font-weight: 700;
   border: none;
   border-radius: 8px;
   padding: 0.65rem 1.2rem;
   cursor: pointer;
+  box-shadow: 0 0 0 rgba(178, 141, 255, 0);
+  transition: box-shadow 0.2s ease, transform 0.15s ease;
+}
+
+button:hover:not(:disabled) {
+  box-shadow: 0 0 22px rgba(178, 141, 255, 0.45), 0 0 8px rgba(110, 231, 217, 0.3);
+  transform: translateY(-1px);
 }
 
 button:disabled { opacity: 0.6; cursor: wait; }
@@ -507,7 +543,7 @@ button:disabled { opacity: 0.6; cursor: wait; }
 }
 
 .star-rating--tier-5 .star-rating-fg {
-  color: #ffd24d;
+  color: var(--gold);
 }
 
 .star-rating--tier-5 .star-rating-stack {
@@ -715,6 +751,18 @@ th { color: var(--accent-2); }
   display: flex;
   justify-content: center;
   width: 100%;
+  position: relative;
+}
+
+/* Halo nébuleuse discret derrière la roue — voir la piste "néon cosmique enrichi". */
+.wheel-wrapper::before {
+  content: "";
+  position: absolute;
+  inset: -6%;
+  background: radial-gradient(circle, rgba(178, 141, 255, 0.16), rgba(110, 231, 217, 0.06) 55%, transparent 72%);
+  filter: blur(18px);
+  z-index: 0;
+  pointer-events: none;
 }
 
 .wheel-svg {
@@ -722,10 +770,29 @@ th { color: var(--accent-2); }
   max-width: 560px;
   height: auto;
   cursor: default;
+  position: relative;
+  z-index: 1;
 }
 
 .wheel-svg .wheel-hoverable {
   cursor: help;
+}
+
+.wheel-planet-glyph circle:nth-of-type(2) {
+  filter: drop-shadow(0 0 5px rgba(178, 141, 255, 0.65));
+  transition: filter 0.15s ease;
+}
+
+.wheel-planet-glyph.is-retrograde circle:nth-of-type(2) {
+  filter: drop-shadow(0 0 5px rgba(255, 128, 128, 0.65));
+}
+
+.wheel-planet-glyph:hover circle:nth-of-type(2) {
+  filter: drop-shadow(0 0 10px rgba(178, 141, 255, 0.95));
+}
+
+.wheel-planet-glyph.is-retrograde:hover circle:nth-of-type(2) {
+  filter: drop-shadow(0 0 10px rgba(255, 128, 128, 0.95));
 }
 
 /* Plein écran : centrer et agrandir la roue, garder la légende visible sous elle. */
@@ -953,7 +1020,7 @@ th { color: var(--accent-2); }
 
 .weekly-weather-main-sign-row {
   background: rgba(255, 210, 77, 0.1);
-  box-shadow: inset 3px 0 0 #ffd24d;
+  box-shadow: inset 3px 0 0 var(--gold);
 }
 
 .weekly-weather-main-sign-row td:first-child {
