@@ -13,25 +13,27 @@ const SIGN_ELEMENTS = {
   Cancer: "water", Scorpio: "water", Pisces: "water",
 };
 
+// Teintes "encre sur parchemin" (style céleste/grimoire ancien) : washes discrets par élément
+// derrière les secteurs du zodiaque.
 const ELEMENT_WHEEL_COLORS = {
-  fire: "rgba(255, 107, 107, 0.15)",
-  earth: "rgba(110, 200, 130, 0.15)",
-  air: "rgba(110, 180, 231, 0.15)",
-  water: "rgba(120, 140, 255, 0.15)",
+  fire: "rgba(161, 61, 61, 0.12)",
+  earth: "rgba(92, 138, 114, 0.12)",
+  air: "rgba(90, 110, 140, 0.12)",
+  water: "rgba(45, 58, 107, 0.12)",
 };
 
-// Une couleur distincte par type d'aspect : majeurs en teintes vives, mineurs plus discrets.
+// Une couleur distincte par type d'aspect : palette encre/feuille d'or plutôt que néon.
 const ASPECT_COLORS = {
-  conjunction: "#e0b34d",
-  sextile: "#5fd4c0",
-  square: "#ff5d5d",
-  trine: "#4da3ff",
-  opposition: "#ff5d9e",
-  semi_sextile: "#8f8fce",
-  semi_square: "#c97b7b",
-  sesquiquadrate: "#c97b7b",
-  quincunx: "#a875c9",
-  quintile: "#7bc98f",
+  conjunction: "#a3771f",
+  sextile: "#5c8a72",
+  square: "#a13d3d",
+  trine: "#2d3a6b",
+  opposition: "#7a3352",
+  semi_sextile: "#9c8a5e",
+  semi_square: "#ad7d6b",
+  sesquiquadrate: "#ad7d6b",
+  quincunx: "#7d5a8a",
+  quintile: "#7a9c6f",
 };
 
 const MAJOR_ASPECTS = new Set(["conjunction", "sextile", "square", "trine", "opposition"]);
@@ -308,7 +310,7 @@ function buildWheelSVG(data, { showMinorAspects }) {
     const inner = arcPoints(cx, cy, rZodiacInner, startAngle + 30, -30);
     const path = pointsToPath([...outer, ...inner]) + " Z";
     const color = ELEMENT_WHEEL_COLORS[SIGN_ELEMENTS[sign]];
-    zodiacSvg += `<path d="${path}" fill="${color}" stroke="#2c2f4a" stroke-width="1" />`;
+    zodiacSvg += `<path d="${path}" fill="${color}" stroke="#b7a273" stroke-width="1" />`;
 
     const midAngle = startAngle + 15;
     const labelPos = polarToXY(cx, cy, (rOuter + rZodiacInner) / 2, midAngle);
@@ -322,10 +324,10 @@ function buildWheelSVG(data, { showMinorAspects }) {
     const inner = polarToXY(cx, cy, 0, angle);
     const outer = polarToXY(cx, cy, rZodiacInner, angle);
     // Traits nettement plus marqués que les pointillés fins de position des planètes
-    // (`stroke-dasharray="2,2"`, couleur `#4a4d6c` plus bas) : sans ce contraste, les deux se
+    // (`stroke-dasharray="2,2"`, couleur `#8a7c5c` plus bas) : sans ce contraste, les deux se
     // confondaient facilement à l'œil. Les 4 axes (ASC/DSC/MC/IC) ressortent encore davantage.
     const isAngular = [1, 4, 7, 10].includes(house.number);
-    housesSvg += `<line x1="${inner.x.toFixed(2)}" y1="${inner.y.toFixed(2)}" x2="${outer.x.toFixed(2)}" y2="${outer.y.toFixed(2)}" stroke="${isAngular ? "#f1f2ff" : "#6d70a8"}" stroke-width="${isAngular ? 2.4 : 1.4}" />`;
+    housesSvg += `<line x1="${inner.x.toFixed(2)}" y1="${inner.y.toFixed(2)}" x2="${outer.x.toFixed(2)}" y2="${outer.y.toFixed(2)}" stroke="${isAngular ? "#2a2313" : "#8a7c5c"}" stroke-width="${isAngular ? 2.4 : 1.4}" />`;
 
     const next = data.houses[(i + 1) % 12];
     const nextAngle = angle + forwardOffset(house.absolute_longitude, next.absolute_longitude);
@@ -335,7 +337,7 @@ function buildWheelSVG(data, { showMinorAspects }) {
   });
 
   // --- Cercle intérieur (support des lignes d'aspect) ---
-  const aspectCircleSvg = `<circle cx="${cx}" cy="${cy}" r="${rAspectCircle}" fill="none" stroke="#2c2f4a" stroke-width="1" />`;
+  const aspectCircleSvg = `<circle cx="${cx}" cy="${cy}" r="${rAspectCircle}" fill="none" stroke="#b7a273" stroke-width="1" />`;
 
   // --- Planètes : glyphe sur un anneau dédié + trait radial vers le point exact ---
   // Tri par angle affiché (relatif à l'Ascendant), pas par longitude brute : sinon la
@@ -383,10 +385,10 @@ function buildWheelSVG(data, { showMinorAspects }) {
         aspectsLines
     );
 
-    planetsSvg += `<line x1="${tickInner.x.toFixed(2)}" y1="${tickInner.y.toFixed(2)}" x2="${tickOuter.x.toFixed(2)}" y2="${tickOuter.y.toFixed(2)}" stroke="#4a4d6c" stroke-width="0.75" stroke-dasharray="2,2" />`;
+    planetsSvg += `<line x1="${tickInner.x.toFixed(2)}" y1="${tickInner.y.toFixed(2)}" x2="${tickOuter.x.toFixed(2)}" y2="${tickOuter.y.toFixed(2)}" stroke="#8a7c5c" stroke-width="0.75" stroke-dasharray="2,2" />`;
     planetsSvg += `<g class="wheel-hoverable wheel-planet-glyph${planet.retrograde ? " is-retrograde" : ""}" data-tooltip="${planetTooltip}">`;
     planetsSvg += `<circle cx="${glyphPos.x.toFixed(2)}" cy="${glyphPos.y.toFixed(2)}" r="16" fill="transparent" pointer-events="all" />`;
-    planetsSvg += `<circle cx="${glyphPos.x.toFixed(2)}" cy="${glyphPos.y.toFixed(2)}" r="11" fill="#1a1e33" stroke="${planet.retrograde ? "#ff8080" : "#b28dff"}" stroke-width="1.5" />`;
+    planetsSvg += `<circle cx="${glyphPos.x.toFixed(2)}" cy="${glyphPos.y.toFixed(2)}" r="11" fill="#f2e9d6" stroke="${planet.retrograde ? "#a13d3d" : "#2d3a6b"}" stroke-width="1.5" />`;
     planetsSvg += `<text x="${glyphPos.x.toFixed(2)}" y="${glyphPos.y.toFixed(2)}" class="wheel-planet-symbol" text-anchor="middle" dominant-baseline="middle">${PLANET_SYMBOLS[planet.name] || "•"}</text>`;
     planetsSvg += `</g>`;
   });
@@ -411,9 +413,9 @@ function buildWheelSVG(data, { showMinorAspects }) {
 
   return `
     <svg viewBox="0 0 600 600" class="wheel-svg" xmlns="http://www.w3.org/2000/svg">
-      <circle cx="${cx}" cy="${cy}" r="${rOuter}" fill="#12152a" />
+      <circle cx="${cx}" cy="${cy}" r="${rOuter}" fill="#ecdfc0" />
       ${zodiacSvg}
-      <circle cx="${cx}" cy="${cy}" r="${rZodiacInner}" fill="none" stroke="#2c2f4a" stroke-width="1.5" />
+      <circle cx="${cx}" cy="${cy}" r="${rZodiacInner}" fill="none" stroke="#b7a273" stroke-width="1.5" />
       ${aspectCircleSvg}
       ${aspectsSvg}
       ${housesSvg}

@@ -1,19 +1,24 @@
 :root {
-  --bg: #0a0c1e;
-  --bg-2: #171b3f;
-  --card-bg: #1a1e33;
-  --card-bg-glass: rgba(19, 22, 46, 0.88);
-  --card-edge-glow: rgba(178, 141, 255, 0.28);
-  --text: #eeecfb;
-  --muted: #9a9cbd;
-  --accent: #b28dff;
-  --accent-2: #6ee7d9;
-  --gold: #ffd24d;
-  --border: #2c2f4a;
-  --danger: #ff8080;
-  --display-font: "Unbounded", "Segoe UI", system-ui, sans-serif;
-  --body-font: "Manrope", "Segoe UI", system-ui, sans-serif;
-  --data-font: "Space Mono", ui-monospace, "SFMono-Regular", monospace;
+  /* Céleste / grimoire ancien : parchemin, encre indigo, feuille d'or — voir le comparatif de
+     styles. Remplace la palette "néon cosmique" précédente sur l'ensemble du site. */
+  --bg: #e7dbc0;
+  --bg-2: #ddcda8;
+  --card-bg: #f2e9d6;
+  --card-bg-glass: #f2e9d6;
+  --card-edge-glow: #b7a273;
+  --inset-bg: #ecdfc0;
+  --on-accent: #f7efe0;
+  --text: #2a2313;
+  --muted: #6c5f43;
+  --accent: #2d3a6b;
+  --accent-2: #5c8a72;
+  --gold: #a3771f;
+  --border: #b7a273;
+  --danger: #a13d3d;
+  --display-font: "Cormorant Garamond", "Iowan Old Style", Georgia, serif;
+  --body-font: "EB Garamond", "Iowan Old Style", Georgia, serif;
+  --data-font: "EB Garamond", Georgia, serif;
+  --letter-space: 0.02em;
 }
 
 * { box-sizing: border-box; }
@@ -21,12 +26,11 @@
 body {
   margin: 0;
   font-family: var(--body-font);
-  /* Fond "nébuleuse" : deux halos violet/teal doux au-dessus du dégradé sombre déjà en place,
-     plutôt qu'un simple aplat — voir la piste "néon cosmique enrichi" du comparatif de styles. */
+  /* Parchemin : un seul dégradé discret, pas de halos lumineux — voir la piste "céleste /
+     grimoire ancien" du comparatif de styles. */
   background:
-    radial-gradient(ellipse 800px 460px at -6% -10%, rgba(178, 141, 255, 0.13), transparent 58%),
-    radial-gradient(ellipse 700px 420px at 106% 12%, rgba(110, 231, 217, 0.08), transparent 55%),
-    radial-gradient(circle at top, var(--bg-2) 0%, var(--bg) 60%);
+    radial-gradient(ellipse 1100px 620px at 50% -18%, var(--bg-2), transparent 65%),
+    var(--bg);
   background-attachment: fixed;
   color: var(--text);
   line-height: 1.5;
@@ -40,23 +44,22 @@ body {
 .app-header h1 {
   margin: 0;
   font-family: var(--display-font);
-  font-weight: 800;
-  font-size: 2.1rem;
-  letter-spacing: 0.01em;
-  background: linear-gradient(90deg, var(--accent), var(--accent-2));
+  font-weight: 700;
+  font-size: 2.3rem;
+  letter-spacing: var(--letter-space);
+  background: linear-gradient(90deg, var(--accent), var(--gold));
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
-  filter: drop-shadow(0 0 18px rgba(178, 141, 255, 0.35));
 }
 
 h2, h3 {
   font-family: var(--display-font);
-  letter-spacing: 0.01em;
+  letter-spacing: var(--letter-space);
 }
 
-h2 { font-weight: 600; }
-h3 { font-weight: 600; font-size: 1.05rem; }
+h2 { font-weight: 700; }
+h3 { font-weight: 600; font-size: 1.15rem; }
 
 .app-header p {
   color: var(--muted);
@@ -112,12 +115,10 @@ main {
 
 .card {
   background: var(--card-bg-glass);
-  border: 1px solid var(--card-edge-glow);
-  border-radius: 16px;
+  border: 1.5px solid var(--card-edge-glow);
+  border-radius: 3px;
   padding: 1.5rem;
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  box-shadow: 0 24px 60px -32px rgba(178, 141, 255, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.4) inset;
 }
 
 .card h2 {
@@ -158,10 +159,10 @@ input, select, button {
 }
 
 input[type="text"], input[type="date"], input[type="time"], input[type="number"], select {
-  background: #12152a;
+  background: var(--inset-bg);
   border: 1px solid var(--border);
   color: var(--text);
-  border-radius: 8px;
+  border-radius: 2px;
   padding: 0.55rem 0.7rem;
 }
 
@@ -182,8 +183,8 @@ input[type="text"], input[type="date"], input[type="time"], input[type="number"]
   cursor: pointer;
   padding: 0.4rem 0.6rem;
   border: 1px solid var(--border);
-  border-radius: 8px;
-  background: #12152a;
+  border-radius: 2px;
+  background: var(--inset-bg);
 }
 
 .city-result-item:hover { border-color: var(--accent); }
@@ -192,21 +193,20 @@ details { margin-bottom: 1rem; }
 details summary { cursor: pointer; color: var(--accent-2); margin-bottom: 0.75rem; }
 
 button {
-  background: linear-gradient(90deg, var(--accent), var(--accent-2));
-  color: #10121f;
+  background: var(--accent);
+  color: var(--on-accent);
   font-family: var(--body-font);
   font-weight: 700;
-  border: none;
-  border-radius: 8px;
+  border: 1px solid var(--accent);
+  border-radius: 2px;
   padding: 0.65rem 1.2rem;
   cursor: pointer;
-  box-shadow: 0 0 0 rgba(178, 141, 255, 0);
-  transition: box-shadow 0.2s ease, transform 0.15s ease;
+  transition: background 0.2s ease, border-color 0.2s ease;
 }
 
 button:hover:not(:disabled) {
-  box-shadow: 0 0 22px rgba(178, 141, 255, 0.45), 0 0 8px rgba(110, 231, 217, 0.3);
-  transform: translateY(-1px);
+  background: var(--gold);
+  border-color: var(--gold);
 }
 
 button:disabled { opacity: 0.6; cursor: wait; }
@@ -234,7 +234,7 @@ button:disabled { opacity: 0.6; cursor: wait; }
 
 .tab-btn.active {
   background: var(--accent);
-  color: #10121f;
+  color: var(--on-accent);
 }
 
 .reading-tab-btn {
@@ -269,13 +269,13 @@ button:disabled { opacity: 0.6; cursor: wait; }
 
 .section-toggle-btn.active {
   background: var(--accent);
-  color: #10121f;
+  color: var(--on-accent);
   border-color: var(--accent);
 }
 
 .reading-tab-btn.active {
   background: var(--accent);
-  color: #10121f;
+  color: var(--on-accent);
 }
 
 .reading-section-intro {
@@ -338,7 +338,7 @@ button:disabled { opacity: 0.6; cursor: wait; }
 
 .zr-mode-btn.active {
   background: var(--accent);
-  color: #10121f;
+  color: var(--on-accent);
   border-color: var(--accent);
 }
 
@@ -362,7 +362,7 @@ button:disabled { opacity: 0.6; cursor: wait; }
 
 .zr-axis-btn.active {
   background: var(--accent);
-  color: #10121f;
+  color: var(--on-accent);
   border-color: var(--accent);
 }
 
@@ -383,8 +383,8 @@ button:disabled { opacity: 0.6; cursor: wait; }
 }
 
 .lot-badge-disputed {
-  background: rgba(230, 160, 60, 0.18);
-  color: #e0a03c;
+  background: rgba(163, 119, 31, 0.18);
+  color: var(--gold);
 }
 
 .compat-mode-tabs {
@@ -403,7 +403,7 @@ button:disabled { opacity: 0.6; cursor: wait; }
 
 .compat-mode-btn.active {
   background: var(--accent);
-  color: #10121f;
+  color: var(--on-accent);
   border-color: var(--accent);
 }
 
@@ -433,9 +433,9 @@ button:disabled { opacity: 0.6; cursor: wait; }
   font-weight: 600;
 }
 
-.compat-weight-very-strong { background: rgba(255, 93, 158, 0.18); color: #ff5d9e; }
-.compat-weight-strong { background: rgba(255, 189, 89, 0.18); color: #ffbd59; }
-.compat-weight-medium { background: rgba(178, 141, 255, 0.18); color: var(--accent); }
+.compat-weight-very-strong { background: rgba(122, 51, 82, 0.18); color: #7a3352; }
+.compat-weight-strong { background: rgba(163, 119, 31, 0.18); color: var(--gold); }
+.compat-weight-medium { background: rgba(45, 58, 107, 0.18); color: var(--accent); }
 .compat-weight-weak { background: rgba(154, 156, 189, 0.18); color: var(--muted); }
 
 .compat-meaning-row td {
@@ -538,7 +538,7 @@ button:disabled { opacity: 0.6; cursor: wait; }
 }
 
 .star-rating--tier-4 .star-rating-stack {
-  filter: drop-shadow(0 0 4px rgba(178, 141, 255, 0.55));
+  filter: drop-shadow(0 0 4px rgba(45, 58, 107, 0.55));
   transform: scale(1.06);
 }
 
@@ -606,8 +606,8 @@ button:disabled { opacity: 0.6; cursor: wait; }
 }
 
 .zr-badge-peak {
-  background: rgba(255, 200, 87, 0.18);
-  color: #ffc857;
+  background: rgba(163, 119, 31, 0.18);
+  color: var(--gold);
 }
 
 .zr-badge-loosing {
@@ -616,7 +616,7 @@ button:disabled { opacity: 0.6; cursor: wait; }
 }
 
 .zr-current-row {
-  background: rgba(178, 141, 255, 0.12);
+  background: rgba(45, 58, 107, 0.12);
 }
 
 table {
@@ -654,7 +654,7 @@ th { color: var(--accent-2); }
   padding: 0.75rem 1rem;
   margin-bottom: 1rem;
   border: 1px solid var(--accent);
-  background: rgba(178, 141, 255, 0.12);
+  background: rgba(45, 58, 107, 0.12);
 }
 
 .convergence-alert.convergence-forte {
@@ -670,7 +670,7 @@ th { color: var(--accent-2); }
 }
 
 .trait-tag {
-  background: rgba(178, 141, 255, 0.15);
+  background: rgba(45, 58, 107, 0.15);
   border: 1px solid var(--accent);
   color: var(--text);
   border-radius: 999px;
@@ -679,7 +679,7 @@ th { color: var(--accent-2); }
 }
 
 .trait-tag-dominant {
-  background: rgba(178, 141, 255, 0.32);
+  background: rgba(45, 58, 107, 0.32);
   border-color: var(--accent-2);
   font-weight: 600;
 }
@@ -754,17 +754,6 @@ th { color: var(--accent-2); }
   position: relative;
 }
 
-/* Halo nébuleuse discret derrière la roue — voir la piste "néon cosmique enrichi". */
-.wheel-wrapper::before {
-  content: "";
-  position: absolute;
-  inset: -6%;
-  background: radial-gradient(circle, rgba(178, 141, 255, 0.16), rgba(110, 231, 217, 0.06) 55%, transparent 72%);
-  filter: blur(18px);
-  z-index: 0;
-  pointer-events: none;
-}
-
 .wheel-svg {
   width: 100%;
   max-width: 560px;
@@ -778,21 +767,14 @@ th { color: var(--accent-2); }
   cursor: help;
 }
 
+/* Pas de halo lumineux façon "néon" : un simple épaississement du trait au survol, cohérent
+   avec l'esthétique gravée du style "céleste / grimoire ancien". */
 .wheel-planet-glyph circle:nth-of-type(2) {
-  filter: drop-shadow(0 0 5px rgba(178, 141, 255, 0.65));
-  transition: filter 0.15s ease;
-}
-
-.wheel-planet-glyph.is-retrograde circle:nth-of-type(2) {
-  filter: drop-shadow(0 0 5px rgba(255, 128, 128, 0.65));
+  transition: stroke-width 0.15s ease;
 }
 
 .wheel-planet-glyph:hover circle:nth-of-type(2) {
-  filter: drop-shadow(0 0 10px rgba(178, 141, 255, 0.95));
-}
-
-.wheel-planet-glyph.is-retrograde:hover circle:nth-of-type(2) {
-  filter: drop-shadow(0 0 10px rgba(255, 128, 128, 0.95));
+  stroke-width: 2.5;
 }
 
 /* Plein écran : centrer et agrandir la roue, garder la légende visible sous elle. */
@@ -820,7 +802,7 @@ th { color: var(--accent-2); }
   position: absolute;
   z-index: 20;
   pointer-events: none;
-  background: #0d0f1c;
+  background: var(--inset-bg);
   border: 1px solid var(--accent);
   color: var(--text);
   padding: 0.4rem 0.7rem;
@@ -863,7 +845,7 @@ th { color: var(--accent-2); }
 
 .astro-mode-btn.active {
   background: var(--accent);
-  color: #10121f;
+  color: var(--on-accent);
   border-color: var(--accent);
 }
 
@@ -922,7 +904,7 @@ th { color: var(--accent-2); }
   border-color: var(--accent);
   border-width: 2px;
   background: rgba(255, 255, 255, 0.04);
-  box-shadow: 0 0 0 1px var(--accent), 0 0 14px rgba(178, 141, 255, 0.35);
+  box-shadow: 0 0 0 1px var(--accent), 0 0 14px rgba(45, 58, 107, 0.35);
 }
 
 .astro-focus-badge {
@@ -931,7 +913,7 @@ th { color: var(--accent-2); }
   gap: 0.25rem;
   font-size: 0.72rem;
   font-weight: 700;
-  color: #10121f;
+  color: var(--on-accent);
   background: var(--accent);
   border-radius: 999px;
   padding: 0.15rem 0.6rem;
@@ -1009,7 +991,7 @@ th { color: var(--accent-2); }
 
 .witchy-event-row-selected,
 .witchy-event-row-selected:hover {
-  background: rgba(178, 141, 255, 0.14);
+  background: rgba(45, 58, 107, 0.14);
   box-shadow: inset 3px 0 0 var(--accent);
 }
 
@@ -1028,8 +1010,8 @@ th { color: var(--accent-2); }
 }
 
 .astro-location-delete-btn:hover {
-  border-color: #ff5d5d;
-  color: #ff5d5d;
+  border-color: var(--danger);
+  color: var(--danger);
 }
 
 .wheel-legend {
@@ -1064,7 +1046,7 @@ th { color: var(--accent-2); }
 
 .balance-bar-track {
   flex: 1;
-  background: #12152a;
+  background: var(--inset-bg);
   border-radius: 6px;
   overflow: hidden;
   height: 14px;
@@ -1138,9 +1120,9 @@ footer {
 
 .favorability-favorable { background: rgba(110, 231, 217, 0.18); color: var(--accent-2); }
 .favorability-exigeant { background: rgba(255, 128, 128, 0.18); color: var(--danger); }
-.favorability-instable { background: rgba(255, 189, 89, 0.18); color: #ffbd59; }
-.favorability-intense { background: rgba(255, 93, 158, 0.18); color: #ff5d9e; }
-.favorability-a_nuancer { background: rgba(178, 141, 255, 0.18); color: var(--accent); }
+.favorability-instable { background: rgba(163, 119, 31, 0.18); color: var(--gold); }
+.favorability-intense { background: rgba(122, 51, 82, 0.18); color: #7a3352; }
+.favorability-a_nuancer { background: rgba(45, 58, 107, 0.18); color: var(--accent); }
 .favorability-neutre { background: rgba(154, 156, 189, 0.18); color: var(--muted); }
 
 .intensity-flames {
