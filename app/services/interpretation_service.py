@@ -36,6 +36,7 @@ from app.core.witchy_calendar import (
 )
 from app.core.witchy_calendar_personalization import personalize_day_chart, personalize_witchy_events
 from app.core.weekly_weather import compute_generic_weekly_by_sign, compute_weekly_collective
+from app.core.weekly_weather_domains import compute_weekly_domain_scores
 from app.core.zodiacal_releasing import FORTUNE_LOT_NAME, SPIRIT_LOT_NAME
 from app.services import astrocartography_service, timing_service
 from app.services.synastry_service import compute_synastry_for_charts
@@ -577,9 +578,10 @@ appuie-toi exclusivement sur les données fournies."""
 
 
 def _weekly_weather_max_tokens(request: schemas.ReadingRequest) -> int:
-    """Deux blocs (climat collectif de la semaine + impact personnel) sur une seule semaine :
-    plus court qu'une lecture annuelle mais plus développé qu'un item du calendrier witchy."""
-    return 4000
+    """Deux blocs (climat collectif de la semaine + impact personnel, désormais avec la
+    notation par domaine de vie) sur une seule semaine : plus court qu'une lecture annuelle mais
+    plus développé qu'un item du calendrier witchy."""
+    return 4600
 
 
 def _weekly_weather_prompt_block(request: schemas.ReadingRequest) -> str:
@@ -599,7 +601,12 @@ principale de la semaine, donnant une tonalité différente jour après jour) ; 
 planètes) ; `witchy_events` (lunaisons/éclipses déjà calculées tombant dans la semaine, mêmes \
 champs que le calendrier ésotérique) ; `transit_transit_aspects` (aspects majeurs qui \
 deviennent EXACTS pendant la semaine entre deux de ces 4 planètes rapides — un événement \
-collectif, pas une comparaison au thème natal) ; et `highlights`, la fusion triée par \
+collectif, pas une comparaison au thème natal) ; `generational_aspects` (aspect majeur EXACT \
+cette semaine entre une planète rapide — `planet_a`, Mercure/Vénus/Mars — et une planète \
+générationnelle quasi immobile — `planet_b`, Jupiter à Pluton : un événement RARE et marquant, \
+à mentionner explicitement dans le climat collectif plutôt qu'en simple note technique, ex. \
+"Vénus en opposition à Neptune cette semaine colore le climat amoureux collectif d'un voile \
+plus rêveur, entre idéalisation et besoin de clarté") ; et `highlights`, la fusion triée par \
 importance (`score`, déjà calculé, ne le recalcule jamais) de tout ce qui précède — utilise \
 cette liste pour savoir sur quoi insister et dans quel ordre, sans jamais citer le chiffre brut \
 dans le texte (traduis-le en intensité ressentie)."""
@@ -611,6 +618,25 @@ chacun avec `intensity` 1-4 déjà calculée — mêmes données que le Pronosti
 `personal_highlights` est vide, dis-le simplement plutôt que d'inventer un impact personnel de \
 remplissage."""
 
+    domain_scores_data = """DANS `domain_scores` : une note 1-5 déjà calculée (NE LA RECALCULE \
+JAMAIS) pour chacun des 4 domaines de vie (`amour`, `argent`, `sante`, `travail_quotidien`), \
+chacune avec `label` (ex. "semaine favorable"), et `top_positive_signal`/`top_negative_signal` \
+(le transit le plus porteur/le plus tendu de ce domaine cette semaine, ou null s'il n'y en a \
+pas). Intègre ces notes dans "Pour toi cette semaine" par domaine, SANS jamais citer le chiffre \
+brut ni le mot "note"/"score" — traduis uniquement en ton (une note haute = ton plus \
+enthousiaste, une note basse = ton plus doux et posé, jamais alarmiste). Termine la section \
+personnelle par UN point fort ("ce qui coule bien cette semaine") et, seulement si un signal \
+négatif net existe quelque part, UN point de vigilance — formulés à partir de \
+`top_positive_signal`/`top_negative_signal`, jamais pré-écrits pour une combinaison type. Le \
+point fort est une INVITATION à saisir une dynamique ("cette semaine se prête à...") jamais une \
+garantie de résultat ; le point de vigilance est une RECOMMANDATION DE PRUDENCE sur une \
+dynamique ("mieux vaut prendre le temps de..."), jamais une prédiction négative. Pour le domaine \
+`argent` : jamais de conseil financier concret (montant, achat, vente, investissement précis), \
+reste au niveau de l'énergie autour des ressources. Pour le domaine `sante` : jamais de \
+symptôme, diagnostic ou action médicale, reste au niveau du tonus/de l'énergie générale, et si \
+ce domaine est mis en avant négativement ajoute une formule du type "pour toute préoccupation de \
+santé réelle, mieux vaut consulter un professionnel"."""
+
     structure = """FORMAT : deux sections Markdown clairement séparées (## Climat de la semaine, \
 ## Pour toi cette semaine), la première valable pour tout le monde et rédigée sans référence au \
 thème natal, la seconde explicitement personnelle et jamais fusionnée dans la première. \
@@ -621,13 +647,17 @@ purement astronomique."""
 
     guardrails = """Ton évocateur et pratique mais jamais fataliste : reformule toujours en \
 tendance ou énergie disponible ("cette semaine invite à..." plutôt que "il vous arrivera..."). \
-N'invente aucune position, aspect ou événement hors des données fournies."""
+N'invente aucune position, aspect ou événement hors des données fournies. Si plusieurs domaines \
+ont une note basse simultanément, garde un ton posé et stabilisant plutôt que d'accumuler \
+l'inquiétude d'un domaine à l'autre."""
 
     return f"""{intro}
 
 {collective_data}
 
 {personal_data}
+
+{domain_scores_data}
 
 {structure}
 
@@ -846,42 +876,6 @@ disponible ('cette période favorise...', 'une tension pourrait émerger autour 
 {structure}
 
 {ratings_section}"""
-
-
-def _select_significant_events(events: list[dict], min_count: int = 5, max_count: int = 20) -> list[dict]:
-    """Réduit la liste brute d'événements à venir (potentiellement des centaines, la Lune et \
-    les autres planètes rapides étant désormais incluses) aux plus significatifs, en \
-    s'appuyant sur `intensity` : commence par le seuil le plus strict et l'assouplit tant \
-    qu'il n'y a pas assez d'événements à proposer au modèle."""
-    candidates = events
-    for min_intensity in (4, 3, 2, 1):
-        candidates = [e for e in events if e["intensity"] >= min_intensity]
-        if len(candidates) >= min_count or min_intensity == 1:
-            break
-    candidates = sorted(candidates, key=lambda e: (-e["intensity"], e["peak_orb"]))[:max_count]
-    return sorted(candidates, key=lambda e: e["peak_date"])
-
-
-_TIMING_HORIZON_DAYS = {"week": 7, "month": 30, "year": 365}
-
-
-def _select_events_for_horizon(events: list[dict], horizon: str, as_of_date: date_type, max_count: int = 20) -> list[dict]:
-    """Filtre les événements dont la fenêtre active recoupe l'horizon demandé, avec une
-    sélection adaptée à l'échelle de temps : sur un an, on privilégie les signaux les plus
-    intenses (grands arcs) comme `_select_significant_events` ; sur une semaine, on garde tout
-    (y compris les transits lunaires mineurs, qui sont justement ce qui donne la texture
-    concrète à cette échelle) ; le mois est un compromis entre les deux."""
-    window_end = (as_of_date + timedelta(days=_TIMING_HORIZON_DAYS.get(horizon, 365))).isoformat()
-    as_of_iso = as_of_date.isoformat()
-    in_window = [e for e in events if e["window_start"] <= window_end and e["window_end"] >= as_of_iso]
-
-    if horizon == "week":
-        return sorted(in_window, key=lambda e: e["peak_date"])[:max_count]
-    if horizon == "month":
-        candidates = [e for e in in_window if e["intensity"] >= 2] or in_window
-        candidates = sorted(candidates, key=lambda e: (-e["intensity"], e["peak_orb"]))[:max_count]
-        return sorted(candidates, key=lambda e: e["peak_date"])
-    return _select_significant_events(in_window, max_count=max_count)
 
 
 # Modules de prompt par axe thématique de lots (voir prompts_par_axe_thematique.md), pour
@@ -1329,7 +1323,7 @@ def _build_user_payload(
         payload["horizon"] = horizon
         payload["profection"] = timing["profection"]
         payload["current_transits"] = {"date": timing["date"].isoformat(), "aspects": timing["aspects"]}
-        payload["upcoming_events"] = _select_events_for_horizon(forecast["events"], horizon, as_of)
+        payload["upcoming_events"] = timing_service.select_events_for_horizon(forecast["events"], horizon, as_of)
     elif request.reading_type == "zodiacal_releasing":
         selected_lots = request.zr_selected_lots or [FORTUNE_LOT_NAME, SPIRIT_LOT_NAME]
         lookahead_years = 10 if request.zr_mode == "predictive" else 5
@@ -1501,17 +1495,27 @@ def _build_user_payload(
 
         # Couche personnelle : AUCUN nouveau moteur, réutilise directement
         # timing_service.compute_timing/compute_forecast (déjà spécifiés pour le Pronostic
-        # hebdomadaire) et le même filtrage _select_events_for_horizon("week", ...) que le
+        # hebdomadaire) et le même filtrage timing_service.select_events_for_horizon("week", ...) que le
         # bouton "Semaine" du Pronostic — la météo de la semaine et le Pronostic hebdomadaire
         # partagent donc exactement le même calcul d'impact personnel.
         timing = timing_service.compute_timing(chart, start_date)
         forecast = timing_service.compute_forecast(chart, start_date)
-        personal_highlights = _select_events_for_horizon(forecast["events"], "week", start_date)
+        personal_highlights = timing_service.select_events_for_horizon(forecast["events"], "week", start_date)
+
+        # Notation par domaine de vie (voir app/core/weekly_weather_domains.py) : calcul
+        # déterministe combinant `personal_highlights` ci-dessus et `collective`'s
+        # `generational_aspects` — même score que celui affiché par l'endpoint
+        # /api/charts/{chart_id}/weekly-weather/domain-scores, jamais recalculé par le LLM.
+        natal_planet_houses = {p["name"]: p["house"] for p in chart_data["planets"]}
+        domain_scores = compute_weekly_domain_scores(
+            natal_planet_houses, personal_highlights, collective["generational_aspects"], start_date
+        )
 
         payload["identity"] = _identity_context(chart_data)
         payload["collective"] = collective
         payload["personal_profection"] = timing["profection"]
         payload["personal_highlights"] = personal_highlights
+        payload["domain_scores"] = domain_scores
     elif request.reading_type == "weekly_weather_by_sign":
         # Couche 3 (voir app/core/weekly_weather.py::compute_generic_weekly_by_sign) : technique
         # générique indépendante du thème natal réel, pas de bloc `identity` ici.

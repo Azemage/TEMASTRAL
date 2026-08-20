@@ -225,6 +225,26 @@ Implémenté :
   "harmonieux" notés haut, quinconce "mineur inconfortable" noté bas) — même vocabulaire que
   partout ailleurs dans l'app, aucune doctrine nouvelle introduite, et la note n'entre jamais
   dans le texte généré par le LLM (qui ne fait qu'en adapter le ton).
+- Météo de la semaine — **aspects vers les planètes générationnelles** (`generational_aspects`,
+  `app/core/weekly_weather.py::_compute_generational_aspects`) : en plus des aspects entre
+  Lune/Mercure/Vénus/Mars, détecte les aspects majeurs qui deviennent EXACTS pendant la semaine
+  entre une planète rapide (Mercure/Vénus/Mars) et une planète générationnelle (Jupiter à
+  Pluton) — un événement plus rare, marquant le climat collectif au-delà de cette seule semaine
+  (même recherche de racine par bissection, noté un cran au-dessus du même aspect entre deux
+  planètes rapides). Alimente une **notation par domaine de vie** (`app/core/
+  weekly_weather_domains.py`, config dans `app/reference_data/weekly_domain_scoring.json`) sur
+  le modèle classique de l'horoscope hebdomadaire : une note 1-5 pour chacun des 4 domaines
+  (amour, argent, santé, travail quotidien), calculée en combinant deux composantes — les
+  transits personnels vers le thème natal réel (mêmes données que le Pronostic hebdomadaire,
+  filtrés par domaine via les maisons/planètes de référence de chaque domaine) et les aspects
+  rapide→générationnelle ci-dessus (climat collectif, pondéré deux fois plus léger qu'un transit
+  vraiment personnel), chacun pondéré selon qu'il est applicatif ou séparatif. Calcul entièrement
+  déterministe (code, jamais le LLM) ; exposé via `GET /api/charts/{chart_id}/weekly-weather/
+  domain-scores` (personnel, donc jamais mis en cache, contrairement à la couche collective) et
+  affiché avec le même composant d'étoiles unifié. La lecture LLM `weekly_weather` reçoit ces
+  notes pour en adapter le ton (jamais le chiffre cité tel quel) et formuler un point fort / un
+  point de vigilance à partir du signal le plus marquant de chaque domaine, avec les mêmes
+  garde-fous que le reste de l'app (aucun conseil financier ou médical concret).
 - Lecture interprétée par l'API Anthropic avec **prompt dédié par catégorie** : lecture
   générale (thème de base uniquement — planètes/maisons/aspects/dispositeurs, sans les lots
   ni les maisons dérivées), et six lectures spécialisées (Lots, Maisons dérivées, Timing,
@@ -319,6 +339,7 @@ Principe directeur repris du cahier des charges : tout ce qui est dans `app/core
 | GET | `/api/witchy-calendar?year=YYYY` | Calendrier ésotérique annuel (lunaisons, éclipses, stations rétrogrades, ingrès de planètes lentes), collectif et mis en cache par année (défaut : année en cours) |
 | GET | `/api/weekly-weather?start_date=YYYY-MM-DD` | Couche collective de la météo de la semaine (Lune/Mercure/Vénus/Mars, événements du calendrier witchy dans la semaine, points clés notés), mise en cache par semaine (défaut : aujourd'hui) |
 | GET | `/api/weekly-weather/by-sign?start_date=YYYY-MM-DD` | Mapping générique maison/signe (technique "horoscope de presse") pour les 12 signes, basé sur le signe de l'événement principal de la semaine |
+| GET | `/api/charts/{id}/weekly-weather/domain-scores?start_date=YYYY-MM-DD` | Notation 1-5 par domaine de vie (amour/argent/santé/travail quotidien) pour la semaine demandée, combinant transits personnels et climat collectif rapide→générationnelle — personnel donc calculé à la demande, jamais mis en cache |
 | GET | `/api/reference/config` | Options de configuration (systèmes de maisons, dispositeurs, points optionnels) |
 | GET | `/api/reference/timezones` | Liste des ~490 fuseaux horaires IANA canoniques |
 | GET | `/api/geocode?query=...` | Recherche ville -> latitude/longitude/fuseau horaire |

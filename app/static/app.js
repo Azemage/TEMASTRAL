@@ -2519,10 +2519,12 @@ function todayIsoDate() {
 }
 
 let weeklyWeatherBySignData = null;
+let weeklyWeatherDomainScoresData = null;
 
 function resetWeeklyWeatherStateForNewChart() {
   weeklyWeatherData = null;
   weeklyWeatherBySignData = null;
+  weeklyWeatherDomainScoresData = null;
   weeklyWeatherStartDate = null;
   const dateInput = document.getElementById("weekly-weather-start-date");
   if (dateInput) dateInput.value = "";
@@ -2530,6 +2532,8 @@ function resetWeeklyWeatherStateForNewChart() {
     "weekly-weather-highlights",
     "weekly-weather-planets",
     "weekly-weather-aspects",
+    "weekly-weather-generational-aspects",
+    "weekly-weather-domain-scores",
     "weekly-weather-reading-output",
     "weekly-weather-by-sign-scores",
     "weekly-weather-by-sign-output",
@@ -2544,7 +2548,7 @@ function resetWeeklyWeatherStateForNewChart() {
 }
 
 function weeklyWeatherHighlightLabel(h) {
-  if (h.kind === "aspect_exact") {
+  if (h.kind === "aspect_exact" || h.kind === "aspect_generational") {
     return tf("weekly_weather_highlight_aspect", {
       planetA: planetLabel(h.planet),
       planetB: planetLabel(h.planet_b),
@@ -2659,6 +2663,57 @@ function renderWeeklyWeatherAspects() {
     </table>`;
 }
 
+function renderWeeklyWeatherGenerationalAspects() {
+  const container = document.getElementById("weekly-weather-generational-aspects");
+  if (!container || !weeklyWeatherData) return;
+  const aspects = weeklyWeatherData.generational_aspects || [];
+  if (aspects.length === 0) {
+    container.innerHTML = "";
+    return;
+  }
+  container.innerHTML = `
+    <h3>${t("weekly_weather_generational_aspects_title")}</h3>
+    <p class="reading-section-intro">${t("weekly_weather_generational_aspects_intro")}</p>
+    <table class="astro-forecast-table">
+      <tbody>
+        ${aspects
+          .map(
+            (a) => `
+          <tr>
+            <td>${a.date}</td>
+            <td>${planetLabel(a.planet_a)} ${aspectTypeLabel(a.aspect_type)} ${planetLabel(a.planet_b)}</td>
+          </tr>`
+          )
+          .join("")}
+      </tbody>
+    </table>`;
+}
+
+const WEEKLY_WEATHER_DOMAIN_CODES = ["amour", "argent", "sante", "travail_quotidien"];
+
+function renderWeeklyWeatherDomainScores() {
+  const container = document.getElementById("weekly-weather-domain-scores");
+  if (!container || !weeklyWeatherDomainScoresData) return;
+  const scores = weeklyWeatherDomainScoresData.scores;
+  const rows = WEEKLY_WEATHER_DOMAIN_CODES.filter((code) => scores[code])
+    .map(
+      (code) => `
+      <tr>
+        <td>${t(`weekly_weather_domain_${code}`)}</td>
+        <td>${starRatingHtml(scores[code].note, { max: 5, compact: true, showScore: false })}</td>
+      </tr>`
+    )
+    .join("");
+  container.innerHTML = `
+    <h3>${t("weekly_weather_domain_scores_title")}</h3>
+    <p class="reading-section-intro">${t("weekly_weather_domain_scores_intro")}</p>
+    <table class="astro-forecast-table">
+      <tbody>
+        ${rows}
+      </tbody>
+    </table>`;
+}
+
 function renderWeeklyWeatherBySignScores() {
   const container = document.getElementById("weekly-weather-by-sign-scores");
   if (!container || !weeklyWeatherBySignData) return;
@@ -2683,17 +2738,29 @@ async function loadWeeklyWeather() {
   const errorEl = document.getElementById("weekly-weather-error");
   errorEl.textContent = "";
   try {
-    const [collectiveRes, bySignRes] = await Promise.all([
+    const requests = [
       fetch(`/api/weekly-weather?start_date=${weeklyWeatherStartDate}`),
       fetch(`/api/weekly-weather/by-sign?start_date=${weeklyWeatherStartDate}`),
-    ]);
+    ];
+    // Notation par domaine de vie : personnelle (croise le thème natal réel), donc uniquement
+    // disponible une fois un thème calculé — voir app/core/weekly_weather_domains.py.
+    if (currentChart) {
+      requests.push(fetch(`/api/charts/${currentChart.id}/weekly-weather/domain-scores?start_date=${weeklyWeatherStartDate}`));
+    }
+    const [collectiveRes, bySignRes, domainScoresRes] = await Promise.all(requests);
     if (!collectiveRes.ok) throw new Error(`${t("error_prefix")} ${collectiveRes.status}`);
     if (!bySignRes.ok) throw new Error(`${t("error_prefix")} ${bySignRes.status}`);
     weeklyWeatherData = await collectiveRes.json();
     weeklyWeatherBySignData = await bySignRes.json();
+    if (domainScoresRes) {
+      if (!domainScoresRes.ok) throw new Error(`${t("error_prefix")} ${domainScoresRes.status}`);
+      weeklyWeatherDomainScoresData = await domainScoresRes.json();
+    }
     renderWeeklyWeatherHighlights();
     renderWeeklyWeatherPlanets();
     renderWeeklyWeatherAspects();
+    renderWeeklyWeatherGenerationalAspects();
+    renderWeeklyWeatherDomainScores();
     renderWeeklyWeatherBySignScores();
   } catch (err) {
     errorEl.textContent = `${t("error_loading_weekly_weather")} ${err.message}`;

@@ -7,10 +7,14 @@ semaine donnée, sur le même principe de cache global que le calendrier ésoté
 
 1. `compute_weekly_collective` — Lune (parcours signe par signe + ingrès), Mercure/Vénus/Mars
    (position de départ/fin, rétrogradation, ingrès), aspects exacts entre ces 4 planètes formés
-   PENDANT la semaine (transit-transit, pas transit-natal), événements du calendrier ésotérique
-   tombant dans la semaine (réutilise directement compute_witchy_calendar/compute_station_events,
-   AUCUN recalcul), et une liste de points forts (`highlights`) notés (même esprit que le score
-   1-5 du calendrier witchy) pour repérer les éléments les plus significatifs de la semaine.
+   PENDANT la semaine (transit-transit, pas transit-natal), aspects exacts entre une planète
+   rapide (Mercure/Vénus/Mars) et une planète générationnelle (Jupiter à Pluton) formés PENDANT
+   la semaine (`generational_aspects` — même principe transit-transit, voir
+   _compute_generational_aspects et weekly_weather_domains.py pour son usage dans la notation
+   par domaine), événements du calendrier ésotérique tombant dans la semaine (réutilise
+   directement compute_witchy_calendar/compute_station_events, AUCUN recalcul), et une liste de
+   points forts (`highlights`) notés (même esprit que le score 1-5 du calendrier witchy) pour
+   repérer les éléments les plus significatifs de la semaine.
 2. `compute_generic_weekly_by_sign` — le "thème générique par signe" des horoscopes de presse :
    chaque signe est traité comme son propre Ascendant (maisons en signes intégraux), et la
    maison générique touchée par l'événement principal de la semaine détermine la tonalité de
@@ -39,6 +43,7 @@ from app.core.zodiac import SIGNS, SIGNS_FR, sign_and_degree, signs_distance
 
 MOON_PLANETS = ["Moon"]
 FAST_PLANETS = ["Mercury", "Venus", "Mars"]
+GENERATIONAL_PLANETS = ["Jupiter", "Saturn", "Uranus", "Neptune", "Pluto"]
 WEEK_DAYS = 7
 
 # Poids heuristiques (mêmes ordres de grandeur que le calendrier witchy, mais propres à
@@ -48,6 +53,11 @@ WEEK_DAYS = 7
 _MOON_INGRESS_SCORE = 2
 _FAST_INGRESS_SCORE = 3
 _ASPECT_TYPE_SCORE = {"conjunction": 3, "opposition": 3, "square": 3, "trine": 2, "sextile": 2}
+# Un aspect rapide -> générationnelle (voir _compute_generational_aspects) est structurellement
+# plus rare/marquant qu'un aspect entre deux planètes rapides (la planète lente immobilise le
+# thème sur toute sa durée de transit, contrairement à un aspect rapide-rapide vite dépassé) :
+# noté un cran au-dessus du même type d'aspect entre planètes rapides, mêmes bornes 1-4.
+_ASPECT_TYPE_SCORE_GENERATIONAL = {"conjunction": 4, "opposition": 4, "square": 4, "trine": 3, "sextile": 3}
 
 _ASPECT_TARGETS = {
     "conjunction": [0.0],
@@ -129,37 +139,62 @@ def _compute_fast_planets(dates: list[date_type]) -> list[dict]:
     return results
 
 
-def _compute_exact_transit_transit_aspects(start_jd: float, end_jd: float) -> list[dict]:
-    """Aspects majeurs qui deviennent EXACTS (orbe = 0, croisement détecté) entre deux des 4
-    planètes rapides pendant la semaine — transit-transit, pas transit-natal (voir
+def _scan_pair_aspect_events(start_jd: float, end_jd: float, planet_a: str, planet_b: str, score_table: dict) -> list[dict]:
+    """Aspects majeurs qui deviennent EXACTS (orbe = 0, croisement détecté) entre deux planètes
+    en transit pendant la semaine — transit-transit, pas transit-natal (voir
     enrichissement_contextuel_mode_apercu du calendrier witchy pour le même principe appliqué
-    ailleurs). Fenêtre courte (7 jours) : coût de calcul négligeable même avec les 6 paires."""
+    ailleurs). Fenêtre courte (7 jours) : coût de calcul négligeable, même balayé pour de
+    nombreuses paires (voir _compute_exact_transit_transit_aspects et
+    _compute_generational_aspects, qui appellent cette fonction pour chaque paire)."""
+    id_a, id_b = ephemeris.PLANET_IDS[planet_a], ephemeris.PLANET_IDS[planet_b]
+
+    def directed_diff(t: float, a=id_a, b=id_b) -> float:
+        return (_longitude(t, b) - _longitude(t, a)) % 360
+
     events = []
-    planets = MOON_PLANETS + FAST_PLANETS
-    for planet_a, planet_b in combinations(planets, 2):
-        id_a, id_b = ephemeris.PLANET_IDS[planet_a], ephemeris.PLANET_IDS[planet_b]
+    for aspect_type, targets in _ASPECT_TARGETS.items():
+        for target in targets:
 
-        def directed_diff(t: float, a=id_a, b=id_b) -> float:
-            return (_longitude(t, b) - _longitude(t, a)) % 360
+            def f(t, tgt=target, dd=directed_diff):
+                return ((dd(t) - tgt + 180) % 360) - 180
 
-        for aspect_type, targets in _ASPECT_TARGETS.items():
-            for target in targets:
+            for jd in scan_zero_crossings(f, start_jd, end_jd, step=_ASPECT_SCAN_STEP_DAYS):
+                year, month, day, _hour = swe.revjul(jd)
+                events.append(
+                    {
+                        "date": f"{year:04d}-{month:02d}-{day:02d}",
+                        "planet_a": planet_a,
+                        "planet_b": planet_b,
+                        "aspect_type": aspect_type,
+                        "aspect_type_fr": _ASPECT_TYPE_FR[aspect_type],
+                        "score": score_table[aspect_type],
+                    }
+                )
+    return events
 
-                def f(t, tgt=target, dd=directed_diff):
-                    return ((dd(t) - tgt + 180) % 360) - 180
 
-                for jd in scan_zero_crossings(f, start_jd, end_jd, step=_ASPECT_SCAN_STEP_DAYS):
-                    year, month, day, _hour = swe.revjul(jd)
-                    events.append(
-                        {
-                            "date": f"{year:04d}-{month:02d}-{day:02d}",
-                            "planet_a": planet_a,
-                            "planet_b": planet_b,
-                            "aspect_type": aspect_type,
-                            "aspect_type_fr": _ASPECT_TYPE_FR[aspect_type],
-                            "score": _ASPECT_TYPE_SCORE[aspect_type],
-                        }
-                    )
+def _compute_exact_transit_transit_aspects(start_jd: float, end_jd: float) -> list[dict]:
+    """Aspects exacts entre deux des 4 planètes rapides (Lune/Mercure/Vénus/Mars) pendant la
+    semaine — voir _scan_pair_aspect_events."""
+    events = []
+    for planet_a, planet_b in combinations(MOON_PLANETS + FAST_PLANETS, 2):
+        events += _scan_pair_aspect_events(start_jd, end_jd, planet_a, planet_b, _ASPECT_TYPE_SCORE)
+    events.sort(key=lambda e: e["date"])
+    return events
+
+
+def _compute_generational_aspects(start_jd: float, end_jd: float) -> list[dict]:
+    """Technique 'Aspects planète rapide vers planète lente/générationnelle' (voir
+    echelles_temporelles_lecture.json, mode_semaine) : Mercure/Vénus/Mars (rapides, `planet_a`)
+    en aspect majeur EXACT cette semaine avec Jupiter à Pluton (`planet_b`, quasi immobiles à
+    cette échelle). La Lune est volontairement exclue ici (elle bouge trop vite pour que ces
+    aspects soient un signal hebdomadaire distinctif — voir doc source). Ne colore jamais le
+    thème personnel : c'est un événement COLLECTIF, pertinent pour tout le monde cette
+    semaine-là (voir weekly_weather_domains.py pour son usage dans la notation par domaine)."""
+    events = []
+    for fast in FAST_PLANETS:
+        for slow in GENERATIONAL_PLANETS:
+            events += _scan_pair_aspect_events(start_jd, end_jd, fast, slow, _ASPECT_TYPE_SCORE_GENERATIONAL)
     events.sort(key=lambda e: e["date"])
     return events
 
@@ -189,6 +224,7 @@ def _assemble_highlights(
     stations: list[dict],
     witchy_events: list[dict],
     aspects: list[dict],
+    generational_aspects: list[dict],
 ) -> list[dict]:
     highlights: list[dict] = []
     for ingress in moon_ingresses:
@@ -231,6 +267,14 @@ def _assemble_highlights(
                 "aspect_type_fr": aspect["aspect_type_fr"], "sign": None, "score": aspect["score"],
             }
         )
+    for aspect in generational_aspects:
+        highlights.append(
+            {
+                "date": aspect["date"], "kind": "aspect_generational", "planet": aspect["planet_a"],
+                "planet_b": aspect["planet_b"], "aspect_type": aspect["aspect_type"],
+                "aspect_type_fr": aspect["aspect_type_fr"], "sign": None, "score": aspect["score"],
+            }
+        )
     highlights.sort(key=lambda h: (-h["score"], h["date"]))
     return highlights
 
@@ -247,7 +291,8 @@ def compute_weekly_collective(start_date: date_type) -> dict:
     stations = _fast_station_events(start_date, end_date)
     witchy_events = _witchy_events_in_range(start_date, end_date)
     aspects = _compute_exact_transit_transit_aspects(start_jd, end_jd)
-    highlights = _assemble_highlights(moon_ingresses, fast_planets, stations, witchy_events, aspects)
+    generational_aspects = _compute_generational_aspects(start_jd, end_jd)
+    highlights = _assemble_highlights(moon_ingresses, fast_planets, stations, witchy_events, aspects, generational_aspects)
 
     main_event = next((h for h in highlights if h.get("sign")), None)
     if main_event is None:
@@ -262,6 +307,7 @@ def compute_weekly_collective(start_date: date_type) -> dict:
         "stations": stations,
         "witchy_events": witchy_events,
         "transit_transit_aspects": aspects,
+        "generational_aspects": generational_aspects,
         "highlights": highlights,
         "main_event": {"kind": main_event["kind"], "planet": main_event.get("planet"), "sign": main_event["sign"]},
     }

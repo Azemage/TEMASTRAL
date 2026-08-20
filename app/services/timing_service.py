@@ -37,3 +37,39 @@ def compute_forecast(chart: models.NatalChart, start_date: date_type | None = No
     natal_bodies = _natal_bodies_from_chart(chart)
     events = compute_upcoming_transits(natal_bodies, start_date, end_date)
     return {"start_date": start_date, "end_date": end_date, "events": events}
+
+
+def select_significant_events(events: list[dict], min_count: int = 5, max_count: int = 20) -> list[dict]:
+    """Réduit la liste brute d'événements à venir (potentiellement des centaines, la Lune et
+    les autres planètes rapides étant désormais incluses) aux plus significatifs, en
+    s'appuyant sur `intensity` : commence par le seuil le plus strict et l'assouplit tant
+    qu'il n'y a pas assez d'événements à proposer au modèle."""
+    candidates = events
+    for min_intensity in (4, 3, 2, 1):
+        candidates = [e for e in events if e["intensity"] >= min_intensity]
+        if len(candidates) >= min_count or min_intensity == 1:
+            break
+    candidates = sorted(candidates, key=lambda e: (-e["intensity"], e["peak_orb"]))[:max_count]
+    return sorted(candidates, key=lambda e: e["peak_date"])
+
+
+TIMING_HORIZON_DAYS = {"week": 7, "month": 30, "year": 365}
+
+
+def select_events_for_horizon(events: list[dict], horizon: str, as_of_date: date_type, max_count: int = 20) -> list[dict]:
+    """Filtre les événements dont la fenêtre active recoupe l'horizon demandé, avec une
+    sélection adaptée à l'échelle de temps : sur un an, on privilégie les signaux les plus
+    intenses (grands arcs) comme `select_significant_events` ; sur une semaine, on garde tout
+    (y compris les transits lunaires mineurs, qui sont justement ce qui donne la texture
+    concrète à cette échelle) ; le mois est un compromis entre les deux."""
+    window_end = (as_of_date + timedelta(days=TIMING_HORIZON_DAYS.get(horizon, 365))).isoformat()
+    as_of_iso = as_of_date.isoformat()
+    in_window = [e for e in events if e["window_start"] <= window_end and e["window_end"] >= as_of_iso]
+
+    if horizon == "week":
+        return sorted(in_window, key=lambda e: e["peak_date"])[:max_count]
+    if horizon == "month":
+        candidates = [e for e in in_window if e["intensity"] >= 2] or in_window
+        candidates = sorted(candidates, key=lambda e: (-e["intensity"], e["peak_orb"]))[:max_count]
+        return sorted(candidates, key=lambda e: e["peak_date"])
+    return select_significant_events(in_window, max_count=max_count)

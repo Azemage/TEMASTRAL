@@ -83,6 +83,13 @@ def astrocartography_significations() -> dict:
     return _load("astrocartography_significations.json")
 
 
+def weekly_domain_scoring() -> dict:
+    """Domaines de vie (maisons/planètes de référence) et barème déterministe utilisés par
+    app/core/weekly_weather_domains.py pour noter la semaine par domaine (amour/argent/santé/
+    travail quotidien) — voir doc source notation_hebdomadaire_domaines.json."""
+    return _load("weekly_domain_scoring.json")
+
+
 def witchy_calendar_events() -> dict:
     """Catalogue d'événements du calendrier ésotérique annuel (poids, gabarits de sens,
     formule de score) — voir app/core/witchy_calendar.py pour le calcul déterministe des

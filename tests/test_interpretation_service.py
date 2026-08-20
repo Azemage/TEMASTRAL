@@ -5,7 +5,7 @@ from datetime import date, time
 from app import schemas
 from app.config import Settings
 from app.core.chart_calculator import calculate_natal_chart
-from app.services import interpretation_service
+from app.services import interpretation_service, timing_service
 
 
 class _FakeChart:
@@ -159,7 +159,7 @@ def test_select_events_for_horizon_week_keeps_low_intensity_events():
         {"intensity": 1, "peak_orb": 0.1, "peak_date": "2026-08-04", "window_start": "2026-08-03", "window_end": "2026-08-05"},
         {"intensity": 4, "peak_orb": 0.1, "peak_date": "2026-09-15", "window_start": "2026-09-14", "window_end": "2026-09-16"},
     ]
-    selected = interpretation_service._select_events_for_horizon(events, "week", date(2026, 8, 2))
+    selected = timing_service.select_events_for_horizon(events, "week", date(2026, 8, 2))
     assert len(selected) == 1
     assert selected[0]["intensity"] == 1  # l'événement mineur mais dans la fenêtre est gardé
 
@@ -173,7 +173,7 @@ def test_select_events_for_horizon_year_filters_to_significant_events():
         {"intensity": 4, "peak_orb": 0.1, "peak_date": "2026-12-15", "window_start": "2026-12-14", "window_end": "2026-12-16"},
         {"intensity": 4, "peak_orb": 0.1, "peak_date": "2027-01-15", "window_start": "2027-01-14", "window_end": "2027-01-16"},
     ]
-    selected = interpretation_service._select_events_for_horizon(events, "year", date(2026, 8, 2))
+    selected = timing_service.select_events_for_horizon(events, "year", date(2026, 8, 2))
     assert all(e["intensity"] == 4 for e in selected)  # le minime (intensité 1) est écarté au profit des majeurs
 
 
@@ -181,7 +181,7 @@ def test_select_events_for_horizon_excludes_events_outside_the_window():
     events = [
         {"intensity": 4, "peak_orb": 0.1, "peak_date": "2027-06-01", "window_start": "2027-05-30", "window_end": "2027-06-03"},
     ]
-    selected = interpretation_service._select_events_for_horizon(events, "week", date(2026, 8, 2))
+    selected = timing_service.select_events_for_horizon(events, "week", date(2026, 8, 2))
     assert selected == []
 
 
@@ -213,7 +213,7 @@ def test_timing_max_tokens_scale_by_horizon():
 
 def test_select_significant_events_prefers_high_intensity_and_falls_back_when_scarce():
     events = [{"intensity": i, "peak_orb": 0.1, "peak_date": f"2026-01-{i:02d}"} for i in (1, 1, 1, 2, 4)]
-    selected = interpretation_service._select_significant_events(events, min_count=3, max_count=10)
+    selected = timing_service.select_significant_events(events, min_count=3, max_count=10)
     # Seuil 4 -> 1 seul événement (< min_count), on redescend jusqu'à un seuil qui en donne >= 3.
     assert len(selected) >= 3
     assert selected == sorted(selected, key=lambda e: e["peak_date"])
@@ -221,7 +221,7 @@ def test_select_significant_events_prefers_high_intensity_and_falls_back_when_sc
 
 def test_select_significant_events_caps_at_max_count():
     events = [{"intensity": 4, "peak_orb": i * 0.01, "peak_date": f"2026-01-{(i % 28) + 1:02d}"} for i in range(50)]
-    selected = interpretation_service._select_significant_events(events, min_count=5, max_count=10)
+    selected = timing_service.select_significant_events(events, min_count=5, max_count=10)
     assert len(selected) == 10
 
 

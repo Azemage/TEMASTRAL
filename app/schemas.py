@@ -588,7 +588,7 @@ class WeeklyWeatherAspect(BaseModel):
 
 class WeeklyWeatherHighlight(BaseModel):
     date: str
-    kind: str  # 'ingres_lune' | 'ingres_rapide' | 'station' | 'aspect_exact' | un event_type du calendrier witchy
+    kind: str  # 'ingres_lune' | 'ingres_rapide' | 'station' | 'aspect_exact' | 'aspect_generational' | un event_type du calendrier witchy
     planet: str | None = None
     planet_b: str | None = None
     sign: str | None = None
@@ -615,6 +615,7 @@ class WeeklyWeatherResponse(BaseModel):
     stations: list[dict]
     witchy_events: list[dict]
     transit_transit_aspects: list[WeeklyWeatherAspect]
+    generational_aspects: list[WeeklyWeatherAspect] = []  # rapide (Mercure/Vénus/Mars) -> générationnelle (Jupiter à Pluton)
     highlights: list[WeeklyWeatherHighlight]
     main_event: WeeklyWeatherMainEvent
 
@@ -632,3 +633,16 @@ class WeeklyWeatherBySignEntry(BaseModel):
 class WeeklyWeatherBySignResponse(BaseModel):
     main_event_sign: str
     by_sign: list[WeeklyWeatherBySignEntry]
+
+
+class WeeklyWeatherDomainScore(BaseModel):
+    note: int = Field(ge=1, le=5)
+    label: str
+    top_positive_signal: str | None = None
+    top_negative_signal: str | None = None
+
+
+class WeeklyWeatherDomainScoresResponse(BaseModel):
+    period_start: date_type
+    period_end: date_type
+    scores: dict[str, WeeklyWeatherDomainScore]  # clé = code de life_areas (amour/argent/sante/travail_quotidien)

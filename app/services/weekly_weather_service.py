@@ -1,7 +1,13 @@
 """Calcul et mise en cache de la couche collective de la météo hebdomadaire (voir
 app/core/weekly_weather.py). Une seule ligne de cache par semaine (identifiée par sa date de
 début), partagée par tous les utilisateurs — même principe de cache paresseux que le calendrier
-ésotérique annuel (app/services/witchy_calendar_service.py)."""
+ésotérique annuel (app/services/witchy_calendar_service.py).
+
+Expose aussi `compute_domain_scores_for_chart`, qui combine cette couche collective (réutilisée
+telle quelle depuis le cache) avec le thème natal réel d'une personne pour la notation par
+domaine de vie (voir app/core/weekly_weather_domains.py) — PAS mis en cache, car personnel à
+chaque thème (même principe que les autres calculs "à la volée" propres à un chart_id, ex.
+timing_service)."""
 
 from __future__ import annotations
 
@@ -12,6 +18,8 @@ from sqlalchemy.orm import Session
 
 from app import models
 from app.core.weekly_weather import compute_weekly_collective
+from app.core.weekly_weather_domains import compute_weekly_domain_scores
+from app.services import timing_service
 
 
 def get_or_compute_weekly_weather(db: Session, start_date: date_type) -> dict:
@@ -33,3 +41,16 @@ def get_or_compute_weekly_weather(db: Session, start_date: date_type) -> dict:
         return existing.collective_data
 
     return collective_data
+
+
+def compute_domain_scores_for_chart(db: Session, chart: models.NatalChart, start_date: date_type) -> dict:
+    collective = get_or_compute_weekly_weather(db, start_date)
+
+    forecast = timing_service.compute_forecast(chart, start_date)
+    personal_highlights = timing_service.select_events_for_horizon(forecast["events"], "week", start_date)
+
+    natal_planet_houses = {p["name"]: p["house"] for p in chart.computed_chart_data["planets"]}
+
+    return compute_weekly_domain_scores(
+        natal_planet_houses, personal_highlights, collective.get("generational_aspects", []), start_date
+    )

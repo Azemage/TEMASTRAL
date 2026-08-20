@@ -1,0 +1,56 @@
+{
+  "description": "Notation par domaine de vie pour la météo de la semaine (voir doc source notation_hebdomadaire_domaines.json). Calcul déterministe uniquement — la formulation du conseil/avertissement est déléguée au LLM à partir des signaux top_positive_signal/top_negative_signal, jamais du chiffre lui-même.",
+
+  "life_areas": [
+    {
+      "code": "amour",
+      "houses_ref": [5, 7, 8],
+      "planets_ref": ["Venus", "Mars", "Moon"]
+    },
+    {
+      "code": "argent",
+      "houses_ref": [2, 8],
+      "planets_ref": ["Venus", "Jupiter", "Saturn"]
+    },
+    {
+      "code": "sante",
+      "houses_ref": [1, 6],
+      "planets_ref": ["Sun", "Mars", "Saturn"]
+    },
+    {
+      "code": "travail_quotidien",
+      "houses_ref": [6, 10],
+      "planets_ref": ["Mercury", "Mars", "Saturn"]
+    }
+  ],
+
+  "planet_categories": {
+    "note": "Classification bénéfique/exigeante/neutre utilisée par modifier_by_aspect_and_category, appliquée à la planète EN TRANSIT (jamais au point natal touché) — voir la règle explicite du doc source pour la conjonction ('si planète bénéfique EN TRANSIT').",
+    "benefic": ["Venus", "Jupiter"],
+    "demanding": ["Mars", "Saturn"],
+    "neutral": ["Sun", "Moon", "Mercury", "Uranus", "Neptune", "Pluto"]
+  },
+
+  "modifier_by_aspect_and_category": {
+    "note": "Reprend modifier_table du doc source. Le doc ne détaille explicitement que 'bénéfique' et 'exigeante' pour carré/opposition/conjonction : la catégorie 'neutral' y est alignée sur 'bénéfique' (tension/énergie plus douce qu'une planète structurellement dure comme Mars/Saturne), et sur 'bénéfique+exigeante confondues' pour trigone/sextile (le doc les regroupe explicitement à +1).",
+    "trine": { "benefic": 2, "neutral": 1, "demanding": 1 },
+    "sextile": { "benefic": 2, "neutral": 1, "demanding": 1 },
+    "square": { "benefic": -1, "neutral": -1, "demanding": -2 },
+    "opposition": { "benefic": -1, "neutral": -1, "demanding": -2 },
+    "conjunction": { "benefic": 2, "neutral": 1, "demanding": -1 },
+    "quincunx": { "benefic": -1, "neutral": -1, "demanding": -1 }
+  },
+
+  "collective_multiplier": 0.5,
+  "applying_multiplier": 1.3,
+  "separating_multiplier": 0.7,
+
+  "final_scale_note": "Bornes décalées à mi-chemin des entiers du doc source (-3/-2, -1/0, 1/2, 3/4) plutôt que les entiers eux-mêmes, pour rester CONTINU (aucun trou) : la pondération applicatif/séparatif (x1.3/x0.7) produit des sommes non entières que le barème d'origine, pensé pour des totaux entiers, ne couvrait pas. Ces bornes reproduisent exactement le mapping du doc pour toute somme entière.",
+  "final_scale": [
+    { "min_score": null, "max_score": -2.5, "note": 2, "label": "semaine de vigilance" },
+    { "min_score": -2.5, "max_score": -0.5, "note": 3, "label": "semaine avec quelques frictions" },
+    { "min_score": -0.5, "max_score": 1.5, "note": 3, "label": "semaine stable" },
+    { "min_score": 1.5, "max_score": 3.5, "note": 4, "label": "semaine favorable" },
+    { "min_score": 3.5, "max_score": null, "note": 5, "label": "semaine particulièrement favorable" }
+  ]
+}

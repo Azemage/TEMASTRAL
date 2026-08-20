@@ -988,4 +988,28 @@ const UI_TEXT = {
     en: "Main event",
     es: "Evento principal",
   },
+  weekly_weather_generational_aspects_title: {
+    fr: "Aspects vers les planètes générationnelles",
+    en: "Aspects to the generational planets",
+    es: "Aspectos hacia los planetas generacionales",
+  },
+  weekly_weather_generational_aspects_intro: {
+    fr: "Mercure, Vénus ou Mars forment cette semaine un aspect exact avec une planète lente (Jupiter à Pluton) — un événement plus rare, qui colore le climat collectif au-delà de cette seule semaine.",
+    en: "Mercury, Venus or Mars forms an exact aspect this week with a slow planet (Jupiter through Pluto) — a rarer event that colors the collective climate beyond this single week.",
+    es: "Mercurio, Venus o Marte forman esta semana un aspecto exacto con un planeta lento (Júpiter a Plutón) — un evento más raro, que colorea el clima colectivo más allá de esta sola semana.",
+  },
+  weekly_weather_domain_scores_title: {
+    fr: "Notes par domaine de vie",
+    en: "Scores by life area",
+    es: "Notas por ámbito de vida",
+  },
+  weekly_weather_domain_scores_intro: {
+    fr: "Combine les transits personnels vers votre thème natal et le climat collectif de la semaine — voir le détail dans votre lecture personnelle ci-dessus.",
+    en: "Combines your personal transits to your natal chart with the week's collective climate — see the details in your personal reading above.",
+    es: "Combina tus tránsitos personales hacia tu carta natal con el clima colectivo de la semana — ver el detalle en tu lectura personal arriba.",
+  },
+  weekly_weather_domain_amour: { fr: "Amour", en: "Love", es: "Amor" },
+  weekly_weather_domain_argent: { fr: "Argent", en: "Money", es: "Dinero" },
+  weekly_weather_domain_sante: { fr: "Énergie / santé", en: "Energy / health", es: "Energía / salud" },
+  weekly_weather_domain_travail_quotidien: { fr: "Travail quotidien", en: "Daily work", es: "Trabajo diario" },
 };
