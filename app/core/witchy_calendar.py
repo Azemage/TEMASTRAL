@@ -66,14 +66,20 @@ def _scan_zero_crossings(f, start_jd: float, end_jd: float, step: float = _SCAN_
 
 
 def _score_from_raw(score_brut: float) -> int:
-    """Conversion en note 1-5, voir scoring_formula.conversion_echelle_5 du document source."""
+    """Conversion en note 1-5, voir scoring_formula.conversion_echelle_5 du document source.
+    Le poids_base le plus bas du catalogue (stations, 4) doit pouvoir atteindre 1 : une station
+    de Mercure (l'événement le plus fréquent, ~3-4x/an, sans modificateur) est justement le cas
+    le moins marquant du calendrier, pas un cas médian — voir aussi le barème par domaine de vie
+    (app/reference_data/weekly_domain_scoring.json) qui suit le même principe."""
     if score_brut >= 10:
         return 5
-    if score_brut >= 8:
+    if score_brut >= 9:
         return 4
-    if score_brut >= 5:
+    if score_brut >= 7:
         return 3
-    return 2
+    if score_brut >= 5:
+        return 2
+    return 1
 
 
 @dataclass

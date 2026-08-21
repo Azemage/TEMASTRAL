@@ -47,11 +47,13 @@ GENERATIONAL_PLANETS = ["Jupiter", "Saturn", "Uranus", "Neptune", "Pluto"]
 WEEK_DAYS = 7
 
 # Poids heuristiques (mêmes ordres de grandeur que le calendrier witchy, mais propres à
-# l'échelle hebdomadaire) : un ingrès lunaire est fréquent (~3/semaine) donc modeste, un ingrès
-# de planète rapide est plus rare donc plus notable. Les stations réutilisent directement le
-# score déjà calculé par compute_station_events (catalogue witchy), aucune valeur nouvelle.
-_MOON_INGRESS_SCORE = 2
-_FAST_INGRESS_SCORE = 3
+# l'échelle hebdomadaire) : un ingrès lunaire est fréquent (~3/semaine) donc le cas le moins
+# marquant de la semaine (plancher réel 1, pas artificiellement remonté à 2 — voir
+# app/core/witchy_calendar.py::_score_from_raw pour le même principe), un ingrès de planète
+# rapide est plus rare donc plus notable. Les stations réutilisent directement le score déjà
+# calculé par compute_station_events (catalogue witchy), aucune valeur nouvelle.
+_MOON_INGRESS_SCORE = 1
+_FAST_INGRESS_SCORE = 2
 _ASPECT_TYPE_SCORE = {"conjunction": 3, "opposition": 3, "square": 3, "trine": 2, "sextile": 2}
 # Un aspect rapide -> générationnelle (voir _compute_generational_aspects) est structurellement
 # plus rare/marquant qu'un aspect entre deux planètes rapides (la planète lente immobilise le
@@ -316,10 +318,16 @@ def compute_weekly_collective(start_date: date_type) -> dict:
 _HOUSE_ASPECT_NATURE_SCORE = {
     "harmonieux": 5,  # sextile/trigone (maisons 3/5/9/11) — le lien le plus fluide
     "variable": 4,  # conjonction (maison 1) — "sous les projecteurs", énergie forte mais neutre
-    "tendu": 3,  # carré/opposition (maisons 4/7/10) — actif mais avec friction
     "mineur": 3,  # semi-sextile (maisons 2/12) — lien discret, ni facile ni difficile
-    "mineur inconfortable": 2,  # quinconce (maisons 6/8) — ajustement, le lien le plus faible
+    "tendu": 2,  # carré/opposition (maisons 4/7/10) — actif, avec friction réelle
+    "mineur inconfortable": 1,  # quinconce (maisons 6/8) — ajustement, le lien le plus faible
 }
+# Chaque nature astrologique de aspects.json (mêmes 5 valeurs qu'ailleurs dans l'app) a
+# désormais sa propre note, du plancher réel 1 au plafond 5 — pas de valeur ex æquo qui
+# comprimerait artificiellement le milieu de l'échelle. "tendu" (carré/opposition, un aspect
+# MAJEUR même s'il est difficile) reste jugé plus rude qu'un "mineur" (semi-sextile, discret)
+# pour une tonalité hebdomadaire générale, mais moins que "mineur inconfortable" (quinconce,
+# aucune affinité de signe/élément entre les deux maisons — le lien le plus dissonant).
 
 
 def _house_score(generic_house: int) -> int:

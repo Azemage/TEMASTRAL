@@ -45,12 +45,12 @@
   "applying_multiplier": 1.3,
   "separating_multiplier": 0.7,
 
-  "final_scale_note": "Bornes décalées à mi-chemin des entiers du doc source (-3/-2, -1/0, 1/2, 3/4) plutôt que les entiers eux-mêmes, pour rester CONTINU (aucun trou) : la pondération applicatif/séparatif (x1.3/x0.7) produit des sommes non entières que le barème d'origine, pensé pour des totaux entiers, ne couvrait pas. Ces bornes reproduisent exactement le mapping du doc pour toute somme entière.",
+  "final_scale_note": "Barème redessiné pour couvrir RÉELLEMENT 1 à 5 (le doc source excluait délibérément le 1 par prudence — 'floor_note' — mais ça produit un plancher artificiel à 2 même pour des semaines à signaux multiples et négatifs, ce que le calcul lui-même ne justifie pas). Continu (aucun trou) malgré les sommes non entières produites par la pondération applicatif/séparatif (x1.3/x0.7). Le 1 exige plusieurs signaux négatifs cumulés (un seul aspect dur appliquant, ex. -2.6, ne suffit pas à lui seul) — pas un plancher qui se déclenche au moindre signal, mais un vrai résultat possible, pas un cas théorique jamais atteint.",
   "final_scale": [
-    { "min_score": null, "max_score": -2.5, "note": 2, "label": "semaine de vigilance" },
-    { "min_score": -2.5, "max_score": -0.5, "note": 3, "label": "semaine avec quelques frictions" },
-    { "min_score": -0.5, "max_score": 1.5, "note": 3, "label": "semaine stable" },
-    { "min_score": 1.5, "max_score": 3.5, "note": 4, "label": "semaine favorable" },
-    { "min_score": 3.5, "max_score": null, "note": 5, "label": "semaine particulièrement favorable" }
+    { "min_score": null, "max_score": -4, "note": 1, "label": "semaine difficile" },
+    { "min_score": -4, "max_score": -1.5, "note": 2, "label": "semaine avec de vraies frictions" },
+    { "min_score": -1.5, "max_score": 1.5, "note": 3, "label": "semaine stable" },
+    { "min_score": 1.5, "max_score": 4, "note": 4, "label": "semaine favorable" },
+    { "min_score": 4, "max_score": null, "note": 5, "label": "semaine très favorable" }
   ]
 }

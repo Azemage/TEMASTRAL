@@ -620,22 +620,31 @@ remplissage."""
 
     domain_scores_data = """DANS `domain_scores` : une note 1-5 déjà calculée (NE LA RECALCULE \
 JAMAIS) pour chacun des 4 domaines de vie (`amour`, `argent`, `sante`, `travail_quotidien`), \
-chacune avec `label` (ex. "semaine favorable"), et `top_positive_signal`/`top_negative_signal` \
-(le transit le plus porteur/le plus tendu de ce domaine cette semaine, ou null s'il n'y en a \
-pas). Intègre ces notes dans "Pour toi cette semaine" par domaine, SANS jamais citer le chiffre \
-brut ni le mot "note"/"score" — traduis uniquement en ton (une note haute = ton plus \
-enthousiaste, une note basse = ton plus doux et posé, jamais alarmiste). Termine la section \
-personnelle par UN point fort ("ce qui coule bien cette semaine") et, seulement si un signal \
-négatif net existe quelque part, UN point de vigilance — formulés à partir de \
-`top_positive_signal`/`top_negative_signal`, jamais pré-écrits pour une combinaison type. Le \
-point fort est une INVITATION à saisir une dynamique ("cette semaine se prête à...") jamais une \
-garantie de résultat ; le point de vigilance est une RECOMMANDATION DE PRUDENCE sur une \
-dynamique ("mieux vaut prendre le temps de..."), jamais une prédiction négative. Pour le domaine \
-`argent` : jamais de conseil financier concret (montant, achat, vente, investissement précis), \
-reste au niveau de l'énergie autour des ressources. Pour le domaine `sante` : jamais de \
-symptôme, diagnostic ou action médicale, reste au niveau du tonus/de l'énergie générale, et si \
-ce domaine est mis en avant négativement ajoute une formule du type "pour toute préoccupation de \
-santé réelle, mieux vaut consulter un professionnel"."""
+chacune avec `label` (ex. "semaine favorable", "semaine difficile"), et \
+`top_positive_signal`/`top_negative_signal` (le transit le plus porteur/le plus tendu de ce \
+domaine cette semaine, ou null s'il n'y en a pas). Intègre ces notes dans "Pour toi cette \
+semaine" par domaine, SANS jamais citer le chiffre brut ni le mot "note"/"score" — traduis \
+en ton, mais SOIS DIRECT : une note de 4-5 mérite un ton franchement enthousiaste, une note de \
+1-2 doit clairement dire que le domaine demande une vraie vigilance cette semaine (pas juste \
+"un peu plus doux") — ne gomme jamais l'écart entre un 1-2 et un 4-5 en ramenant tout vers un \
+ton tiède et prudent par défaut. Un score bas n'est PAS une catastrophe annoncée (reste en \
+tendance, jamais en certitude ni en événement précis prédit), mais ce n'est pas non plus \
+quelque chose à enjoliver : nomme directement la difficulté ("cette semaine met à l'épreuve...", \
+"mieux vaut avancer avec prudence sur...") plutôt que de la noyer dans un optimisme de façade. \
+Termine la section personnelle par UN point fort ("ce qui coule bien cette semaine") et, dès \
+qu'un signal négatif net existe quelque part (pas seulement en cas extrême), UN point de \
+vigilance — formulés à partir de `top_positive_signal`/`top_negative_signal`, jamais pré-écrits \
+pour une combinaison type. Le point fort est une INVITATION à saisir une dynamique ("cette \
+semaine se prête à...") jamais une garantie de résultat ; le point de vigilance NOMME clairement \
+la difficulté puis la formule en RECOMMANDATION DE PRUDENCE sur une dynamique ("mieux vaut \
+prendre le temps de..."), jamais une prédiction d'événement négatif précis. Si plusieurs \
+domaines sont notés bas EN MÊME TEMPS, dis-le franchement (c'est une semaine qui demande de la \
+prudence sur plusieurs fronts) sans pour autant dramatiser ni empiler l'inquiétude phrase après \
+phrase. Pour le domaine `argent` : jamais de conseil financier concret (montant, achat, vente, \
+investissement précis), reste au niveau de l'énergie autour des ressources. Pour le domaine \
+`sante` : jamais de symptôme, diagnostic ou action médicale, reste au niveau du tonus/de \
+l'énergie générale, et si ce domaine est mis en avant négativement ajoute une formule du type \
+"pour toute préoccupation de santé réelle, mieux vaut consulter un professionnel"."""
 
     structure = """FORMAT : deux sections Markdown clairement séparées (## Climat de la semaine, \
 ## Pour toi cette semaine), la première valable pour tout le monde et rédigée sans référence au \
@@ -645,11 +654,11 @@ Mercure/Vénus/Mars, aspects) plutôt qu'une liste plate. Reste concret et actio
 intention à poser, un type de journée à privilégier ou à éviter), jamais une description \
 purement astronomique."""
 
-    guardrails = """Ton évocateur et pratique mais jamais fataliste : reformule toujours en \
-tendance ou énergie disponible ("cette semaine invite à..." plutôt que "il vous arrivera..."). \
-N'invente aucune position, aspect ou événement hors des données fournies. Si plusieurs domaines \
-ont une note basse simultanément, garde un ton posé et stabilisant plutôt que d'accumuler \
-l'inquiétude d'un domaine à l'autre."""
+    guardrails = """Ton évocateur et pratique, direct plutôt qu'édulcoré, mais jamais fataliste \
+: reformule toujours en tendance ou énergie disponible ("cette semaine invite à..." plutôt que \
+"il vous arrivera..."), jamais en prédiction d'événement précis — mais une tendance franchement \
+difficile reste une tendance DIFFICILE, pas une tendance stable maquillée en positif. \
+N'invente aucune position, aspect ou événement hors des données fournies."""
 
     return f"""{intro}
 
@@ -680,13 +689,16 @@ maison générique touchée par l'événement principal de la semaine (`main_eve
 signe précis —, `house_keyword`/`house_themes` (le thème de vie de cette maison), et `score` \
 (1 à 5, déjà calculé, voir ci-dessous)."""
 
-    scoring = """SCORE — chaque signe porte un `score` de 1 (lien le plus ténu/discret cette \
-semaine) à 5 (lien le plus porteur) : NE LE RECALCULE JAMAIS, ne le cite JAMAIS tel quel dans le \
-texte (pas de chiffre, pas de "note", pas de "sur 5") — traduis-le uniquement en TON. Un score \
-élevé mérite un ton plus enthousiaste et porteur, un score bas un ton plus doux et posé (jamais \
-alarmiste ni négatif : même un score de 1 reste une tendance discrète, jamais une "mauvaise \
-semaine"). Un score ne juge jamais la valeur du signe lui-même, seulement l'intensité du lien \
-avec l'événement de cette semaine précise — ça change à chaque semaine."""
+    scoring = """SCORE — chaque signe porte un `score` de 1 (semaine la plus délicate/discrète \
+cette semaine) à 5 (semaine la plus porteuse) : NE LE RECALCULE JAMAIS, ne le cite JAMAIS tel \
+quel dans le texte (pas de chiffre, pas de "note", pas de "sur 5") — traduis-le en TON, mais \
+sans gommer l'écart : un score de 4-5 mérite un ton franchement enthousiaste et porteur, un \
+score de 1-2 doit se lire clairement comme une semaine plus délicate pour ce signe (pas juste \
+"un peu plus calme") — reste en tendance plutôt qu'en certitude, mais ne dilue jamais un score \
+bas dans un optimisme de façade. Un score ne juge jamais la valeur du signe lui-même en général \
+(ce n'est pas "les Poissons sont difficiles"), seulement l'intensité et la tonalité du lien avec \
+l'événement de cette semaine précise — ça change à chaque semaine, un signe noté bas cette \
+semaine peut être le mieux loti la semaine suivante."""
 
     rules = """RÈGLES IMPÉRATIVES :
 - Pour CHAQUE signe, un court paragraphe (2 à 4 phrases, pas plus), concret et actionnable, \

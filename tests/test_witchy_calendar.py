@@ -47,14 +47,23 @@ def client():
 # Moteur de calcul
 # ---------------------------------------------------------------------------
 def test_score_from_raw_matches_conversion_table():
-    assert _score_from_raw(0) == 2
-    assert _score_from_raw(4) == 2
-    assert _score_from_raw(5) == 3
+    assert _score_from_raw(0) == 1
+    assert _score_from_raw(4) == 1
+    assert _score_from_raw(5) == 2
+    assert _score_from_raw(6) == 2
     assert _score_from_raw(7) == 3
-    assert _score_from_raw(8) == 4
+    assert _score_from_raw(8) == 3
     assert _score_from_raw(9) == 4
     assert _score_from_raw(10) == 5
     assert _score_from_raw(15) == 5
+
+
+def test_score_from_raw_floor_is_reachable_by_the_most_common_event():
+    """Une station de Mercure (poids_base 4, l'événement le plus fréquent du catalogue, sans
+    modificateur) doit atteindre le vrai plancher 1/5 — pas être artificiellement remontée à 2
+    (voir app/reference_data/witchy_calendar_events.json, note_qualitative)."""
+    mercury_station_score_brut = 4
+    assert _score_from_raw(mercury_station_score_brut) == 1
 
 
 def test_lunation_events_alternate_new_and_full_moon():

@@ -60,12 +60,13 @@
     "description": "Calcul du score final affiché (ex. sur 5 ou en nombre d'étoiles) à partir du poids de base + modificateurs",
     "formula": "score_brut = poids_base + somme(poids_modificateurs applicables)",
     "conversion_echelle_5": [
-      { "score_brut_range": "0-4", "note": 2 },
-      { "score_brut_range": "5-7", "note": 3 },
-      { "score_brut_range": "8-9", "note": 4 },
+      { "score_brut_range": "0-4", "note": 1 },
+      { "score_brut_range": "5-6", "note": 2 },
+      { "score_brut_range": "7-8", "note": 3 },
+      { "score_brut_range": "9", "note": 4 },
       { "score_brut_range": ">=10", "note": 5 }
     ],
-    "note_qualitative": "Cette échelle sert à trier/prioriser l'affichage (voir output_schema), pas à décréter qu'un événement noté 2 est 'sans intérêt' — reformuler toujours en 'intensité collective' plutôt qu'en jugement de valeur."
+    "note_qualitative": "Cette échelle sert à trier/prioriser l'affichage (voir output_schema) et doit couvrir tout l'intervalle 1-5 réellement : une station de Mercure (poids_base 4, sans modificateur — l'événement le plus fréquent du catalogue) est le cas le moins marquant et doit se noter 1, pas être artificiellement remontée à 2. Un événement noté 1 n'est pas 'sans intérêt' pour autant — reformuler toujours en 'intensité collective' plutôt qu'en jugement de valeur, mais sans gonfler le plancher de l'échelle."
   },
 
   "output_schema": {
