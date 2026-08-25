@@ -42,11 +42,14 @@ from app.core.witchy_calendar import STATION_PLANETS, compute_station_events, co
 from app.core.zodiac import SIGNS, SIGNS_FR, sign_and_degree, signs_distance
 
 # Incrémenté à chaque changement de la forme du dict retourné par compute_weekly_collective
-# (nouveau champ, renommage...) — voir weekly_weather_service.py::get_or_compute_weekly_weather,
-# qui compare cette valeur à celle stockée dans le cache pour invalider silencieusement une
-# ligne obsolète plutôt que de servir indéfiniment une forme de données périmée (le cache est
-# partagé par tous les visiteurs d'une même semaine et ne se rafraîchit sinon jamais tout seul).
-SCHEMA_VERSION = 2
+# (nouveau champ, renommage...) OU du contenu généré par un champ existant sans changement de
+# forme (ex. le passage de combination_lines d'une formule par assemblage à une banque de
+# phrases concrètes, v2 — même clé, texte différent) — voir
+# weekly_weather_service.py::get_or_compute_weekly_weather, qui compare cette valeur à celle
+# stockée dans le cache pour invalider silencieusement une ligne obsolète plutôt que de servir
+# indéfiniment une forme ou un contenu périmés (le cache est partagé par tous les visiteurs
+# d'une même semaine et ne se rafraîchit sinon jamais tout seul).
+SCHEMA_VERSION = 3
 
 MOON_PLANETS = ["Moon"]
 FAST_PLANETS = ["Mercury", "Venus", "Mars"]
@@ -375,6 +378,7 @@ def compute_weekly_collective(start_date: date_type) -> dict:
         transit_transit_aspects=aspects,
         daily_fast_positions=daily_fast_positions,
         slow_planet_signs=slow_planet_signs,
+        witchy_events=witchy_events,
     )
 
     return {

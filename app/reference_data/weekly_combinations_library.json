@@ -1,42 +1,421 @@
 {
-  "description": "Bibliothèque de combinaisons pour les points forts hebdomadaires (voir doc source bibliotheque_combinaisons_hebdomadaires.md) — lookup/formules déterministes, AUCUNE génération IA. Sert à la fois d'affichage direct dans l'app et de donnée d'entrée factuelle pour la lecture LLM de la météo de la semaine (qui synthétise ces lignes plutôt que de les réinventer).",
-
+  "description": "Bibliothèque de combinaisons pour les points forts hebdomadaires (voir docs source bibliotheque_combinaisons_hebdomadaires.md et bibliotheque_combinaisons_hebdomadaires2.md) — lookup/formules déterministes, AUCUNE génération IA. Sert à la fois d'affichage direct dans l'app et de donnée d'entrée factuelle pour la lecture LLM de la météo de la semaine (qui synthétise ces lignes plutôt que de les réinventer).",
+  "combination_phrase_bank": {
+    "note": "Banque de phrases CONCRÈTES par paire (planète rapide x planète/point lent), scindée en 2 polarités (harmonieux/tendu), 3 variantes chacune (voir doc source v2, section 1) — remplace l'ancienne formule par assemblage de 3 briques abstraites (thème + modulateur + thème), jugée trop répétitive et interchangeable d'une combinaison à l'autre. Sélection d'une variante par rotation déterministe (numéro de semaine ISO + hash de la paire, voir _rotation_index dans weekly_weather_combinations.py) plutôt qu'un tirage aléatoire, pour qu'une même paire ne retombe jamais deux semaines de suite sur la même variante tout en restant reproductible. Ne couvre QUE les aspects rapide->lente (Lune/Mercure/Vénus/Mars vers Jupiter à Pluton, Chiron, l'axe des Nœuds) : les aspects ENTRE planètes rapides elles-mêmes (ex. Lune conjonction Vénus) restent construits par la formule combinable (fast_planet_themes + aspect_modulators), le doc source ne couvrant que les paires rapide-lente.",
+    "polarity_rule": "'tendu' pour carré/opposition/quinconce, et pour la conjonction UNIQUEMENT si la planète rapide est classée 'exigeante' (Mars, même classification que planet_categories.demanding dans weekly_domain_scoring.json) ; 'harmonieux' pour trigone/sextile, et pour la conjonction sinon (Lune/Mercure/Vénus, neutres ou bénéfique).",
+    "banks": {
+      "Moon": {
+        "Jupiter": {
+          "harmonieux": [
+            "Ton moral est particulièrement haut cette semaine — bon moment pour te faire plaisir ou pour dire oui à une sortie improvisée.",
+            "Une bonne nouvelle ou un geste généreux pourrait venir alléger ton humeur cette semaine.",
+            "Tu te sens porté(e) par un optimisme naturel — profites-en pour te reconnecter à ce qui te fait du bien."
+          ],
+          "tendu": [
+            "Attention à ne pas trop en faire cette semaine sur le plan émotionnel — l'envie de tout dire oui peut te déborder.",
+            "Une tendance à dramatiser légèrement ou à voir les choses plus grandes qu'elles ne sont — vérifie avant de réagir.",
+            "Ton besoin de réconfort pourrait te pousser à des excès (nourriture, dépenses, promesses) — reste vigilant(e) sur la mesure."
+          ]
+        },
+        "Saturn": {
+          "harmonieux": [
+            "Une semaine où tu te sens capable de tenir bon émotionnellement, même si le contexte est exigeant.",
+            "Bon moment pour poser une limite claire dans une relation — tu as la solidité intérieure pour le faire calmement.",
+            "Tu ressens un besoin sain de stabilité — organiser ton quotidien te fera du bien plutôt que de te peser."
+          ],
+          "tendu": [
+            "Une sensation de lourdeur ou de solitude peut s'installer cette semaine — ne reste pas isolé(e) si ça pèse trop.",
+            "Tu pourrais te sentir jugé(e) ou pas à la hauteur émotionnellement — rappelle-toi que ce ressenti est passager.",
+            "Le besoin de contrôler tes émotions peut se retourner contre toi — mieux vaut exprimer que retenir cette semaine."
+          ]
+        },
+        "Uranus": {
+          "harmonieux": [
+            "Un besoin rafraîchissant d'indépendance cette semaine — un peu de temps pour toi te fera un bien fou.",
+            "Une surprise agréable ou un changement de routine bienvenu pourrait égayer ta semaine.",
+            "Tu te sens prêt(e) à casser une habitude qui ne te correspond plus — suis cette impulsion."
+          ],
+          "tendu": [
+            "Tes émotions peuvent être plus instables que d'habitude cette semaine — évite de prendre des décisions à chaud.",
+            "Une envie soudaine de tout plaquer peut surgir — prends le temps de voir si c'est un vrai besoin ou un coup de tête.",
+            "Un imprévu pourrait bousculer ton quotidien — ta capacité d'adaptation sera ton meilleur atout cette semaine."
+          ]
+        },
+        "Neptune": {
+          "harmonieux": [
+            "Ton intuition est particulièrement fine cette semaine — fais-lui confiance, surtout dans tes relations proches.",
+            "Un moment propice pour te reposer, rêver ou créer — laisse-toi porter sans culpabiliser.",
+            "Une connexion émotionnelle plus subtile et plus douce que d'habitude est possible cette semaine."
+          ],
+          "tendu": [
+            "Tu pourrais avoir du mal à distinguer ce que tu ressens vraiment de ce que tu imagines — prends du recul avant de conclure.",
+            "Attention à l'idéalisation cette semaine, en amour comme dans tes projets — vérifie les faits plutôt que l'impression.",
+            "Une certaine confusion ou fatigue diffuse peut s'installer — accorde-toi du repos plutôt que de forcer la clarté."
+          ]
+        },
+        "Pluto": {
+          "harmonieux": [
+            "Une intensité émotionnelle plus forte que d'habitude, mais qui te pousse dans une direction constructive cette semaine.",
+            "Bon moment pour aborder un sujet profond que tu évitais habituellement — tu as la force pour le faire maintenant.",
+            "Un sentiment de transformation intérieure discrète mais réelle peut se manifester cette semaine."
+          ],
+          "tendu": [
+            "Des émotions intenses, parfois difficiles à canaliser, peuvent remonter cette semaine — donne-toi le droit de les traverser sans les juger.",
+            "Une tendance à vouloir tout contrôler émotionnellement peut créer de la tension avec un proche — lâche un peu de lest.",
+            "Un sentiment d'obsession ou de rumination est possible — bouger physiquement peut t'aider à décharger cette intensité."
+          ]
+        },
+        "chiron": {
+          "harmonieux": [
+            "Une occasion douce de prendre soin d'une blessure émotionnelle ancienne se présente cette semaine, sans urgence.",
+            "Tu pourrais ressentir une vraie compassion pour toi-même cette semaine — un pas important, même discret.",
+            "Un échange sincère avec quelqu'un pourrait t'aider à te sentir compris(e) sur un sujet sensible."
+          ],
+          "tendu": [
+            "Une sensibilité à fleur de peau cette semaine — une remarque anodine pourrait toucher un point plus profond que prévu.",
+            "Un vieux sentiment de blessure pourrait remonter sans prévenir — accueille-le plutôt que de le repousser.",
+            "Tu pourrais te sentir plus vulnérable émotionnellement — ce n'est pas une faiblesse, juste un moment à traverser en douceur."
+          ]
+        },
+        "node_axis": {
+          "harmonieux": [
+            "Tu sens instinctivement que tu es sur la bonne voie cette semaine, même si le chemin reste incertain.",
+            "Un ressenti fort pourrait te confirmer une direction que tu envisages depuis un moment.",
+            "Une situation familière refait surface, mais cette fois tu la géreras différemment — signe de progression réelle."
+          ],
+          "tendu": [
+            "Une tension entre ce qui te rassure et ce qui te ferait grandir peut se faire sentir cette semaine.",
+            "Tu pourrais être tenté(e) de retomber dans une vieille habitude émotionnelle par facilité — reste conscient(e) du choix que ça représente.",
+            "Un sentiment d'inconfort face à l'inconnu est normal cette semaine — ce n'est pas un signal d'arrêt, juste un signal de changement."
+          ]
+        }
+      },
+      "Mercury": {
+        "Jupiter": {
+          "harmonieux": [
+            "Les idées viennent facilement cette semaine et une conversation pourrait ouvrir une possibilité à laquelle tu n'avais pas pensé.",
+            "Bon moment pour présenter un projet ou demander ce dont tu as besoin — ta façon de t'exprimer inspire confiance.",
+            "Une nouvelle rassurante ou une occasion d'apprendre quelque chose qui t'enthousiasme pourrait se présenter cette semaine."
+          ],
+          "tendu": [
+            "Tu pourrais avoir tendance à promettre plus que ce que tu peux tenir cette semaine — vérifie avant de t'engager.",
+            "Une info reçue avec enthousiasme mérite d'être vérifiée avant d'être répétée — l'exagération guette cette semaine.",
+            "Trop de sujets en tête à la fois peut te disperser — mieux vaut choisir une priorité claire qu'essayer de tout mener de front."
+          ]
+        },
+        "Saturn": {
+          "harmonieux": [
+            "Une semaine où tu vois clair dans une situation compliquée — bon moment pour poser un plan concret plutôt que de tergiverser.",
+            "Une conversation sérieuse ou un engagement pris cette semaine a de bonnes chances de tenir dans la durée.",
+            "Ta capacité à structurer tes idées est particulièrement solide — utile pour trancher une décision en suspens."
+          ],
+          "tendu": [
+            "Une conversation pourrait tourner plus froide ou plus rigide que prévu cette semaine — laisse le temps faire son travail plutôt que de forcer une réponse.",
+            "Le doute ou l'autocritique peut peser sur tes décisions cette semaine — évite de conclure trop vite que tu as tort.",
+            "Une nouvelle contraignante ou un délai serré pourrait tomber cette semaine — mieux vaut l'accepter tôt que lutter contre."
+          ]
+        },
+        "Uranus": {
+          "harmonieux": [
+            "Une idée originale ou une solution inattendue pourrait te traverser l'esprit cette semaine — note-la avant de l'oublier.",
+            "Bon moment pour changer d'angle sur un sujet qui bloquait — un peu de recul suffit à débloquer la situation.",
+            "Une conversation surprenante pourrait relancer ton intérêt pour un sujet que tu pensais clos."
+          ],
+          "tendu": [
+            "Tes pensées peuvent partir dans plusieurs directions à la fois cette semaine — difficile de rester concentré(e) longtemps sur un seul sujet.",
+            "Une nouvelle inattendue pourrait bousculer un plan déjà posé — la flexibilité vaudra mieux que la résistance.",
+            "Attention aux décisions prises sur un coup de tête cette semaine — un temps de réflexion supplémentaire ne coûte rien."
+          ]
+        },
+        "Neptune": {
+          "harmonieux": [
+            "Ton imagination est en éveil cette semaine — un bon moment pour un projet créatif ou pour visualiser où tu veux aller.",
+            "Une intuition sur une situation en cours mérite d'être écoutée cette semaine, même sans preuve concrète encore.",
+            "Les mots viennent avec plus de poésie ou de sensibilité que d'habitude — utile pour dire quelque chose de délicat."
+          ],
+          "tendu": [
+            "Une information reçue cette semaine pourrait être incomplète ou déformée — recoupe avant de la considérer comme acquise.",
+            "Difficile de te concentrer pleinement cette semaine — accepte de faire une pause plutôt que de forcer la clarté.",
+            "Un malentendu est possible si tu supposes que l'autre comprend sans que tu l'aies vraiment dit — mieux vaut être explicite."
+          ]
+        },
+        "Pluto": {
+          "harmonieux": [
+            "Une conversation cette semaine pourrait aller droit à l'essentiel, sans détour — utile pour clarifier un sujet resté flou trop longtemps.",
+            "Tu vois particulièrement clair derrière les apparences cette semaine — fais confiance à cette lucidité.",
+            "Bon moment pour reprendre un dossier ou une négociation avec une détermination renouvelée."
+          ],
+          "tendu": [
+            "Une discussion pourrait virer à l'obsession ou au besoin de tout contrôler cette semaine — desserre un peu la prise.",
+            "Tu pourrais soupçonner qu'on te cache quelque chose cette semaine — vérifie les faits avant d'y voir une intention.",
+            "Un sujet sensible pourrait ressurgir dans une conversation — mieux vaut l'aborder franchement que le laisser couver."
+          ]
+        },
+        "chiron": {
+          "harmonieux": [
+            "Une conversation pourrait t'aider à mettre des mots sur quelque chose que tu portais en silence depuis un moment.",
+            "Tu trouves les mots justes pour parler d'un sujet sensible cette semaine, pour toi ou pour quelqu'un d'autre.",
+            "Une remarque bienveillante pourrait t'aider à voir une vieille histoire sous un jour plus doux."
+          ],
+          "tendu": [
+            "Une remarque anodine pourrait toucher un point plus sensible que prévu cette semaine — le dire plutôt que le ravaler t'aidera.",
+            "Tu pourrais te sentir jugé(e) sur un sujet où tu es justement fragile — rappelle-toi que ce ressenti dit plus sur le contexte que sur toi.",
+            "Difficile de trouver les bons mots sur un sujet qui te touche cette semaine — ce n'est pas grave de prendre le temps."
+          ]
+        },
+        "node_axis": {
+          "harmonieux": [
+            "Une conversation cette semaine pourrait éclairer une direction que tu envisages depuis un moment sans oser la nommer.",
+            "Les mots pour expliquer où tu veux aller te viennent plus facilement que d'habitude cette semaine.",
+            "Un échange pourrait confirmer que tu es sur la bonne piste, même si le chemin reste à préciser."
+          ],
+          "tendu": [
+            "Une conversation pourrait te tirer vers une habitude rassurante plutôt que vers ce qui te ferait vraiment avancer — sois attentif(ve) au choix que tu fais.",
+            "Difficile de mettre des mots sur une direction encore floue cette semaine — ce n'est pas un problème à résoudre dans l'urgence.",
+            "Une discussion pourrait raviver un doute sur la direction prise — normal à ce stade, pas un signal d'alarme."
+          ]
+        }
+      },
+      "Venus": {
+        "Jupiter": {
+          "harmonieux": [
+            "L'affection circule facilement cette semaine — bon moment pour un geste généreux envers quelqu'un que tu aimes.",
+            "Une rentrée d'argent ou une bonne nouvelle financière est possible cette semaine, ou simplement un sentiment d'abondance.",
+            "Tu te sens séduisant(e) et sociable cette semaine — profite d'une occasion de sortir ou de rencontrer du monde."
+          ],
+          "tendu": [
+            "Tentation de dépenser plus que de raison cette semaine, surtout pour te faire plaisir ou plaire à quelqu'un — pose-toi la question avant d'acheter.",
+            "Une relation ou une situation pourrait sembler plus belle qu'elle ne l'est vraiment — vérifie avant de t'engager davantage.",
+            "L'envie de dire oui à tout peut te déborder cette semaine — reste attentif(ve) à ce que tu peux vraiment assumer."
+          ]
+        },
+        "Saturn": {
+          "harmonieux": [
+            "Une relation prend un tour plus sérieux et plus stable cette semaine — un engagement pris maintenant a de bonnes chances de durer.",
+            "Bon moment pour poser un budget clair ou tenir une promesse financière que tu t'étais fixée.",
+            "Tu te sens capable d'aimer sans te perdre cette semaine — une maturité affective qui te sert bien."
+          ],
+          "tendu": [
+            "Une relation pourrait sembler plus froide ou plus distante que d'habitude cette semaine — pas forcément un signe de rupture, souvent juste un passage.",
+            "Une contrainte financière ou une dépense obligée pourrait tomber cette semaine — mieux vaut l'anticiper que la subir.",
+            "Tu pourrais te sentir peu apprécié(e) ou pas assez désiré(e) cette semaine — ce ressenti dit plus sur ta fatigue du moment que sur la réalité."
+          ]
+        },
+        "Uranus": {
+          "harmonieux": [
+            "Une rencontre ou un moment inattendu pourrait apporter un vent de fraîcheur dans ta vie affective cette semaine.",
+            "Envie de sortir de ta routine amoureuse ou sociale cette semaine — suis cette impulsion, elle est bienvenue.",
+            "Un geste ou une proposition surprenante pourrait te faire sourire cette semaine."
+          ],
+          "tendu": [
+            "Une relation pourrait sembler soudain instable ou imprévisible cette semaine — évite les décisions radicales à chaud.",
+            "Une dépense impulsive est plus tentante que d'habitude cette semaine — laisse passer une nuit avant de valider un achat important.",
+            "Un besoin soudain d'indépendance pourrait surprendre ton entourage cette semaine — explique plutôt que de t'éclipser."
+          ]
+        },
+        "Neptune": {
+          "harmonieux": [
+            "Un moment romantique ou inspirant est possible cette semaine — l'amour prend une teinte plus poétique que d'habitude.",
+            "Ta créativité et ton sens esthétique sont en éveil — bon moment pour un projet artistique ou une sortie culturelle.",
+            "Une connexion affective particulièrement douce et compréhensive peut se vivre cette semaine."
+          ],
+          "tendu": [
+            "Attention à ne pas idéaliser une personne ou une situation amoureuse cette semaine — vérifie ce qui est réel.",
+            "Un flou ou un malentendu sentimental est possible — privilégie les conversations claires plutôt que les sous-entendus.",
+            "Tu pourrais dépenser ou promettre plus que ce que la situation ne le permet réellement — reste les pieds sur terre côté argent."
+          ]
+        },
+        "Pluto": {
+          "harmonieux": [
+            "Une relation gagne en profondeur et en intensité cette semaine — un rapprochement sincère est possible.",
+            "Bon moment pour aborder un sujet financier ou affectif que tu évitais habituellement, avec la force nécessaire pour le faire.",
+            "Une attirance particulièrement forte ou un désir de fusion peut se faire sentir cette semaine."
+          ],
+          "tendu": [
+            "Une relation pourrait se teinter de jalousie ou de besoin de contrôle cette semaine — nomme le sentiment plutôt que de le taire.",
+            "Une question d'argent ou de pouvoir dans une relation pourrait créer de la tension — mieux vaut en parler franchement que la laisser couver.",
+            "Une intensité affective difficile à canaliser peut remonter cette semaine — donne-toi le droit de la traverser sans culpabiliser."
+          ]
+        },
+        "chiron": {
+          "harmonieux": [
+            "Une relation peut t'aider à guérir une vieille blessure affective cette semaine, sans que ce soit dramatique ni brusque.",
+            "Tu te sens capable d'accueillir une part vulnérable de toi-même dans une relation cette semaine.",
+            "Un geste tendre pourrait toucher un endroit sensible en toi, d'une manière réparatrice plutôt que douloureuse."
+          ],
+          "tendu": [
+            "Une remarque sur ton apparence ou ta valeur pourrait toucher plus profondément que prévu cette semaine — ce n'est pas anodin, tu as le droit de le dire.",
+            "Une vieille peur d'être abandonné(e) ou pas assez aimé(e) pourrait ressurgir cette semaine — elle appartient au passé, pas forcément à la situation présente.",
+            "Tu pourrais te sentir plus vulnérable en amour cette semaine — accueille ce ressenti plutôt que de le repousser par fierté."
+          ]
+        },
+        "node_axis": {
+          "harmonieux": [
+            "Une relation ou une rencontre cette semaine pourrait avoir un vrai sens sur ton chemin, au-delà du plaisir immédiat.",
+            "Tu sens instinctivement qu'une relation ou un choix financier va dans la bonne direction cette semaine.",
+            "Un lien affectif qui te pousse à grandir plutôt qu'à te rassurer prend de l'importance cette semaine."
+          ],
+          "tendu": [
+            "Tu pourrais être tenté(e) de rester dans une relation ou une habitude confortable plutôt que d'avancer vers ce qui te ferait grandir.",
+            "Un choix affectif ou financier cette semaine met en tension ce qui te rassure et ce qui te ferait évoluer.",
+            "Un schéma amoureux familier pourrait se répéter cette semaine — l'occasion de le reconnaître plutôt que de le rejouer sans y penser."
+          ]
+        }
+      },
+      "Mars": {
+        "Jupiter": {
+          "harmonieux": [
+            "Ton énergie est au rendez-vous cette semaine — bon moment pour te lancer dans un projet qui te tient à cœur.",
+            "Une occasion d'agir avec audace et d'obtenir un bon résultat se présente cette semaine.",
+            "Tu te sens motivé(e) et confiant(e) dans ta capacité à avancer cette semaine — utilise cet élan."
+          ],
+          "tendu": [
+            "Tendance à en faire trop ou à foncer sans regarder cette semaine — un peu de mesure t'évitera des efforts inutiles.",
+            "Une prise de risque tentante mérite d'être vérifiée avant d'être suivie — l'enthousiasme peut masquer un détail important.",
+            "Une impatience à vouloir tout obtenir vite pourrait cette semaine te pousser à brûler une étape."
+          ]
+        },
+        "Saturn": {
+          "harmonieux": [
+            "Tu as la discipline nécessaire cette semaine pour avancer sur un objectif de longue haleine, sans te décourager.",
+            "Bon moment pour structurer un effort ou tenir un engagement physique que tu t'étais fixé.",
+            "Une situation qui demandait de la patience commence à porter ses fruits cette semaine."
+          ],
+          "tendu": [
+            "Ton énergie tourne au ralenti cette semaine alors que le contexte demande justement de tenir bon — la frustration guette si tu veux aller plus vite que prévu.",
+            "Un obstacle concret pourrait freiner un projet cette semaine — mieux vaut ajuster le rythme que forcer contre lui.",
+            "Une contrariété liée à une règle ou une contrainte extérieure pourrait t'agacer cette semaine — l'accepter coûtera moins d'énergie que lutter."
+          ]
+        },
+        "Uranus": {
+          "harmonieux": [
+            "Une impulsion d'agir différemment cette semaine pourrait te sortir efficacement d'une situation figée.",
+            "Ton énergie prend une tournure plus indépendante cette semaine — bon moment pour initier quelque chose en solo.",
+            "Un changement soudain d'approche pourrait débloquer une situation qui traînait."
+          ],
+          "tendu": [
+            "Une tension imprévue pourrait surgir cette semaine — respire avant de réagir à chaud.",
+            "L'envie de tout casser ou de partir sur un coup de tête peut te traverser cette semaine — donne-toi un délai avant d'agir.",
+            "Une situation pourrait devenir plus volatile que prévu — ta capacité à t'adapter vite sera ton meilleur atout."
+          ]
+        },
+        "Neptune": {
+          "harmonieux": [
+            "Une action inspirée par ton intuition plutôt que par le calcul a de bonnes chances de porter ses fruits cette semaine.",
+            "Bon moment pour un projet créatif qui demande autant d'énergie que d'imagination.",
+            "Tu agis avec plus de douceur que d'habitude cette semaine, sans perdre en efficacité."
+          ],
+          "tendu": [
+            "Ton énergie peut sembler plus diffuse ou moins précise que d'habitude cette semaine — évite les décisions qui demandent une grande clarté.",
+            "Une situation où tu penses agir pour la bonne cause mérite d'être vérifiée avant de t'y engager à fond.",
+            "Une fatigue difficile à expliquer peut s'installer cette semaine — le repos sera plus utile que l'effort supplémentaire."
+          ]
+        },
+        "Pluto": {
+          "harmonieux": [
+            "Une détermination profonde et durable t'anime cette semaine — utile pour avancer sur un sujet qui compte vraiment pour toi.",
+            "Bon moment pour transformer une situation bloquée en avançant avec constance plutôt qu'en forçant.",
+            "Ton énergie retrouve une intensité qui te permet d'aller au bout d'un sujet que tu remettais à plus tard."
+          ],
+          "tendu": [
+            "Un conflit de pouvoir ou de contrôle pourrait tendre une situation cette semaine — choisis tes batailles plutôt que de toutes les mener.",
+            "Une colère intense mais difficile à exprimer clairement pourrait monter cette semaine — bouger physiquement peut t'aider à la décharger.",
+            "Une confrontation semble inévitable cette semaine — mieux vaut l'aborder de face que la laisser s'envenimer en silence."
+          ]
+        },
+        "chiron": {
+          "harmonieux": [
+            "Une action posée cette semaine pourrait t'aider à reprendre du pouvoir sur une situation où tu t'étais senti(e) impuissant(e).",
+            "Tu trouves l'énergie de défendre quelque chose qui te tient à cœur, même un sujet sensible.",
+            "Agir sur un vieux sujet qui te pesait pourrait t'apporter un vrai soulagement cette semaine."
+          ],
+          "tendu": [
+            "Une action ou une remarque pourrait raviver une ancienne blessure d'humiliation ou d'échec cette semaine — accueille-la sans t'y noyer.",
+            "Tu pourrais te sentir plus facilement blessé(e) dans ton amour-propre cette semaine — normal, ce n'est pas une faiblesse.",
+            "Une frustration ancienne pourrait ressurgir dans un contexte qui n'a rien à voir — reconnaître l'origine t'aidera à ne pas la reporter sur le mauvais sujet."
+          ]
+        },
+        "node_axis": {
+          "harmonieux": [
+            "Une action entreprise cette semaine te rapproche concrètement de la direction que tu essaies de suivre depuis un moment.",
+            "Tu as l'énergie pour sortir d'une zone de confort cette semaine — une bonne semaine pour oser un premier pas.",
+            "Un geste courageux cette semaine pourrait marquer une vraie progression, même s'il te semble petit."
+          ],
+          "tendu": [
+            "Tu pourrais être tenté(e) d'agir par réflexe familier plutôt que d'oser quelque chose de nouveau cette semaine — remarque le choix que tu fais.",
+            "Une tension entre agir prudemment et agir pour grandir peut se faire sentir cette semaine.",
+            "Une action entreprise cette semaine pourrait te confronter directement à ce que tu évites d'habitude — c'est justement le signe que tu avances."
+          ]
+        }
+      }
+    }
+  },
   "fast_planet_themes": {
+    "note": "Utilisé UNIQUEMENT pour les aspects ENTRE planètes rapides elles-mêmes (aspect_rapide_rapide, ex. Lune conjonction Vénus) — les aspects rapide->lente utilisent désormais combination_phrase_bank ci-dessus.",
     "Moon": "l'humeur, le ressenti émotionnel, le besoin de sécurité",
     "Mercury": "les échanges, les décisions, la clarté d'esprit",
     "Venus": "les relations affectives, l'attraction, le rapport à l'argent/au plaisir",
     "Mars": "l'énergie, l'initiative, la façon d'agir ou de réagir"
   },
-
   "aspect_modulators": {
-    "note": "2-3 variantes par aspect (voir option_rapide du doc source), sélectionnées de façon déterministe par semaine/paire plutôt qu'aléatoire, pour rester reproductible.",
-    "conjunction": ["se fusionne directement avec", "est amplifié(e) par"],
-    "trine": ["trouve un appui fluide dans", "circule facilement avec"],
-    "sextile": ["trouve une occasion favorable avec"],
-    "square": ["entre en friction avec", "est mis(e) sous tension par"],
-    "opposition": ["se confronte à", "doit composer avec"],
-    "quincunx": ["doit s'ajuster maladroitement à"]
+    "note": "2-3 variantes par aspect, sélectionnées de façon déterministe par semaine/paire plutôt qu'aléatoire, pour rester reproductible — utilisé uniquement pour les aspects rapide-rapide (voir fast_planet_themes.note).",
+    "conjunction": [
+      "se fusionne directement avec",
+      "est amplifié(e) par"
+    ],
+    "trine": [
+      "trouve un appui fluide dans",
+      "circule facilement avec"
+    ],
+    "sextile": [
+      "trouve une occasion favorable avec"
+    ],
+    "square": [
+      "entre en friction avec",
+      "est mis(e) sous tension par"
+    ],
+    "opposition": [
+      "se confronte à",
+      "doit composer avec"
+    ],
+    "quincunx": [
+      "doit s'ajuster maladroitement à"
+    ]
   },
-
-  "slow_point_themes": {
-    "Jupiter": "l'expansion, la confiance, les opportunités, l'excès possible",
-    "Saturn": "la structure, les responsabilités, les limites, la patience nécessaire",
-    "Uranus": "l'imprévu, le besoin de liberté, la rupture ou l'innovation soudaine",
-    "Neptune": "l'idéalisation, l'intuition, le flou, le risque d'illusion",
-    "Pluto": "la transformation profonde, les enjeux de pouvoir ou de contrôle",
-    "chiron": "la blessure sensible, le besoin de guérison, ce qui demande à être accueilli plutôt que corrigé",
-    "node_axis": "la direction de croissance, ce qui pousse à sortir de sa zone de confort, et les schémas familiers qu'il tente de dépasser"
-  },
-
   "critical_degrees": {
     "description": "Degrés remarquables (voir section 3 du doc source) — signalés uniquement pour les 4 planètes rapides de la semaine, orbe serré.",
     "orb": 1.0,
-    "cardinal_signs": ["Aries", "Cancer", "Libra", "Capricorn"],
-    "fixed_signs": ["Taurus", "Leo", "Scorpio", "Aquarius"],
-    "mutable_signs": ["Gemini", "Virgo", "Sagittarius", "Pisces"],
-    "cardinal_degrees": [0, 13, 26],
-    "fixed_degrees": [8, 21],
-    "mutable_degrees": [4, 17],
+    "cardinal_signs": [
+      "Aries",
+      "Cancer",
+      "Libra",
+      "Capricorn"
+    ],
+    "fixed_signs": [
+      "Taurus",
+      "Leo",
+      "Scorpio",
+      "Aquarius"
+    ],
+    "mutable_signs": [
+      "Gemini",
+      "Virgo",
+      "Sagittarius",
+      "Pisces"
+    ],
+    "cardinal_degrees": [
+      0,
+      13,
+      26
+    ],
+    "fixed_degrees": [
+      8,
+      21
+    ],
+    "mutable_degrees": [
+      4,
+      17
+    ],
     "anaretic_degree": 29,
     "meanings": {
       "cardinal": "point de tension/urgence, une action qui ne peut plus attendre",
@@ -46,43 +425,211 @@
       "aries_point": "point cardinal du zodiaque, symboliquement associé à un nouveau départ à fort enjeu"
     }
   },
-
   "curated_combinations": {
-    "description": "Liste éditoriale de patterns spécifiques (voir section 4 du doc source) — à enrichir progressivement, stockée en donnée de configuration plutôt que codée en dur. `conditions` : toutes doivent être vraies (ET logique) pour que la combinaison soit détectée.",
+    "description": "Liste éditoriale de patterns spécifiques (voir section 4 des docs source, table élargie en v2) — à enrichir progressivement, stockée en donnée de configuration plutôt que codée en dur. `conditions` : toutes doivent être vraies (ET logique) pour que la combinaison soit détectée. Non couvert (nécessiterait le degré exact des planètes lentes, non calculé à cette échelle hebdomadaire — seulement leur signe, voir _compute_slow_planet_signs) : la ligne du doc v2 'convergence de 2+ aspects tendus vers la même lente ET degré critique de cette lente'.",
     "combinations": [
       {
         "id": "mercury_rx_earth_slow",
         "conditions": [
-          { "type": "retrograde", "planet": "Mercury" },
-          { "type": "slow_in_signs", "planets": ["Jupiter", "Saturn"], "signs": ["Taurus", "Virgo", "Capricorn"] }
+          {
+            "type": "retrograde",
+            "planet": "Mercury"
+          },
+          {
+            "type": "slow_in_signs",
+            "planets": [
+              "Jupiter",
+              "Saturn"
+            ],
+            "signs": [
+              "Taurus",
+              "Virgo",
+              "Capricorn"
+            ]
+          }
         ],
         "score": 4,
         "text": "Mercure rétrograde cette semaine, mais dans un climat de fond plus stable — les retards ou malentendus sont probables, mais les solutions concrètes ne manquent pas si tu prends le temps de vérifier les détails."
       },
       {
+        "id": "mercury_rx_air_slow",
+        "conditions": [
+          {
+            "type": "retrograde",
+            "planet": "Mercury"
+          },
+          {
+            "type": "slow_in_signs",
+            "planets": [
+              "Jupiter",
+              "Saturn"
+            ],
+            "signs": [
+              "Gemini",
+              "Libra",
+              "Aquarius"
+            ]
+          }
+        ],
+        "score": 3,
+        "text": "Mercure rétrograde cette semaine dans un climat déjà agité côté idées — les malentendus verbaux sont plus probables que d'habitude, mieux vaut reformuler deux fois qu'une avant d'envoyer un message important."
+      },
+      {
         "id": "mars_rx_jupiter_water",
         "conditions": [
-          { "type": "retrograde", "planet": "Mars" },
-          { "type": "slow_in_signs", "planets": ["Jupiter"], "signs": ["Cancer", "Scorpio", "Pisces"] }
+          {
+            "type": "retrograde",
+            "planet": "Mars"
+          },
+          {
+            "type": "slow_in_signs",
+            "planets": [
+              "Jupiter"
+            ],
+            "signs": [
+              "Cancer",
+              "Scorpio",
+              "Pisces"
+            ]
+          }
         ],
         "score": 4,
         "text": "Mars ralentit son élan cette semaine, dans une ambiance de fond plus intuitive et émotionnelle — moins une semaine pour foncer que pour ajuster ta direction en écoutant ton ressenti plutôt que ta seule volonté."
       },
       {
+        "id": "mars_rx_saturn_cardinal",
+        "conditions": [
+          {
+            "type": "retrograde",
+            "planet": "Mars"
+          },
+          {
+            "type": "slow_in_signs",
+            "planets": [
+              "Saturn"
+            ],
+            "signs": [
+              "Aries",
+              "Cancer",
+              "Libra",
+              "Capricorn"
+            ]
+          }
+        ],
+        "score": 3,
+        "text": "Ton énergie tourne au ralenti cette semaine alors que le contexte demande justement de tenir bon — frustration possible si tu veux avancer plus vite que ce que la situation permet."
+      },
+      {
+        "id": "venus_retrograde",
+        "conditions": [
+          {
+            "type": "retrograde",
+            "planet": "Venus"
+          }
+        ],
+        "score": 3,
+        "text": "Vénus rétrograde cette semaine — période classique pour réévaluer une relation ou une dépense plutôt que pour s'engager sur du nouveau ; les retrouvailles ou les remises en question amoureuses sont plus fréquentes que d'habitude durant cette phase."
+      },
+      {
         "id": "venus_mars_same_hard_aspect",
         "conditions": [
-          { "type": "both_hard_aspect_same_target", "planets": ["Venus", "Mars"], "aspect_types": ["square", "opposition"] }
+          {
+            "type": "both_hard_aspect_same_target",
+            "planets": [
+              "Venus",
+              "Mars"
+            ],
+            "aspect_types": [
+              "square",
+              "opposition"
+            ]
+          }
         ],
         "score": 5,
         "text": "Cette semaine, à la fois l'attraction (Vénus) et l'action (Mars) se heurtent aux mêmes limites structurelles — un moment qui demande de la patience autant en amour que dans tes initiatives, plutôt qu'une semaine pour brusquer les choses."
       },
       {
+        "id": "venus_mars_same_harmonious_aspect",
+        "conditions": [
+          {
+            "type": "both_hard_aspect_same_target",
+            "planets": [
+              "Venus",
+              "Mars"
+            ],
+            "aspect_types": [
+              "trine",
+              "sextile"
+            ]
+          }
+        ],
+        "score": 4,
+        "text": "Une semaine où le cœur et l'énergie d'action tirent dans la même direction — un bon moment pour joindre le geste à l'intention, en amour comme dans un projet."
+      },
+      {
         "id": "moon_pluto_hard_aspect",
         "conditions": [
-          { "type": "hard_aspect", "planet_a": "Moon", "planet_b": "Pluto" }
+          {
+            "type": "hard_aspect",
+            "planet_a": "Moon",
+            "planet_b": "Pluto"
+          }
         ],
         "score": 4,
         "text": "Cette semaine, les émotions peuvent remonter avec une intensité inhabituelle — un moment propice pour regarder en face ce qui est habituellement évité, plutôt qu'une simple mauvaise passe à ignorer."
+      },
+      {
+        "id": "moon_chiron_hard_aspect",
+        "conditions": [
+          {
+            "type": "hard_aspect",
+            "planet_a": "Moon",
+            "planet_b": "chiron"
+          }
+        ],
+        "score": 3,
+        "text": "Une semaine où une ancienne blessure émotionnelle peut se réveiller sans prévenir — pas un signe que quelque chose ne va pas, plutôt une invitation à te traiter avec plus de douceur que d'habitude."
+      },
+      {
+        "id": "new_moon_hard_aspect_slow",
+        "conditions": [
+          {
+            "type": "lunation_aspect",
+            "event_type": "nouvelle_lune",
+            "aspect_types": [
+              "square",
+              "opposition"
+            ]
+          }
+        ],
+        "score": 3,
+        "text": "L'intention que tu poses cette semaine avec la Nouvelle Lune se heurte d'emblée à une résistance — pas une raison d'abandonner, plutôt un signe qu'il faudra de la persévérance pour la voir aboutir."
+      },
+      {
+        "id": "full_moon_harmonious_aspect_slow",
+        "conditions": [
+          {
+            "type": "lunation_aspect",
+            "event_type": "pleine_lune",
+            "aspect_types": [
+              "trine",
+              "sextile"
+            ]
+          }
+        ],
+        "score": 4,
+        "text": "La culmination de cette Pleine Lune est soutenue par un contexte favorable — un dénouement ou une reconnaissance a de bonnes chances de se faire sentir en douceur plutôt que dans la tension."
+      },
+      {
+        "id": "three_plus_fast_slow_aspects",
+        "conditions": [
+          {
+            "type": "count_fast_slow_aspects_at_least",
+            "count": 3
+          }
+        ],
+        "score": 3,
+        "text": "Une semaine chargée en signaux, sur plusieurs plans à la fois — plutôt que de vouloir tout traiter en même temps, choisis un domaine prioritaire et laisse le reste attendre la semaine prochaine."
       }
     ]
   }

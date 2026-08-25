@@ -1,13 +1,15 @@
 """Bibliothèque de combinaisons hebdomadaires (voir app/core/weekly_weather_combinations.py et
-bibliotheque_combinaisons_hebdomadaires.md) — formules déterministes, aucun appel LLM."""
+bibliotheque_combinaisons_hebdomadaires.md / bibliotheque_combinaisons_hebdomadaires2.md) —
+banque de phrases/formules déterministes, aucun appel LLM."""
 
 from datetime import date
 
 from app.core.weekly_weather import compute_weekly_collective
 from app.core.weekly_weather_combinations import (
-    build_aspect_combination_lines,
     build_critical_degree_lines,
     build_curated_combination_lines,
+    build_fast_fast_combination_lines,
+    build_fast_slow_phrase_lines,
     build_position_lines,
     compute_weekly_combination_lines,
 )
@@ -16,37 +18,93 @@ _ASPECT = {"date": "2027-02-05", "planet_a": "Venus", "planet_b": "Neptune", "as
 
 
 # ---------------------------------------------------------------------------
-# Section 1 : formule d'aspect rapide x lente
+# Section 1b : banque de phrases par paire rapide x lente
 # ---------------------------------------------------------------------------
-def test_build_aspect_combination_lines_assembles_the_formula():
-    lines = build_aspect_combination_lines([_ASPECT], kind="aspect_rapide_lente")
+def test_build_fast_slow_phrase_lines_picks_a_phrase_from_the_bank():
+    lines = build_fast_slow_phrase_lines([_ASPECT], kind="aspect_rapide_lente")
     assert len(lines) == 1
     line = lines[0]
     assert line["kind"] == "aspect_rapide_lente"
-    assert line["text"].endswith("cette semaine.")
+    assert line["planet"] == "Venus"
+    assert line["planet_b"] == "Neptune"
     assert line["text"][0].isupper()
-    # Les 3 briques de la formule doivent apparaître dans le texte assemblé.
-    assert "relations affectives" in line["text"]  # thème Vénus
-    assert "confronte" in line["text"] or "composer" in line["text"]  # modulateur d'opposition
-    assert "idéalisation" in line["text"]  # thème Neptune
+    assert line["text"].endswith(".")
 
 
-def test_build_aspect_combination_lines_is_deterministic_not_random():
-    a = build_aspect_combination_lines([_ASPECT], kind="aspect_rapide_lente")
-    b = build_aspect_combination_lines([_ASPECT], kind="aspect_rapide_lente")
+def test_build_fast_slow_phrase_lines_is_deterministic_not_random():
+    a = build_fast_slow_phrase_lines([_ASPECT], kind="aspect_rapide_lente")
+    b = build_fast_slow_phrase_lines([_ASPECT], kind="aspect_rapide_lente")
     assert a == b
 
 
-def test_build_aspect_combination_lines_uses_node_axis_wording():
+def test_build_fast_slow_phrase_lines_uses_node_axis_bank():
     aspect = {"date": "2027-02-05", "planet_a": "Mars", "planet_b": "north_node", "aspect_type": "square", "aspect_type_fr": "carré", "score": 4}
-    lines = build_aspect_combination_lines([aspect], kind="aspect_rapide_lente")
+    lines = build_fast_slow_phrase_lines([aspect], kind="aspect_rapide_lente")
     assert len(lines) == 1
-    assert "zone de confort" in lines[0]["text"] or "croissance" in lines[0]["text"]
+    assert lines[0]["text"]  # une phrase de la banque Mars/node_axis (polarité tendu) a bien été trouvée
 
 
-def test_build_aspect_combination_lines_skips_unrecognized_aspect_type():
+def test_build_fast_slow_phrase_lines_skips_unrecognized_aspect_type():
     aspect = {**_ASPECT, "aspect_type": "quintile"}
-    assert build_aspect_combination_lines([aspect], kind="aspect_rapide_lente") == []
+    assert build_fast_slow_phrase_lines([aspect], kind="aspect_rapide_lente") == []
+
+
+def test_build_fast_slow_phrase_lines_harmonious_and_tense_pick_different_banks():
+    """Un même couple planète rapide/lente doit piocher dans la banque 'harmonieux' pour un
+    trigone et 'tendu' pour un carré — les deux listes de phrases sont disjointes dans la
+    bibliothèque, donc le texte produit doit différer."""
+    trine = {"date": "2027-02-05", "planet_a": "Moon", "planet_b": "Saturn", "aspect_type": "trine", "aspect_type_fr": "trigone", "score": 3}
+    square = {"date": "2027-02-05", "planet_a": "Moon", "planet_b": "Saturn", "aspect_type": "square", "aspect_type_fr": "carré", "score": 3}
+    trine_text = build_fast_slow_phrase_lines([trine], kind="aspect_rapide_lente")[0]["text"]
+    square_text = build_fast_slow_phrase_lines([square], kind="aspect_rapide_lente")[0]["text"]
+    assert trine_text != square_text
+
+
+def test_build_fast_slow_phrase_lines_conjunction_polarity_depends_on_fast_planet():
+    """Une conjonction est classée 'tendu' pour Mars (planète rapide exigeante) mais
+    'harmonieux' pour Vénus (bénéfique) — voir polarity_rule de la bibliothèque."""
+    venus_conj = {"date": "2027-02-05", "planet_a": "Venus", "planet_b": "Jupiter", "aspect_type": "conjunction", "aspect_type_fr": "conjonction", "score": 3}
+    mars_conj = {"date": "2027-02-05", "planet_a": "Mars", "planet_b": "Jupiter", "aspect_type": "conjunction", "aspect_type_fr": "conjonction", "score": 3}
+    from app.core.reference_data import weekly_combinations_library
+
+    bank = weekly_combinations_library()["combination_phrase_bank"]["banks"]
+    venus_text = build_fast_slow_phrase_lines([venus_conj], kind="aspect_rapide_lente")[0]["text"]
+    mars_text = build_fast_slow_phrase_lines([mars_conj], kind="aspect_rapide_lente")[0]["text"]
+    assert venus_text in bank["Venus"]["Jupiter"]["harmonieux"]
+    assert mars_text in bank["Mars"]["Jupiter"]["tendu"]
+
+
+def test_build_fast_slow_phrase_lines_rotates_across_iso_weeks():
+    """La même paire/polarité doit pouvoir produire des variantes différentes d'une semaine ISO
+    à l'autre (rotation, voir _rotation_index) — sur les 3 variantes disponibles, au moins deux
+    semaines testées doivent produire un texte différent de la première."""
+    aspects = [
+        {"date": iso_date, "planet_a": "Moon", "planet_b": "Jupiter", "aspect_type": "trine", "aspect_type_fr": "trigone", "score": 3}
+        for iso_date in ("2027-01-08", "2027-01-15", "2027-01-22")  # 3 semaines ISO consécutives
+    ]
+    texts = {build_fast_slow_phrase_lines([a], kind="aspect_rapide_lente")[0]["text"] for a in aspects}
+    assert len(texts) > 1  # pas systématiquement la même variante d'une semaine à l'autre
+
+
+# ---------------------------------------------------------------------------
+# Section 1a : aspects entre planètes rapides elles-mêmes — formule combinable
+# ---------------------------------------------------------------------------
+def test_build_fast_fast_combination_lines_assembles_the_formula():
+    aspect = {"date": "2027-02-05", "planet_a": "Moon", "planet_b": "Venus", "aspect_type": "conjunction", "aspect_type_fr": "conjonction", "score": 3}
+    lines = build_fast_fast_combination_lines([aspect], kind="aspect_rapide_rapide")
+    assert len(lines) == 1
+    line = lines[0]
+    assert line["kind"] == "aspect_rapide_rapide"
+    assert line["text"].endswith("cette semaine.")
+    assert line["text"][0].isupper()
+    assert "ressenti émotionnel" in line["text"]  # thème Lune
+    assert "relations affectives" in line["text"]  # thème Vénus
+
+
+def test_build_fast_fast_combination_lines_skips_a_slow_planet_operand():
+    """Cette fonction est réservée aux paires rapide-rapide : un aspect vers une planète lente
+    (absente de fast_planet_themes) ne doit produire aucune ligne ici."""
+    assert build_fast_fast_combination_lines([_ASPECT], kind="aspect_rapide_rapide") == []
 
 
 # ---------------------------------------------------------------------------
@@ -119,6 +177,7 @@ def _base_ctx():
         "slow_planet_signs": {},
         "generational_aspects": [],
         "moon_generational_aspects": [],
+        "witchy_events": [],
     }
 
 
@@ -131,6 +190,23 @@ def test_curated_combination_mercury_retrograde_in_earth_slow_climate():
     assert any(line["id"] == "mercury_rx_earth_slow" for line in lines)
 
 
+def test_curated_combination_mercury_retrograde_in_air_slow_climate():
+    ctx = _base_ctx()
+    ctx["fast_planets"][0]["retrograde_start"] = True
+    ctx["fast_planets"][0]["retrograde_end"] = True
+    ctx["slow_planet_signs"] = {"Jupiter": "Gemini", "Saturn": "Aquarius"}
+    lines = build_curated_combination_lines(ctx)
+    assert any(line["id"] == "mercury_rx_air_slow" for line in lines)
+
+
+def test_curated_combination_venus_retrograde_alone():
+    ctx = _base_ctx()
+    ctx["fast_planets"][1]["retrograde_start"] = True
+    ctx["fast_planets"][1]["retrograde_end"] = True
+    lines = build_curated_combination_lines(ctx)
+    assert any(line["id"] == "venus_retrograde" for line in lines)
+
+
 def test_curated_combination_venus_mars_same_hard_aspect_target():
     ctx = _base_ctx()
     ctx["generational_aspects"] = [
@@ -141,11 +217,63 @@ def test_curated_combination_venus_mars_same_hard_aspect_target():
     assert any(line["id"] == "venus_mars_same_hard_aspect" for line in lines)
 
 
+def test_curated_combination_venus_mars_same_harmonious_aspect_target():
+    ctx = _base_ctx()
+    ctx["generational_aspects"] = [
+        {"planet_a": "Venus", "planet_b": "Jupiter", "aspect_type": "trine"},
+        {"planet_a": "Mars", "planet_b": "Jupiter", "aspect_type": "sextile"},
+    ]
+    lines = build_curated_combination_lines(ctx)
+    assert any(line["id"] == "venus_mars_same_harmonious_aspect" for line in lines)
+
+
 def test_curated_combination_moon_pluto_hard_aspect():
     ctx = _base_ctx()
     ctx["moon_generational_aspects"] = [{"planet_a": "Moon", "planet_b": "Pluto", "aspect_type": "square"}]
     lines = build_curated_combination_lines(ctx)
     assert any(line["id"] == "moon_pluto_hard_aspect" for line in lines)
+
+
+def test_curated_combination_moon_chiron_hard_aspect():
+    ctx = _base_ctx()
+    ctx["moon_generational_aspects"] = [{"planet_a": "Moon", "planet_b": "chiron", "aspect_type": "opposition"}]
+    lines = build_curated_combination_lines(ctx)
+    assert any(line["id"] == "moon_chiron_hard_aspect" for line in lines)
+
+
+def test_curated_combination_new_moon_hard_aspect_to_slow_planet():
+    ctx = _base_ctx()
+    ctx["witchy_events"] = [{"event_type": "nouvelle_lune", "event_date": "2027-02-05"}]
+    ctx["moon_generational_aspects"] = [{"planet_a": "Moon", "planet_b": "Saturn", "aspect_type": "square", "date": "2027-02-06"}]
+    lines = build_curated_combination_lines(ctx)
+    assert any(line["id"] == "new_moon_hard_aspect_slow" for line in lines)
+
+
+def test_curated_combination_full_moon_harmonious_aspect_to_slow_planet():
+    ctx = _base_ctx()
+    ctx["witchy_events"] = [{"event_type": "pleine_lune", "event_date": "2027-02-19"}]
+    ctx["moon_generational_aspects"] = [{"planet_a": "Moon", "planet_b": "Jupiter", "aspect_type": "trine", "date": "2027-02-18"}]
+    lines = build_curated_combination_lines(ctx)
+    assert any(line["id"] == "full_moon_harmonious_aspect_slow" for line in lines)
+
+
+def test_curated_combination_new_moon_without_matching_aspect_is_not_detected():
+    ctx = _base_ctx()
+    ctx["witchy_events"] = [{"event_type": "nouvelle_lune", "event_date": "2027-02-05"}]
+    ctx["moon_generational_aspects"] = [{"planet_a": "Moon", "planet_b": "Saturn", "aspect_type": "square", "date": "2027-02-20"}]  # trop loin
+    lines = build_curated_combination_lines(ctx)
+    assert not any(line["id"] == "new_moon_hard_aspect_slow" for line in lines)
+
+
+def test_curated_combination_three_plus_fast_slow_aspects():
+    ctx = _base_ctx()
+    ctx["generational_aspects"] = [
+        {"planet_a": "Venus", "planet_b": "Jupiter", "aspect_type": "trine"},
+        {"planet_a": "Mars", "planet_b": "Saturn", "aspect_type": "square"},
+    ]
+    ctx["moon_generational_aspects"] = [{"planet_a": "Moon", "planet_b": "Pluto", "aspect_type": "opposition"}]
+    lines = build_curated_combination_lines(ctx)
+    assert any(line["id"] == "three_plus_fast_slow_aspects" for line in lines)
 
 
 def test_curated_combination_none_detected_returns_empty_list():
@@ -167,7 +295,7 @@ def test_compute_weekly_combination_lines_always_includes_all_position_lines():
     moon_path = [{"sign": "Cancer"}]
     lines = compute_weekly_combination_lines(
         fast_planets=fast_planets, moon_path=moon_path, generational_aspects=[], moon_generational_aspects=[],
-        transit_transit_aspects=[], daily_fast_positions={}, slow_planet_signs={},
+        transit_transit_aspects=[], daily_fast_positions={}, slow_planet_signs={}, witchy_events=[],
     )
     position_lines = [line for line in lines if line["kind"] == "position_signe"]
     assert len(position_lines) == 4
@@ -191,7 +319,7 @@ def test_compute_weekly_combination_lines_covers_fast_fast_aspects_too():
     }
     lines = compute_weekly_combination_lines(
         fast_planets=fast_planets, moon_path=moon_path, generational_aspects=[], moon_generational_aspects=[],
-        transit_transit_aspects=[fast_fast_aspect], daily_fast_positions={}, slow_planet_signs={},
+        transit_transit_aspects=[fast_fast_aspect], daily_fast_positions={}, slow_planet_signs={}, witchy_events=[],
     )
     fast_fast_lines = [line for line in lines if line["kind"] == "aspect_rapide_rapide"]
     assert len(fast_fast_lines) == 1
@@ -227,3 +355,24 @@ def test_compute_weekly_collective_combination_lines_prioritize_fast_over_moon_a
     assert len(data["moon_generational_aspects"]) > 5  # confirme que le risque de submersion est réel cette semaine-là
     position_lines = [line for line in data["combination_lines"] if line["kind"] == "position_signe"]
     assert len(position_lines) == 4  # jamais évincées malgré le grand nombre d'aspects lunaires
+
+
+def test_compute_weekly_collective_fast_slow_lines_use_the_phrase_bank():
+    """Vérifie l'intégration bout en bout : les lignes rapide->lente de la semaine de référence
+    doivent provenir de la banque de phrases (pas un texte formulé par assemblage — voir
+    combination_phrase_bank.banks, où toutes les phrases se terminent par un point sans le
+    gabarit '... cette semaine.' générique de l'ancienne formule sur CE point précis)."""
+    from app.core.reference_data import weekly_combinations_library
+
+    bank = weekly_combinations_library()["combination_phrase_bank"]["banks"]
+    all_phrases = {
+        text
+        for planet in bank.values()
+        for point in planet.values()
+        for variants in point.values()
+        for text in variants
+    }
+    data = compute_weekly_collective(date(2027, 2, 3))
+    fast_slow_lines = [line for line in data["combination_lines"] if line["kind"] == "aspect_rapide_lente"]
+    assert len(fast_slow_lines) > 0
+    assert all(line["text"] in all_phrases for line in fast_slow_lines)
