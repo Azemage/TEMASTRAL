@@ -140,9 +140,12 @@ def test_compute_weekly_collective_generational_aspects_excluded_from_transit_tr
 
 
 def test_compute_weekly_collective_highlights_include_generational_aspect_kind():
+    """Les points forts 'aspect_generational' regroupent AUSSI les aspects Lune -> planète
+    générationnelle (moon_generational_aspects), pas seulement Mercure/Vénus/Mars — voir
+    _compute_moon_generational_aspects."""
     data = compute_weekly_collective(date(2027, 2, 3))
     generational_highlights = [h for h in data["highlights"] if h["kind"] == "aspect_generational"]
-    assert len(generational_highlights) == len(data["generational_aspects"])
+    assert len(generational_highlights) == len(data["generational_aspects"]) + len(data["moon_generational_aspects"])
 
 
 def test_compute_weekly_collective_highlights_sorted_by_score_descending():
@@ -306,7 +309,7 @@ def test_compute_weekly_domain_scores_unrecognized_aspect_type_is_ignored_not_cr
 def test_compute_weekly_domain_scores_covers_all_four_life_areas():
     start = date(2027, 2, 3)
     scores = compute_weekly_domain_scores({}, [], [], start)
-    assert set(scores.keys()) == {"amour", "argent", "sante", "travail_quotidien"}
+    assert set(scores.keys()) == {"amour", "argent", "sante", "travail_quotidien", "cheminement_evolution"}
     for area in scores.values():
         assert 1 <= area["note"] <= 5
         assert isinstance(area["label"], str) and area["label"]
@@ -386,7 +389,7 @@ def test_compute_domain_scores_for_chart_returns_all_areas_and_reuses_cached_col
 
         count_after = db.query(GlobalWeeklyWeatherCache).filter_by(period_start=target_date).count()
         assert count_before == count_after == 1
-        assert set(scores.keys()) == {"amour", "argent", "sante", "travail_quotidien"}
+        assert set(scores.keys()) == {"amour", "argent", "sante", "travail_quotidien", "cheminement_evolution"}
         for area in scores.values():
             assert 1 <= area["note"] <= 5
     finally:
@@ -447,7 +450,7 @@ def test_weekly_weather_domain_scores_endpoint_returns_four_areas(client):
     body = res.json()
     assert body["period_start"] == "2027-02-03"
     assert body["period_end"] == "2027-02-09"
-    assert set(body["scores"].keys()) == {"amour", "argent", "sante", "travail_quotidien"}
+    assert set(body["scores"].keys()) == {"amour", "argent", "sante", "travail_quotidien", "cheminement_evolution"}
     for area in body["scores"].values():
         assert 1 <= area["note"] <= 5
         assert area["label"]
@@ -506,7 +509,7 @@ def test_weekly_weather_payload_includes_domain_scores_for_all_four_areas():
     chart = _make_chart()
     request = schemas.ReadingRequest(reading_type="weekly_weather", weekly_weather_start_date=date(2027, 2, 3))
     payload = interpretation_service._build_user_payload(chart, request)
-    assert set(payload["domain_scores"].keys()) == {"amour", "argent", "sante", "travail_quotidien"}
+    assert set(payload["domain_scores"].keys()) == {"amour", "argent", "sante", "travail_quotidien", "cheminement_evolution"}
     assert "generational_aspects" in payload["collective"]
 
 

@@ -135,7 +135,7 @@ def test_timing_endpoint_returns_transits_and_profection(client):
     res = client.get(f"/api/charts/{chart_id}/timing")
     assert res.status_code == 200
     body = res.json()
-    assert len(body["transiting_planets"]) == 10  # toutes les planètes classiques, Lune/Mercure/Vénus/Soleil/Mars compris
+    assert len(body["transiting_planets"]) == 11  # 10 planètes classiques + Chiron (voir TRANSIT_PLANETS)
     assert all("intensity" in a for a in body["aspects"])
     assert "profection" in body
     assert body["profection"]["profected_house"] in range(1, 13)

@@ -83,6 +83,13 @@ def astrocartography_significations() -> dict:
     return _load("astrocartography_significations.json")
 
 
+def weekly_combinations_library() -> dict:
+    """Bibliothèque de phrases/dégrés remarquables/combinaisons éditoriales pour les points
+    forts hebdomadaires (voir app/core/weekly_weather_combinations.py) — voir doc source
+    bibliotheque_combinaisons_hebdomadaires.md."""
+    return _load("weekly_combinations_library.json")
+
+
 def weekly_domain_scoring() -> dict:
     """Domaines de vie (maisons/planètes de référence) et barème déterministe utilisés par
     app/core/weekly_weather_domains.py pour noter la semaine par domaine (amour/argent/santé/

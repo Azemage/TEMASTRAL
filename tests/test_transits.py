@@ -5,10 +5,12 @@ from app.core.transits import TRANSIT_PLANETS, compute_current_transits, compute
 
 
 def test_returns_all_classic_planets():
+    """Chiron y figure aussi (voir TRANSIT_PLANETS) : point lent suivi pour le transit-vers-natal
+    au même titre que Jupiter à Pluton — voir notation_hebdomadaire_domaines.json, points_mineurs_note."""
     result = compute_current_transits([], date(2026, 8, 2))
     names = {p["name"] for p in result["transiting_planets"]}
     assert names == set(TRANSIT_PLANETS)
-    assert names == {"Sun", "Moon", "Mercury", "Venus", "Mars", "Jupiter", "Saturn", "Uranus", "Neptune", "Pluto"}
+    assert names == {"Sun", "Moon", "Mercury", "Venus", "Mars", "Jupiter", "Saturn", "Uranus", "Neptune", "Pluto", "chiron"}
 
 
 def test_each_transiting_planet_has_valid_sign_and_degree():

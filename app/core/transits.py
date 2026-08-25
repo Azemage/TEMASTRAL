@@ -19,7 +19,7 @@ from app.core.aspects import BodyForAspect, angular_separation, compute_cross_as
 from app.core.reference_data import aspects_reference, lot_timing_rules
 from app.core.zodiac import SIGNS_FR, sign_and_degree
 
-TRANSIT_PLANETS = ["Moon", "Mercury", "Venus", "Sun", "Mars", "Jupiter", "Saturn", "Uranus", "Neptune", "Pluto"]
+TRANSIT_PLANETS = ["Moon", "Mercury", "Venus", "Sun", "Mars", "Jupiter", "Saturn", "Uranus", "Neptune", "Pluto", "chiron"]
 DEFAULT_TRANSIT_ORB = 3.0
 _MAJOR_ASPECT_NAMES = ["conjunction", "opposition", "square", "trine", "sextile"]
 
@@ -37,6 +37,7 @@ SAMPLE_STEP_DAYS: dict[str, float] = {
     "Uranus": 1.0,
     "Neptune": 1.0,
     "Pluto": 1.0,
+    "chiron": 1.0,
 }
 
 # Poids utilisés pour la note d'intensité (1 à 4 flammes) : une planète lente/lourde ou un
@@ -53,6 +54,7 @@ PLANET_INTENSITY_WEIGHT: dict[str, float] = {
     "Uranus": 3.5,
     "Saturn": 4.0,
     "Pluto": 4.0,
+    "chiron": 3.0,
 }
 
 ASPECT_INTENSITY_WEIGHT: dict[str, float] = {

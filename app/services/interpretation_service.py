@@ -606,10 +606,24 @@ cette semaine entre une planète rapide — `planet_a`, Mercure/Vénus/Mars — 
 générationnelle quasi immobile — `planet_b`, Jupiter à Pluton : un événement RARE et marquant, \
 à mentionner explicitement dans le climat collectif plutôt qu'en simple note technique, ex. \
 "Vénus en opposition à Neptune cette semaine colore le climat amoureux collectif d'un voile \
-plus rêveur, entre idéalisation et besoin de clarté") ; et `highlights`, la fusion triée par \
-importance (`score`, déjà calculé, ne le recalcule jamais) de tout ce qui précède — utilise \
-cette liste pour savoir sur quoi insister et dans quel ordre, sans jamais citer le chiffre brut \
-dans le texte (traduis-le en intensité ressentie)."""
+plus rêveur, entre idéalisation et besoin de clarté") ; `moon_generational_aspects` (même \
+mécanisme mais pour la Lune — plus fréquent, à mentionner seulement si aucun signal plus fort ne \
+domine déjà la semaine) ; et `highlights`, la fusion triée par importance (`score`, déjà \
+calculé, ne le recalcule jamais) de tout ce qui précède — utilise cette liste pour savoir sur \
+quoi insister et dans quel ordre, sans jamais citer le chiffre brut dans le texte (traduis-le en \
+intensité ressentie)."""
+
+    combination_lines_data = """DANS `collective.combination_lines` : ~10 lignes de texte déjà \
+rédigées (français, prêtes à l'emploi), le "profil brut de la semaine" — combinaisons \
+éditoriales notables (`kind`="combinaison_editoriale"), phrases d'aspect rapide vers planète \
+lente/Chiron/axe des Nœuds (`kind`="aspect_rapide_lente"), degrés remarquables (`kind`= \
+"degre_remarquable"), et position de chaque planète rapide dans son signe (`kind`= \
+"position_signe", toujours présentes). NE LES IGNORE JAMAIS ET NE LES RÉGÉNÈRE JAMAIS depuis \
+zéro : synthétise-les et priorise-les dans "Climat de la semaine" (même principe que les \
+`themes_confirmes` du thème natal — la convergence est déjà calculée, tu rédiges à partir \
+d'elle). Elles arrivent déjà classées par ordre d'importance ; tu peux fusionner/reformuler \
+plusieurs lignes en une seule phrase plus fluide plutôt que les lister telles quelles, mais sans \
+en inventer de nouvelles ni en ignorer le contenu factuel."""
 
     personal_data = """DANS le bloc personnel : `personal_profection` (maison et planète \
 maîtresse de l'année de profection en cours) et `personal_highlights` (transits personnels qui \
@@ -619,8 +633,13 @@ chacun avec `intensity` 1-4 déjà calculée — mêmes données que le Pronosti
 remplissage."""
 
     domain_scores_data = """DANS `domain_scores` : une note 1-5 déjà calculée (NE LA RECALCULE \
-JAMAIS) pour chacun des 4 domaines de vie (`amour`, `argent`, `sante`, `travail_quotidien`), \
-chacune avec `label` (ex. "semaine favorable", "semaine difficile"), et \
+JAMAIS) pour chacun des domaines de vie présents (`amour`, `argent`, `sante` — qui inclut \
+désormais Chiron, à mentionner en termes de "blessure sensible"/"besoin de guérison" jamais de \
+diagnostic —, `travail_quotidien`, et optionnellement `cheminement_evolution` — l'axe des Nœuds, \
+direction de croissance vs schémas familiers à dépasser, formulation orientée développement \
+personnel plutôt que "karmique" : ne l'aborde QUE s'il est présent dans les données, il est \
+souvent absent tant l'axe des Nœuds bouge peu), chacune avec `label` (ex. "semaine favorable", \
+"semaine difficile"), et \
 `top_positive_signal`/`top_negative_signal` (le transit le plus porteur/le plus tendu de ce \
 domaine cette semaine, ou null s'il n'y en a pas). Intègre ces notes dans "Pour toi cette \
 semaine" par domaine, SANS jamais citer le chiffre brut ni le mot "note"/"score" — traduis \
@@ -663,6 +682,8 @@ N'invente aucune position, aspect ou événement hors des données fournies."""
     return f"""{intro}
 
 {collective_data}
+
+{combination_lines_data}
 
 {personal_data}
 

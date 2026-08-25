@@ -606,6 +606,20 @@ class WeeklyWeatherMainEvent(BaseModel):
     sign: str
 
 
+class WeeklyWeatherCombinationLine(BaseModel):
+    kind: str  # 'combinaison_editoriale' | 'aspect_rapide_lente' | 'degre_remarquable' | 'position_signe'
+    text: str
+    date: str | None = None
+    planet: str | None = None
+    planet_b: str | None = None
+    sign: str | None = None
+    aspect_type: str | None = None
+    aspect_type_fr: str | None = None
+    degree_type: str | None = None
+    id: str | None = None
+    score: int | None = None
+
+
 class WeeklyWeatherResponse(BaseModel):
     period_start: date_type
     period_end: date_type
@@ -615,7 +629,9 @@ class WeeklyWeatherResponse(BaseModel):
     stations: list[dict]
     witchy_events: list[dict]
     transit_transit_aspects: list[WeeklyWeatherAspect]
-    generational_aspects: list[WeeklyWeatherAspect] = []  # rapide (Mercure/Vénus/Mars) -> générationnelle (Jupiter à Pluton)
+    generational_aspects: list[WeeklyWeatherAspect] = []  # rapide (Mercure/Vénus/Mars) -> générationnelle (Jupiter à Pluton, Chiron, axe des Nœuds)
+    moon_generational_aspects: list[WeeklyWeatherAspect] = []  # idem, mais Lune -> générationnelle (voir _compute_moon_generational_aspects)
+    combination_lines: list[WeeklyWeatherCombinationLine] = []  # bibliothèque de combinaisons hebdomadaires (voir weekly_weather_combinations.py)
     highlights: list[WeeklyWeatherHighlight]
     main_event: WeeklyWeatherMainEvent
 

@@ -2,18 +2,43 @@
 
 Utilise l'algorithme Moshier (SEFLG_MOSEPH), intégré à pyswisseph, qui ne nécessite
 aucun fichier d'éphémérides externe et reste précis à la seconde d'arc près sur la
-période couverte par les naissances humaines. Si des fichiers Swiss Ephemeris (.se1)
-sont installés (voir SE_EPHE_PATH), ils peuvent être activés en remplaçant
-CALC_FLAGS par swe.FLG_SWIEPH | swe.FLG_SPEED pour une précision encore supérieure.
+période couverte par les naissances humaines, pour les 10 planètes classiques et les
+points purement orbitaux (nœuds, Lilith moyenne). Chiron et les 4 astéroïdes principaux
+(Cérès, Pallas, Junon, Vesta) ne sont PAS couverts par Moshier : ils nécessitent le
+fichier Swiss Ephemeris seas_18.se1 (app/ephe/, ~220 Ko, un seul fichier couvre les 5
+corps sur ~1900-2200), chargé via set_ephe_path ci-dessous — pyswisseph bascule
+automatiquement sur ce fichier pour ces corps précis même avec FLG_MOSEPH demandé,
+sans rien changer au calcul des planètes classiques (vérifié : même résultat qu'avant
+pour celles-ci une fois le chemin défini).
 """
 
 from __future__ import annotations
 
+import threading
 from dataclasses import dataclass
 from datetime import datetime
+from pathlib import Path
 from zoneinfo import ZoneInfo
 
 import swisseph as swe
+
+EPHE_DIR = Path(__file__).resolve().parent.parent / "ephe"
+swe.set_ephe_path(str(EPHE_DIR))
+
+# swe.set_ephe_path est THREAD-LOCAL dans pyswisseph (vérifié : un thread qui n'a jamais appelé
+# set_ephe_path lui-même retombe sur le chemin par défaut de la bibliothèque C, même si un autre
+# thread — ou le thread principal à l'import du module, ci-dessus — l'a déjà positionné). FastAPI
+# exécute chaque endpoint dans un thread de pool (`run_in_threadpool`), donc l'appel module-level
+# seul NE SUFFIT PAS en usage réel : sans ce filet, Chiron/les astéroïdes échouent silencieusement
+# en dehors du thread principal. `_ensure_ephe_path_for_this_thread` le repositionne une fois par
+# thread avant tout calcul (coût négligeable, un simple set de chaîne côté C).
+_ephe_path_set = threading.local()
+
+
+def _ensure_ephe_path_for_this_thread() -> None:
+    if not getattr(_ephe_path_set, "done", False):
+        swe.set_ephe_path(str(EPHE_DIR))
+        _ephe_path_set.done = True
 
 CALC_FLAGS = swe.FLG_MOSEPH | swe.FLG_SPEED
 
@@ -30,7 +55,15 @@ PLANET_IDS: dict[str, int] = {
     "Pluto": swe.PLUTO,
     "chiron": swe.CHIRON,
     "lilith_mean": swe.MEAN_APOG,
+    "ceres": swe.AST_OFFSET + 1,
+    "pallas": swe.AST_OFFSET + 2,
+    "juno": swe.AST_OFFSET + 3,
+    "vesta": swe.AST_OFFSET + 4,
 }
+
+# Points nécessitant seas_18.se1 (voir docstring du module) — omis silencieusement (voir
+# calc_all_bodies) si le fichier venait à manquer plutôt que de faire échouer tout le thème.
+ASTEROID_POINTS = {"chiron", "ceres", "pallas", "juno", "vesta"}
 
 # Le nœud sud n'a pas d'identifiant swisseph direct : il est l'opposé du nœud nord.
 NORTH_NODE_ID = swe.MEAN_NODE
@@ -79,6 +112,7 @@ class RawPlanetPosition:
 
 
 def calc_planet(jd_ut: float, planet_id: int) -> RawPlanetPosition:
+    _ensure_ephe_path_for_this_thread()
     (lon, lat, dist, speed_lon, _speed_lat, _speed_dist), _flag = swe.calc_ut(jd_ut, planet_id, CALC_FLAGS)
     return RawPlanetPosition(longitude=lon % 360, latitude=lat, distance=dist, speed_longitude=speed_lon)
 
@@ -93,6 +127,7 @@ def calc_planet_equatorial(jd_ut: float, planet_id: int) -> EquatorialPosition:
     """Coordonnées équatoriales (ascension droite, déclinaison), nécessaires au calcul des
     lignes d'astrocartographie (MC/IC/ASC/DC) — contrairement au reste du thème qui reste en
     coordonnées écliptiques (longitude/latitude)."""
+    _ensure_ephe_path_for_this_thread()
     (ra, dec, _dist, _speed_ra, _speed_dec, _speed_dist), _flag = swe.calc_ut(
         jd_ut, planet_id, CALC_FLAGS | swe.FLG_EQUATORIAL
     )
@@ -121,14 +156,15 @@ class BodiesResult:
 def calc_all_bodies(jd_ut: float, include_points: list[str]) -> BodiesResult:
     bodies: dict[str, RawPlanetPosition] = {}
     unavailable: list[str] = []
+    optional_names = ASTEROID_POINTS | {"lilith_mean"}
     for name, planet_id in PLANET_IDS.items():
-        if name in ("chiron", "lilith_mean") and name not in include_points:
+        if name in optional_names and name not in include_points:
             continue
         try:
             bodies[name] = calc_planet(jd_ut, planet_id)
         except swe.Error:
-            # Chiron nécessite un fichier d'éphémérides (ex. seas_18.se1) absent de l'algorithme
-            # Moshier intégré. On l'omet plutôt que de faire échouer tout le calcul du thème.
+            # seas_18.se1 devrait toujours être présent (voir app/ephe/), mais on omet plutôt que
+            # de faire échouer tout le calcul du thème si jamais il venait à manquer.
             unavailable.append(name)
 
     if "north_node" in include_points or "south_node" in include_points:

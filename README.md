@@ -27,6 +27,18 @@ de la synastrie, notes libres des dispositeurs) qui n'ont pas de version traduit
 Implémenté :
 - Thème natal complet (planètes, angles, maisons — Placidus/Koch/Whole Sign/Équal/Regiomontanus,
   aspects majeurs et mineurs avec orbes configurables, applicatif/séparatif, balance éléments/modalités)
+- Points additionnels optionnels (voir `optional_points`, sélecteur dans "Options avancées") :
+  Nœud Nord/Sud et Lilith moyenne (calcul orbital pur, aucun fichier supplémentaire) sont
+  sélectionnés par défaut à la création d'un thème ; Chiron et les 4 principaux astéroïdes
+  (Cérès, Pallas, Junon, Vesta) sont opt-in et nécessitent le fichier Swiss Ephemeris
+  `seas_18.se1` (fourni dans `app/ephe/`, ~220 Ko, couvre ~1900-2200 pour ces 5 corps) —
+  `swe.set_ephe_path()` est repositionné **par thread** (`app/core/ephemeris.py::
+  _ensure_ephe_path_for_this_thread`) car cet appel est thread-local dans pyswisseph, ce qui
+  fait échouer ces corps en silence dans les endpoints FastAPI (exécutés dans un thread de
+  pool) si on ne le fait qu'une fois à l'import. Tous ces points s'intègrent automatiquement à
+  la roue, aux tableaux (Planètes), aux aspects et à la lecture LLM (qui reçoit le thème tel
+  quel, aucun filtrage) — sans figurer dans le nuage de traits de caractère déterministe
+  ci-dessous, volontairement réservé aux planètes classiques.
 - Dispositeurs : maîtres traditionnel et moderne, chaînes de dispositeurs, réceptions mutuelles,
   détection de convergence (planète "clé de voûte" du thème)
 - Traits de caractère (résumé rapide déterministe, combinant planète+signe+maison) : tags de
@@ -56,8 +68,9 @@ Implémenté :
   grands-parents...) calculées par chaînage générique de la même formule ; la lecture LLM
   adapte ses priorités d'analyse (points focaux, angle d'interprétation, mises en garde)
   à la relation choisie
-- Pronostic : transits actuels de toutes les planètes (Lune, Mercure, Vénus, Soleil, Mars
-  compris, pas seulement les lentes) + prévision des transits à venir sur 12 mois (détection
+- Pronostic : transits actuels de toutes les planètes (Lune, Mercure, Vénus, Soleil, Mars et
+  Chiron compris, pas seulement les lentes classiques) + prévision des transits à venir sur 12
+  mois (détection
   des pics d'orbe, échantillonnage adapté à la vitesse de chaque planète pour ne manquer aucun
   passage rapide, gère les boucles rétrogrades) + profection annuelle. Chaque aspect/transit
   porte une note d'intensité (1 à 4) combinant poids de la planète, dureté de l'aspect et
@@ -228,23 +241,57 @@ Implémenté :
 - Météo de la semaine — **aspects vers les planètes générationnelles** (`generational_aspects`,
   `app/core/weekly_weather.py::_compute_generational_aspects`) : en plus des aspects entre
   Lune/Mercure/Vénus/Mars, détecte les aspects majeurs qui deviennent EXACTS pendant la semaine
-  entre une planète rapide (Mercure/Vénus/Mars) et une planète générationnelle (Jupiter à
-  Pluton) — un événement plus rare, marquant le climat collectif au-delà de cette seule semaine
-  (même recherche de racine par bissection, noté un cran au-dessus du même aspect entre deux
-  planètes rapides). Alimente une **notation par domaine de vie** (`app/core/
-  weekly_weather_domains.py`, config dans `app/reference_data/weekly_domain_scoring.json`) sur
-  le modèle classique de l'horoscope hebdomadaire : une note 1-5 pour chacun des 4 domaines
-  (amour, argent, santé, travail quotidien), calculée en combinant deux composantes — les
-  transits personnels vers le thème natal réel (mêmes données que le Pronostic hebdomadaire,
-  filtrés par domaine via les maisons/planètes de référence de chaque domaine) et les aspects
-  rapide→générationnelle ci-dessus (climat collectif, pondéré deux fois plus léger qu'un transit
-  vraiment personnel), chacun pondéré selon qu'il est applicatif ou séparatif. Calcul entièrement
-  déterministe (code, jamais le LLM) ; exposé via `GET /api/charts/{chart_id}/weekly-weather/
-  domain-scores` (personnel, donc jamais mis en cache, contrairement à la couche collective) et
-  affiché avec le même composant d'étoiles unifié. La lecture LLM `weekly_weather` reçoit ces
-  notes pour en adapter le ton (jamais le chiffre cité tel quel) et formuler un point fort / un
-  point de vigilance à partir du signal le plus marquant de chaque domaine, avec les mêmes
-  garde-fous que le reste de l'app (aucun conseil financier ou médical concret).
+  entre une planète rapide (Mercure/Vénus/Mars) et un point lent — Jupiter à Pluton, mais aussi
+  Chiron et l'axe des Nœuds (représenté par le Nœud Nord seul, un aspect à l'un valant
+  automatiquement le même aspect à l'autre) — un événement plus rare, marquant le climat
+  collectif au-delà de cette seule semaine (même recherche de racine par bissection, noté un
+  cran au-dessus du même aspect entre deux planètes rapides). La Lune forme aussi ces aspects
+  (`moon_generational_aspects`, calcul séparé — trop fréquent pour la notation collective
+  "officielle", mais réutilisé par la bibliothèque de combinaisons ci-dessous et pour repérer
+  des combinaisons éditoriales ponctuelles comme Lune-Pluton).
+- Météo de la semaine — **bibliothèque de combinaisons hebdomadaires** (`combination_lines`,
+  `app/core/weekly_weather_combinations.py`, config dans `app/reference_data/
+  weekly_combinations_library.json`) : ~10 lignes de texte français entièrement déterministes
+  (formule + lookup, aucun appel LLM), affichées directement dans l'app ET injectées comme
+  donnée factuelle dans le prompt de la lecture complète (le LLM les synthétise, il ne les
+  régénère jamais — même principe que les `themes_confirmes` du thème natal). Quatre sources,
+  par ordre de priorité : (1) combinaisons éditoriales composées, une table de configuration
+  condition+texte (ex. "Mercure rétrograde + planète lente en signe de terre", "Vénus et Mars
+  tous deux en aspect tendu à la même planète lente") ; (2) phrases d'aspect rapide→lente
+  assemblées par formule combinable (thème de la planète rapide + modulateur selon le type
+  d'aspect + thème du point lent, 2-3 variantes de phrasé sélectionnées de façon déterministe
+  — pas aléatoire — pour rester reproductible) ; (3) degrés remarquables (critiques cardinaux/
+  fixes/mutables, degré anarétique 29°, point 0° Bélier) détectés sur les 4 planètes rapides,
+  orbe serré ; (4) position de chaque planète rapide dans son signe, réutilisant telle quelle
+  `planets_in_signs_full.json` — toujours présentes en entier, même sans aucun signal notable,
+  les 3 autres catégories se partageant le reste du budget de ~10 lignes plutôt que de les
+  évincer (les aspects lunaires, structurellement bien plus fréquents que ceux des 3 autres
+  planètes rapides, sont explicitement relégués en dernier parmi les aspects pour ne pas noyer
+  le reste). Portée volontairement limitée au français pour cet affichage direct (comme
+  `meaning_template` ailleurs dans l'app) — pensé d'abord comme matière première pour la
+  lecture IA, qui elle traduit dans la langue demandée.
+- Météo de la semaine — **notation par domaine de vie** (`app/core/weekly_weather_domains.py`,
+  config dans `app/reference_data/weekly_domain_scoring.json`) sur le modèle classique de
+  l'horoscope hebdomadaire : une note 1-5 pour chacun des domaines de vie présents (amour,
+  argent, santé — incluant désormais Chiron —, travail quotidien, et optionnellement
+  cheminement/évolution — l'axe des Nœuds, sans correspondance par maison, uniquement par
+  planète), calculée en combinant deux composantes — les transits personnels vers le thème
+  natal réel (mêmes données que le Pronostic hebdomadaire, filtrés par domaine via les maisons/
+  planètes de référence de chaque domaine) et les aspects rapide→générationnelle ci-dessus
+  (climat collectif, pondéré deux fois plus léger qu'un transit vraiment personnel), chacun
+  pondéré selon qu'il est applicatif ou séparatif. Barème conçu pour que 1/5 et 5/5 restent
+  RARES mais réellement ATTEIGNABLES par le calcul (plusieurs signaux tendus/positifs
+  convergents), jamais exclus par construction — un plancher artificiel à 2/5 avait d'abord été
+  découvert dans ce système ainsi que dans le calendrier ésotérique et la météo par signe (voir
+  `_score_from_raw`/`_HOUSE_ASPECT_NATURE_SCORE`), corrigé partout pour la même raison : la
+  prudence se joue dans la formulation du texte, jamais dans la manipulation du chiffre. Calcul
+  entièrement déterministe (code, jamais le LLM) ; exposé via `GET /api/charts/{chart_id}/
+  weekly-weather/domain-scores` (personnel, donc jamais mis en cache, contrairement à la couche
+  collective) et affiché avec le même composant d'étoiles unifié. La lecture LLM `weekly_weather`
+  reçoit ces notes pour en adapter le ton (jamais le chiffre cité tel quel, mais un score bas
+  doit se lire clairement comme tel, pas dilué dans un optimisme de façade) et formuler un point
+  fort / un point de vigilance à partir du signal le plus marquant de chaque domaine, avec les
+  mêmes garde-fous que le reste de l'app (aucun conseil financier ou médical concret).
 - Lecture interprétée par l'API Anthropic avec **prompt dédié par catégorie** : lecture
   générale (thème de base uniquement — planètes/maisons/aspects/dispositeurs, sans les lots
   ni les maisons dérivées), et six lectures spécialisées (Lots, Maisons dérivées, Timing,

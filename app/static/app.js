@@ -2530,6 +2530,7 @@ function resetWeeklyWeatherStateForNewChart() {
   if (dateInput) dateInput.value = "";
   [
     "weekly-weather-highlights",
+    "weekly-weather-combination-lines",
     "weekly-weather-planets",
     "weekly-weather-aspects",
     "weekly-weather-generational-aspects",
@@ -2689,7 +2690,26 @@ function renderWeeklyWeatherGenerationalAspects() {
     </table>`;
 }
 
-const WEEKLY_WEATHER_DOMAIN_CODES = ["amour", "argent", "sante", "travail_quotidien"];
+function renderWeeklyWeatherCombinationLines() {
+  const container = document.getElementById("weekly-weather-combination-lines");
+  if (!container || !weeklyWeatherData) return;
+  const lines = weeklyWeatherData.combination_lines || [];
+  if (lines.length === 0) {
+    container.innerHTML = "";
+    return;
+  }
+  // Texte déjà rédigé côté serveur (français) — voir app/core/weekly_weather_combinations.py :
+  // portée volontairement limitée au français pour ce résumé rapide (pensé d'abord comme
+  // matière première pour la lecture IA, qui elle traduit dans la langue demandée).
+  container.innerHTML = `
+    <h3>${t("weekly_weather_combination_lines_title")}</h3>
+    <p class="reading-section-intro">${t("weekly_weather_combination_lines_intro")}</p>
+    <ul class="weekly-weather-combination-list">
+      ${lines.map((line) => `<li class="weekly-weather-combination-item weekly-weather-combination-${line.kind}">${escapeHtml(line.text)}</li>`).join("")}
+    </ul>`;
+}
+
+const WEEKLY_WEATHER_DOMAIN_CODES = ["amour", "argent", "sante", "travail_quotidien", "cheminement_evolution"];
 
 function renderWeeklyWeatherDomainScores() {
   const container = document.getElementById("weekly-weather-domain-scores");
@@ -2757,6 +2777,7 @@ async function loadWeeklyWeather() {
       weeklyWeatherDomainScoresData = await domainScoresRes.json();
     }
     renderWeeklyWeatherHighlights();
+    renderWeeklyWeatherCombinationLines();
     renderWeeklyWeatherPlanets();
     renderWeeklyWeatherAspects();
     renderWeeklyWeatherGenerationalAspects();

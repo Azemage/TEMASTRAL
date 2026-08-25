@@ -1,0 +1,89 @@
+{
+  "description": "Bibliothèque de combinaisons pour les points forts hebdomadaires (voir doc source bibliotheque_combinaisons_hebdomadaires.md) — lookup/formules déterministes, AUCUNE génération IA. Sert à la fois d'affichage direct dans l'app et de donnée d'entrée factuelle pour la lecture LLM de la météo de la semaine (qui synthétise ces lignes plutôt que de les réinventer).",
+
+  "fast_planet_themes": {
+    "Moon": "l'humeur, le ressenti émotionnel, le besoin de sécurité",
+    "Mercury": "les échanges, les décisions, la clarté d'esprit",
+    "Venus": "les relations affectives, l'attraction, le rapport à l'argent/au plaisir",
+    "Mars": "l'énergie, l'initiative, la façon d'agir ou de réagir"
+  },
+
+  "aspect_modulators": {
+    "note": "2-3 variantes par aspect (voir option_rapide du doc source), sélectionnées de façon déterministe par semaine/paire plutôt qu'aléatoire, pour rester reproductible.",
+    "conjunction": ["se fusionne directement avec", "est amplifié(e) par"],
+    "trine": ["trouve un appui fluide dans", "circule facilement avec"],
+    "sextile": ["trouve une occasion favorable avec"],
+    "square": ["entre en friction avec", "est mis(e) sous tension par"],
+    "opposition": ["se confronte à", "doit composer avec"],
+    "quincunx": ["doit s'ajuster maladroitement à"]
+  },
+
+  "slow_point_themes": {
+    "Jupiter": "l'expansion, la confiance, les opportunités, l'excès possible",
+    "Saturn": "la structure, les responsabilités, les limites, la patience nécessaire",
+    "Uranus": "l'imprévu, le besoin de liberté, la rupture ou l'innovation soudaine",
+    "Neptune": "l'idéalisation, l'intuition, le flou, le risque d'illusion",
+    "Pluto": "la transformation profonde, les enjeux de pouvoir ou de contrôle",
+    "chiron": "la blessure sensible, le besoin de guérison, ce qui demande à être accueilli plutôt que corrigé",
+    "node_axis": "la direction de croissance, ce qui pousse à sortir de sa zone de confort, et les schémas familiers qu'il tente de dépasser"
+  },
+
+  "critical_degrees": {
+    "description": "Degrés remarquables (voir section 3 du doc source) — signalés uniquement pour les 4 planètes rapides de la semaine, orbe serré.",
+    "orb": 1.0,
+    "cardinal_signs": ["Aries", "Cancer", "Libra", "Capricorn"],
+    "fixed_signs": ["Taurus", "Leo", "Scorpio", "Aquarius"],
+    "mutable_signs": ["Gemini", "Virgo", "Sagittarius", "Pisces"],
+    "cardinal_degrees": [0, 13, 26],
+    "fixed_degrees": [8, 21],
+    "mutable_degrees": [4, 17],
+    "anaretic_degree": 29,
+    "meanings": {
+      "cardinal": "point de tension/urgence, une action qui ne peut plus attendre",
+      "fixed": "point de cristallisation, ce qui se construit devient difficile à changer",
+      "mutable": "point de transition, un changement de direction en cours",
+      "anaretic": "urgence, fin de cycle imminente, sentiment de dernière ligne droite avant un changement de signe",
+      "aries_point": "point cardinal du zodiaque, symboliquement associé à un nouveau départ à fort enjeu"
+    }
+  },
+
+  "curated_combinations": {
+    "description": "Liste éditoriale de patterns spécifiques (voir section 4 du doc source) — à enrichir progressivement, stockée en donnée de configuration plutôt que codée en dur. `conditions` : toutes doivent être vraies (ET logique) pour que la combinaison soit détectée.",
+    "combinations": [
+      {
+        "id": "mercury_rx_earth_slow",
+        "conditions": [
+          { "type": "retrograde", "planet": "Mercury" },
+          { "type": "slow_in_signs", "planets": ["Jupiter", "Saturn"], "signs": ["Taurus", "Virgo", "Capricorn"] }
+        ],
+        "score": 4,
+        "text": "Mercure rétrograde cette semaine, mais dans un climat de fond plus stable — les retards ou malentendus sont probables, mais les solutions concrètes ne manquent pas si tu prends le temps de vérifier les détails."
+      },
+      {
+        "id": "mars_rx_jupiter_water",
+        "conditions": [
+          { "type": "retrograde", "planet": "Mars" },
+          { "type": "slow_in_signs", "planets": ["Jupiter"], "signs": ["Cancer", "Scorpio", "Pisces"] }
+        ],
+        "score": 4,
+        "text": "Mars ralentit son élan cette semaine, dans une ambiance de fond plus intuitive et émotionnelle — moins une semaine pour foncer que pour ajuster ta direction en écoutant ton ressenti plutôt que ta seule volonté."
+      },
+      {
+        "id": "venus_mars_same_hard_aspect",
+        "conditions": [
+          { "type": "both_hard_aspect_same_target", "planets": ["Venus", "Mars"], "aspect_types": ["square", "opposition"] }
+        ],
+        "score": 5,
+        "text": "Cette semaine, à la fois l'attraction (Vénus) et l'action (Mars) se heurtent aux mêmes limites structurelles — un moment qui demande de la patience autant en amour que dans tes initiatives, plutôt qu'une semaine pour brusquer les choses."
+      },
+      {
+        "id": "moon_pluto_hard_aspect",
+        "conditions": [
+          { "type": "hard_aspect", "planet_a": "Moon", "planet_b": "Pluto" }
+        ],
+        "score": 4,
+        "text": "Cette semaine, les émotions peuvent remonter avec une intensité inhabituelle — un moment propice pour regarder en face ce qui est habituellement évité, plutôt qu'une simple mauvaise passe à ignorer."
+      }
+    ]
+  }
+}

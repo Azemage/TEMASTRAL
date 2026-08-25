@@ -43,7 +43,11 @@ from app.core.zodiac import SIGNS, SIGNS_FR, sign_and_degree, signs_distance
 
 MOON_PLANETS = ["Moon"]
 FAST_PLANETS = ["Mercury", "Venus", "Mars"]
-GENERATIONAL_PLANETS = ["Jupiter", "Saturn", "Uranus", "Neptune", "Pluto"]
+# Chiron et l'axe des Nœuds (représenté par north_node seul — un aspect à l'un est
+# automatiquement le même aspect à l'autre, voir bibliotheque_combinaisons_hebdomadaires.md)
+# sont des points LENTS comme Jupiter à Pluton : mêmes techniques transit-transit ci-dessous
+# (voir notation_hebdomadaire_domaines.json, points_mineurs_note).
+GENERATIONAL_PLANETS = ["Jupiter", "Saturn", "Uranus", "Neptune", "Pluto", "chiron", "north_node"]
 WEEK_DAYS = 7
 
 # Poids heuristiques (mêmes ordres de grandeur que le calendrier witchy, mais propres à
@@ -83,8 +87,17 @@ def _longitude(jd_ut: float, planet_id: int) -> float:
     return ephemeris.calc_planet(jd_ut, planet_id).longitude % 360
 
 
+def _planet_id(name: str) -> int:
+    """Le nœud nord n'a pas d'entrée dans ephemeris.PLANET_IDS (voir calc_all_bodies, qui le
+    traite à part pour dériver aussi le nœud sud) — on le résout ici séparément plutôt que de
+    dupliquer cette logique."""
+    if name == "north_node":
+        return ephemeris.NORTH_NODE_ID
+    return ephemeris.PLANET_IDS[name]
+
+
 def _position_dict(name: str, jd_ut: float) -> dict:
-    raw = ephemeris.calc_planet(jd_ut, ephemeris.PLANET_IDS[name])
+    raw = ephemeris.calc_planet(jd_ut, _planet_id(name))
     sign, degree = sign_and_degree(raw.longitude)
     return {
         "name": name,
@@ -112,13 +125,27 @@ def _compute_moon_path(dates: list[date_type]) -> tuple[list[dict], list[dict]]:
     return path, ingresses
 
 
+def _daily_positions(planet: str, dates: list[date_type]) -> list[dict]:
+    return [_position_dict(planet, _jd_at_noon(d)) for d in dates]
+
+
+def compute_daily_fast_positions(dates: list[date_type]) -> dict[str, list[dict]]:
+    """Position jour par jour de la Lune et des 3 planètes rapides — utilisé pour la détection
+    des degrés remarquables (voir weekly_weather_combinations.py, orbe serré donc besoin d'un
+    échantillon quotidien plutôt que du seul début/fin de semaine)."""
+    return {
+        planet: [position | {"date": d.isoformat()} for position, d in zip(_daily_positions(planet, dates), dates)]
+        for planet in MOON_PLANETS + FAST_PLANETS
+    }
+
+
 def _compute_fast_planets(dates: list[date_type]) -> list[dict]:
     """Pour Mercure/Vénus/Mars : position de début/fin de semaine, rétrogradation, et ingrès
     éventuel détecté par comparaison jour par jour (comme pour la Lune, granularité journalière
     suffisante — ces planètes ne peuvent pas changer de signe deux fois dans la même semaine)."""
     results = []
     for planet in FAST_PLANETS:
-        daily = [_position_dict(planet, _jd_at_noon(d)) for d in dates]
+        daily = _daily_positions(planet, dates)
         ingress = None
         for i in range(1, len(daily)):
             prev, curr = daily[i - 1], daily[i]
@@ -148,7 +175,7 @@ def _scan_pair_aspect_events(start_jd: float, end_jd: float, planet_a: str, plan
     ailleurs). Fenêtre courte (7 jours) : coût de calcul négligeable, même balayé pour de
     nombreuses paires (voir _compute_exact_transit_transit_aspects et
     _compute_generational_aspects, qui appellent cette fonction pour chaque paire)."""
-    id_a, id_b = ephemeris.PLANET_IDS[planet_a], ephemeris.PLANET_IDS[planet_b]
+    id_a, id_b = _planet_id(planet_a), _planet_id(planet_b)
 
     def directed_diff(t: float, a=id_a, b=id_b) -> float:
         return (_longitude(t, b) - _longitude(t, a)) % 360
@@ -201,6 +228,28 @@ def _compute_generational_aspects(start_jd: float, end_jd: float) -> list[dict]:
     return events
 
 
+def _compute_moon_generational_aspects(start_jd: float, end_jd: float) -> list[dict]:
+    """Même technique que _compute_generational_aspects, mais pour la Lune : distinct de
+    `generational_aspects` (qui reste Mercure/Vénus/Mars — voir sa docstring, la Lune y est
+    exclue par conception car trop rapide pour un signal de notation collective). Ici, la Lune
+    reste pertinente pour la bibliothèque de combinaisons hebdomadaires (voir
+    weekly_weather_combinations.py, bibliotheque_combinaisons_hebdomadaires.md section 1.2, où
+    la Lune fait bien partie des 4 planètes rapides de la formule de phrase)."""
+    events = []
+    for slow in GENERATIONAL_PLANETS:
+        events += _scan_pair_aspect_events(start_jd, end_jd, "Moon", slow, _ASPECT_TYPE_SCORE_GENERATIONAL)
+    events.sort(key=lambda e: e["date"])
+    return events
+
+
+def _compute_slow_planet_signs(start_date: date_type) -> dict[str, str]:
+    """Signe de chaque planète générationnelle en DÉBUT de semaine (quasi immobile à cette
+    échelle, un seul instantané suffit) — utilisé par les combinaisons éditoriales (ex. 'Jupiter
+    en signe d'eau', voir weekly_weather_combinations.py)."""
+    jd = _jd_at_noon(start_date)
+    return {planet: _position_dict(planet, jd)["sign"] for planet in GENERATIONAL_PLANETS}
+
+
 def _witchy_events_in_range(start_date: date_type, end_date: date_type) -> list[dict]:
     """Événements du calendrier ésotérique déjà calculés (compute_witchy_calendar, AUCUN
     recalcul) dont la date tombe dans la semaine — gère la semaine à cheval sur deux années."""
@@ -227,6 +276,7 @@ def _assemble_highlights(
     witchy_events: list[dict],
     aspects: list[dict],
     generational_aspects: list[dict],
+    moon_generational_aspects: list[dict],
 ) -> list[dict]:
     highlights: list[dict] = []
     for ingress in moon_ingresses:
@@ -269,7 +319,7 @@ def _assemble_highlights(
                 "aspect_type_fr": aspect["aspect_type_fr"], "sign": None, "score": aspect["score"],
             }
         )
-    for aspect in generational_aspects:
+    for aspect in generational_aspects + moon_generational_aspects:
         highlights.append(
             {
                 "date": aspect["date"], "kind": "aspect_generational", "planet": aspect["planet_a"],
@@ -294,11 +344,30 @@ def compute_weekly_collective(start_date: date_type) -> dict:
     witchy_events = _witchy_events_in_range(start_date, end_date)
     aspects = _compute_exact_transit_transit_aspects(start_jd, end_jd)
     generational_aspects = _compute_generational_aspects(start_jd, end_jd)
-    highlights = _assemble_highlights(moon_ingresses, fast_planets, stations, witchy_events, aspects, generational_aspects)
+    moon_generational_aspects = _compute_moon_generational_aspects(start_jd, end_jd)
+    highlights = _assemble_highlights(
+        moon_ingresses, fast_planets, stations, witchy_events, aspects, generational_aspects, moon_generational_aspects
+    )
 
     main_event = next((h for h in highlights if h.get("sign")), None)
     if main_event is None:
         main_event = {"kind": "lune_transit", "planet": "Moon", "sign": moon_path[0]["sign"], "score": 0}
+
+    # Bibliothèque de combinaisons hebdomadaires (voir weekly_weather_combinations.py et
+    # bibliotheque_combinaisons_hebdomadaires.md) : import local pour éviter tout risque de
+    # cycle (ce module importe déjà pas mal de choses de weekly_weather.py).
+    from app.core.weekly_weather_combinations import compute_weekly_combination_lines
+
+    slow_planet_signs = _compute_slow_planet_signs(start_date)
+    daily_fast_positions = compute_daily_fast_positions(dates)
+    combination_lines = compute_weekly_combination_lines(
+        fast_planets=fast_planets,
+        moon_path=moon_path,
+        generational_aspects=generational_aspects,
+        moon_generational_aspects=moon_generational_aspects,
+        daily_fast_positions=daily_fast_positions,
+        slow_planet_signs=slow_planet_signs,
+    )
 
     return {
         "period_start": start_date.isoformat(),
@@ -310,6 +379,8 @@ def compute_weekly_collective(start_date: date_type) -> dict:
         "witchy_events": witchy_events,
         "transit_transit_aspects": aspects,
         "generational_aspects": generational_aspects,
+        "moon_generational_aspects": moon_generational_aspects,
+        "combination_lines": combination_lines,
         "highlights": highlights,
         "main_event": {"kind": main_event["kind"], "planet": main_event.get("planet"), "sign": main_event["sign"]},
     }

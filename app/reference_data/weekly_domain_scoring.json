@@ -1,5 +1,5 @@
 {
-  "description": "Notation par domaine de vie pour la météo de la semaine (voir doc source notation_hebdomadaire_domaines.json). Calcul déterministe uniquement — la formulation du conseil/avertissement est déléguée au LLM à partir des signaux top_positive_signal/top_negative_signal, jamais du chiffre lui-même.",
+  "description": "Notation par domaine de vie pour la météo de la semaine (voir doc source notation_hebdomadaire_domaines.json, v2). Calcul déterministe uniquement — la formulation du conseil/avertissement est déléguée au LLM à partir des signaux top_positive_signal/top_negative_signal, jamais du chiffre lui-même.",
 
   "life_areas": [
     {
@@ -15,28 +15,37 @@
     {
       "code": "sante",
       "houses_ref": [1, 6],
-      "planets_ref": ["Sun", "Mars", "Saturn"]
+      "planets_ref": ["Sun", "Mars", "Saturn", "chiron"],
+      "note": "Chiron ajouté (doc v2) — représente traditionnellement la 'blessure/guérison' ; reste au niveau symbolique de l'énergie générale, jamais un diagnostic (voir safety_note)."
     },
     {
       "code": "travail_quotidien",
       "houses_ref": [6, 10],
       "planets_ref": ["Mercury", "Mars", "Saturn"]
+    },
+    {
+      "code": "cheminement_evolution",
+      "houses_ref": [],
+      "planets_ref": ["north_node", "south_node"],
+      "note": "Domaine v2, distinct des 4 précédents — ne se rattache à AUCUNE maison fixe (houses_ref volontairement vide, jamais de correspondance par maison) mais à l'AXE des Nœuds lui-même. Optionnel : à n'afficher que si un signal existe (souvent vide, l'axe étant lent — voir points_mineurs_note)."
     }
   ],
+
+  "points_mineurs_note": "Chiron et les Nœuds sont des points à mouvement LENT (comme Jupiter à Pluton) : ils ne sont PAS suivis pour leur propre mouvement hebdomadaire, mais réapparaissent via (1) un aspect exact au thème natal (composante personnelle, si le point a été sélectionné dans le thème — voir app/core/ephemeris.py), ou (2) un aspect transit-transit avec une planète rapide de la semaine (composante collective, voir app/core/weekly_weather.py::GENERATIONAL_PLANETS). La composante personnelle pour les Nœuds transitants n'est PAS suivie en V1 (seule la composante collective l'est) — voir app/core/weekly_weather_domains.py.",
 
   "planet_categories": {
     "note": "Classification bénéfique/exigeante/neutre utilisée par modifier_by_aspect_and_category, appliquée à la planète EN TRANSIT (jamais au point natal touché) — voir la règle explicite du doc source pour la conjonction ('si planète bénéfique EN TRANSIT').",
     "benefic": ["Venus", "Jupiter"],
     "demanding": ["Mars", "Saturn"],
-    "neutral": ["Sun", "Moon", "Mercury", "Uranus", "Neptune", "Pluto"]
+    "neutral": ["Sun", "Moon", "Mercury", "Uranus", "Neptune", "Pluto", "chiron", "north_node", "south_node"]
   },
 
   "modifier_by_aspect_and_category": {
-    "note": "Reprend modifier_table du doc source. Le doc ne détaille explicitement que 'bénéfique' et 'exigeante' pour carré/opposition/conjonction : la catégorie 'neutral' y est alignée sur 'bénéfique' (tension/énergie plus douce qu'une planète structurellement dure comme Mars/Saturne), et sur 'bénéfique+exigeante confondues' pour trigone/sextile (le doc les regroupe explicitement à +1).",
+    "note": "Reprend modifier_table du doc source v2. Le carré/l'opposition d'une planète exigeante est désormais -3 (au lieu de -2 en v1) — voir note_recalibrage du doc source : élargi pour que plusieurs signaux tendus convergents puissent réellement atteindre le bas de l'échelle. La catégorie 'neutral' reste alignée sur 'bénéfique' pour carré/opposition/conjonction (tension plus douce qu'une planète structurellement dure), et sur 'bénéfique+exigeante confondues' pour trigone/sextile (le doc les regroupe explicitement à +1).",
     "trine": { "benefic": 2, "neutral": 1, "demanding": 1 },
     "sextile": { "benefic": 2, "neutral": 1, "demanding": 1 },
-    "square": { "benefic": -1, "neutral": -1, "demanding": -2 },
-    "opposition": { "benefic": -1, "neutral": -1, "demanding": -2 },
+    "square": { "benefic": -1, "neutral": -1, "demanding": -3 },
+    "opposition": { "benefic": -1, "neutral": -1, "demanding": -3 },
     "conjunction": { "benefic": 2, "neutral": 1, "demanding": -1 },
     "quincunx": { "benefic": -1, "neutral": -1, "demanding": -1 }
   },
@@ -45,12 +54,12 @@
   "applying_multiplier": 1.3,
   "separating_multiplier": 0.7,
 
-  "final_scale_note": "Barème redessiné pour couvrir RÉELLEMENT 1 à 5 (le doc source excluait délibérément le 1 par prudence — 'floor_note' — mais ça produit un plancher artificiel à 2 même pour des semaines à signaux multiples et négatifs, ce que le calcul lui-même ne justifie pas). Continu (aucun trou) malgré les sommes non entières produites par la pondération applicatif/séparatif (x1.3/x0.7). Le 1 exige plusieurs signaux négatifs cumulés (un seul aspect dur appliquant, ex. -2.6, ne suffit pas à lui seul) — pas un plancher qui se déclenche au moindre signal, mais un vrai résultat possible, pas un cas théorique jamais atteint.",
+  "final_scale_note": "Bornes décalées à mi-chemin des paliers entiers du doc source v2 (-5/-4, -2/-1, 1/2, 4/5 -> -4.5/-1.5/1.5/4.5) plutôt que les entiers eux-mêmes, pour rester CONTINU (aucun trou) : la pondération applicatif/séparatif (x1.3/x0.7) produit des sommes non entières que le barème d'origine, pensé pour des totaux entiers, ne couvrait pas. Ces bornes reproduisent exactement le mapping du doc pour toute somme entière. Le doc v2 est explicite (note_honnetete) : le 1/5 et le 5/5 doivent rester RARES mais ATTEIGNABLES par le calcul, jamais exclus par construction — si le calcul produit un score <= -4.5, l'afficher tel quel, la prudence se joue dans la formulation du texte, pas dans la manipulation du chiffre.",
   "final_scale": [
-    { "min_score": null, "max_score": -4, "note": 1, "label": "semaine difficile" },
-    { "min_score": -4, "max_score": -1.5, "note": 2, "label": "semaine avec de vraies frictions" },
+    { "min_score": null, "max_score": -4.5, "note": 1, "label": "semaine exigeante — plusieurs tensions convergent, vigilance recommandée" },
+    { "min_score": -4.5, "max_score": -1.5, "note": 2, "label": "semaine avec frictions notables" },
     { "min_score": -1.5, "max_score": 1.5, "note": 3, "label": "semaine stable" },
-    { "min_score": 1.5, "max_score": 4, "note": 4, "label": "semaine favorable" },
-    { "min_score": 4, "max_score": null, "note": 5, "label": "semaine très favorable" }
+    { "min_score": 1.5, "max_score": 4.5, "note": 4, "label": "semaine favorable" },
+    { "min_score": 4.5, "max_score": null, "note": 5, "label": "semaine particulièrement favorable — convergence forte de signaux positifs" }
   ]
 }

@@ -22,6 +22,10 @@
     { "code": "north_node", "name_fr": "Nœud Nord" },
     { "code": "south_node", "name_fr": "Nœud Sud" },
     { "code": "chiron", "name_fr": "Chiron" },
-    { "code": "lilith_mean", "name_fr": "Lilith (Lune Noire moyenne)" }
+    { "code": "lilith_mean", "name_fr": "Lilith (Lune Noire moyenne)" },
+    { "code": "ceres", "name_fr": "Cérès" },
+    { "code": "pallas", "name_fr": "Pallas" },
+    { "code": "juno", "name_fr": "Junon" },
+    { "code": "vesta", "name_fr": "Vesta" }
   ]
 }

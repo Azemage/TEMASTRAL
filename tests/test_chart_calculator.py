@@ -42,9 +42,30 @@ def test_optional_points_are_included_when_requested():
     diff = abs(north["absolute_longitude"] - south["absolute_longitude"]) % 360
     assert abs(diff - 180) < 0.01
 
-    # Chiron nécessite des fichiers d'éphémérides non fournis par le calcul Moshier intégré :
-    # soit il est présent (fichiers installés), soit signalé comme indisponible, jamais silencieux.
-    assert "chiron" in names or "chiron" in chart["unavailable_points"]
+    # Chiron nécessite le fichier d'éphémérides seas_18.se1 (app/ephe/), fourni avec le dépôt —
+    # doit donc être réellement disponible, pas seulement signalé comme indisponible.
+    assert "chiron" in names
+    assert chart["unavailable_points"] == []
+
+
+def test_asteroid_points_are_included_when_requested():
+    """Cérès/Pallas/Junon/Vesta partagent le même fichier d'éphémérides que Chiron
+    (seas_18.se1) — voir points_mineurs_significations.json et app/core/ephemeris.py."""
+    optional = ["ceres", "pallas", "juno", "vesta"]
+    chart = calculate_natal_chart(**BIRTH_KWARGS, optional_points=optional)
+    names = {p["name"] for p in chart["planets"]}
+    assert set(optional) <= names
+    assert chart["unavailable_points"] == []
+    for asteroid in optional:
+        p = next(pl for pl in chart["planets"] if pl["name"] == asteroid)
+        assert p["sign"] in SIGNS
+        assert 0 <= p["degree"] < 30
+
+
+def test_asteroid_points_are_absent_when_not_requested():
+    chart = calculate_natal_chart(**BIRTH_KWARGS, optional_points=[])
+    names = {p["name"] for p in chart["planets"]}
+    assert names.isdisjoint({"ceres", "pallas", "juno", "vesta", "chiron", "lilith_mean"})
 
 
 def test_elements_and_modality_balance_sum_to_ten_classic_planets():

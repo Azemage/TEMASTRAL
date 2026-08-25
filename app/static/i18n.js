@@ -101,6 +101,10 @@ const PLANET_NAMES = {
   south_node: { fr: "Nœud Sud", en: "South Node", es: "Nodo Sur" },
   chiron: { fr: "Chiron", en: "Chiron", es: "Quirón" },
   lilith_mean: { fr: "Lilith", en: "Lilith", es: "Lilith" },
+  ceres: { fr: "Cérès", en: "Ceres", es: "Ceres" },
+  pallas: { fr: "Pallas", en: "Pallas", es: "Palas" },
+  juno: { fr: "Junon", en: "Juno", es: "Juno" },
+  vesta: { fr: "Vesta", en: "Vesta", es: "Vesta" },
   ascendant: { fr: "Ascendant", en: "Ascendant", es: "Ascendente" },
   midheaven: { fr: "Milieu du Ciel", en: "Midheaven", es: "Medio Cielo" },
   descendant: { fr: "Descendant", en: "Descendant", es: "Descendente" },
@@ -133,6 +137,7 @@ const PLANET_SYMBOLS = {
   Sun: "☉", Moon: "☽", Mercury: "☿", Venus: "♀", Mars: "♂",
   Jupiter: "♃", Saturn: "♄", Uranus: "⛢", Neptune: "♆", Pluto: "♇",
   north_node: "☊", south_node: "☋", chiron: "⚷", lilith_mean: "⚸",
+  ceres: "⚳", pallas: "⚴", juno: "⚵", vesta: "⚶",
 };
 
 function signLabel(sign) {
@@ -517,6 +522,10 @@ const UI_TEXT = {
   point_south_node: { fr: "Nœud Sud", en: "South Node", es: "Nodo Sur" },
   point_chiron: { fr: "Chiron", en: "Chiron", es: "Quirón" },
   point_lilith: { fr: "Lilith moyenne", en: "Mean Lilith", es: "Lilith media" },
+  point_ceres: { fr: "Cérès", en: "Ceres", es: "Ceres" },
+  point_pallas: { fr: "Pallas", en: "Pallas", es: "Palas" },
+  point_juno: { fr: "Junon", en: "Juno", es: "Juno" },
+  point_vesta: { fr: "Vesta", en: "Vesta", es: "Vesta" },
   btn_calculate_chart: { fr: "Calculer le thème natal", en: "Calculate natal chart", es: "Calcular la carta natal" },
   status_calculating: { fr: "Calcul en cours...", en: "Calculating...", es: "Calculando..." },
   no_results: { fr: "Aucun résultat. Saisissez les coordonnées manuellement.", en: "No results. Enter coordinates manually.", es: "Sin resultados. Introduce las coordenadas manualmente." },
@@ -1012,4 +1021,19 @@ const UI_TEXT = {
   weekly_weather_domain_argent: { fr: "Argent", en: "Money", es: "Dinero" },
   weekly_weather_domain_sante: { fr: "Énergie / santé", en: "Energy / health", es: "Energía / salud" },
   weekly_weather_domain_travail_quotidien: { fr: "Travail quotidien", en: "Daily work", es: "Trabajo diario" },
+  weekly_weather_domain_cheminement_evolution: {
+    fr: "Cheminement / évolution",
+    en: "Path / growth",
+    es: "Camino / evolución",
+  },
+  weekly_weather_combination_lines_title: {
+    fr: "Résumé de la semaine, combinaison par combinaison",
+    en: "Week summary, combination by combination",
+    es: "Resumen de la semana, combinación por combinación",
+  },
+  weekly_weather_combination_lines_intro: {
+    fr: "Points forts déterministes de la semaine (aspects, degrés remarquables, position des planètes rapides), en français — matière première pour la lecture IA ci-dessous, qui la reprend dans la langue demandée.",
+    en: "Deterministic highlights of the week (aspects, notable degrees, fast planet positions), in French — raw material for the AI reading below, which restates it in the requested language.",
+    es: "Puntos clave deterministas de la semana (aspectos, grados notables, posición de los planetas rápidos), en francés — materia prima para la lectura de IA a continuación, que la retoma en el idioma solicitado.",
+  },
 };
