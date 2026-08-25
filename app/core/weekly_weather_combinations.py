@@ -62,25 +62,35 @@ def _capitalize(sentence: str) -> str:
 # ---------------------------------------------------------------------------
 # Section 1 : formule combinable planète rapide x planète lente
 # ---------------------------------------------------------------------------
-def build_aspect_combination_lines(aspect_events: list[dict]) -> list[dict]:
+def _theme_for(planet_key: str, fast_themes: dict, slow_themes: dict) -> str | None:
+    """Le second opérande d'un aspect peut être une planète lente (Jupiter à Pluton, Chiron,
+    l'axe des Nœuds) OU une autre planète rapide (voir build_aspect_combination_lines, appelée
+    aussi sur transit_transit_aspects — les aspects Lune/Mercure/Vénus/Mars entre elles n'ont
+    pas moins besoin d'une phrase que les aspects vers les planètes lentes) : on cherche d'abord
+    dans slow_themes, puis on retombe sur fast_themes."""
+    return slow_themes.get(planet_key, fast_themes.get(planet_key))
+
+
+def build_aspect_combination_lines(aspect_events: list[dict], kind: str) -> list[dict]:
     lib = weekly_combinations_library()
     fast_themes, slow_themes, modulators = lib["fast_planet_themes"], lib["slow_point_themes"], lib["aspect_modulators"]
 
     lines = []
     for aspect in aspect_events:
-        fast, slow_raw, aspect_type = aspect["planet_a"], aspect["planet_b"], aspect["aspect_type"]
-        slow_key = _slow_point_key(slow_raw)
-        if fast not in fast_themes or slow_key not in slow_themes or aspect_type not in modulators:
+        fast, other_raw, aspect_type = aspect["planet_a"], aspect["planet_b"], aspect["aspect_type"]
+        other_key = _slow_point_key(other_raw)
+        other_theme = _theme_for(other_key, fast_themes, slow_themes)
+        if fast not in fast_themes or other_theme is None or aspect_type not in modulators:
             continue
-        seed = f"{aspect['date']}|{fast}|{slow_raw}|{aspect_type}"
+        seed = f"{aspect['date']}|{fast}|{other_raw}|{aspect_type}"
         modulator = _stable_choice(modulators[aspect_type], seed)
-        text = _capitalize(f"{fast_themes[fast]} {modulator} {slow_themes[slow_key]} cette semaine.")
+        text = _capitalize(f"{fast_themes[fast]} {modulator} {other_theme} cette semaine.")
         lines.append(
             {
-                "kind": "aspect_rapide_lente",
+                "kind": kind,
                 "date": aspect["date"],
                 "planet": fast,
-                "planet_b": slow_raw,
+                "planet_b": other_raw,
                 "aspect_type": aspect_type,
                 "aspect_type_fr": aspect["aspect_type_fr"],
                 "score": aspect["score"],
@@ -206,16 +216,20 @@ def compute_weekly_combination_lines(
     moon_path: list[dict],
     generational_aspects: list[dict],
     moon_generational_aspects: list[dict],
+    transit_transit_aspects: list[dict],
     daily_fast_positions: dict[str, list[dict]],
     slow_planet_signs: dict[str, str],
 ) -> list[dict]:
     """~10 lignes ordonnées par priorité : (1) combinaisons éditoriales, (2) aspects Mercure/
-    Vénus/Mars x lente de la semaine, (3) degrés remarquables, (4) aspects Lune x lente (la Lune
-    en forme structurellement beaucoup plus souvent — elle change de signe tous les ~2,5 jours —
-    donc reléguée après les aspects des 3 autres planètes rapides pour ne pas noyer le reste),
-    (5) position des 4 planètes rapides dans leur signe. Les positions (5) sont TOUJOURS
-    présentes en entier (voir doc source, section 5.1 point 4), même sans aucun signal notable :
-    les catégories 1-4 se partagent le reste du budget de ~10 lignes plutôt que de les évincer."""
+    Vénus/Mars x lente de la semaine, (3) aspects entre planètes rapides elles-mêmes
+    (`transit_transit_aspects`, ex. Lune conjonction Vénus — la même formule de phrase que (2),
+    réutilisant `fast_planet_themes` pour les DEUX opérandes plutôt que `slow_point_themes`),
+    (4) degrés remarquables, (5) aspects Lune x lente (la Lune en forme structurellement
+    beaucoup plus souvent — elle change de signe tous les ~2,5 jours — donc reléguée en dernier
+    parmi les aspects pour ne pas noyer le reste), (6) position des 4 planètes rapides dans leur
+    signe. Les positions (6) sont TOUJOURS présentes en entier (voir doc source, section 5.1
+    point 4), même sans aucun signal notable : les catégories 1-5 se partagent le reste du
+    budget de ~10 lignes plutôt que de les évincer."""
     ctx = {
         "fast_planets": fast_planets,
         "generational_aspects": generational_aspects,
@@ -224,11 +238,12 @@ def compute_weekly_combination_lines(
     }
 
     curated = build_curated_combination_lines(ctx)
-    fast_aspect_lines = build_aspect_combination_lines(generational_aspects)
+    fast_slow_lines = build_aspect_combination_lines(generational_aspects, kind="aspect_rapide_lente")
+    fast_fast_lines = build_aspect_combination_lines(transit_transit_aspects, kind="aspect_rapide_rapide")
     degree_lines = build_critical_degree_lines(daily_fast_positions)
-    moon_aspect_lines = build_aspect_combination_lines(moon_generational_aspects)
+    moon_aspect_lines = build_aspect_combination_lines(moon_generational_aspects, kind="aspect_rapide_lente")
     position_lines = build_position_lines(moon_path[0]["sign"], fast_planets)
 
     variable_budget = max(_MAX_LINES - len(position_lines), 0)
-    variable = (curated + fast_aspect_lines + degree_lines + moon_aspect_lines)[:variable_budget]
+    variable = (curated + fast_slow_lines + fast_fast_lines + degree_lines + moon_aspect_lines)[:variable_budget]
     return variable + position_lines

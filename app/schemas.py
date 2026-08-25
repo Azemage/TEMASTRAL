@@ -607,7 +607,7 @@ class WeeklyWeatherMainEvent(BaseModel):
 
 
 class WeeklyWeatherCombinationLine(BaseModel):
-    kind: str  # 'combinaison_editoriale' | 'aspect_rapide_lente' | 'degre_remarquable' | 'position_signe'
+    kind: str  # 'combinaison_editoriale' | 'aspect_rapide_lente' | 'aspect_rapide_rapide' | 'degre_remarquable' | 'position_signe'
     text: str
     date: str | None = None
     planet: str | None = None

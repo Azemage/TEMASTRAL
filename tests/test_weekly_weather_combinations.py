@@ -19,7 +19,7 @@ _ASPECT = {"date": "2027-02-05", "planet_a": "Venus", "planet_b": "Neptune", "as
 # Section 1 : formule d'aspect rapide x lente
 # ---------------------------------------------------------------------------
 def test_build_aspect_combination_lines_assembles_the_formula():
-    lines = build_aspect_combination_lines([_ASPECT])
+    lines = build_aspect_combination_lines([_ASPECT], kind="aspect_rapide_lente")
     assert len(lines) == 1
     line = lines[0]
     assert line["kind"] == "aspect_rapide_lente"
@@ -32,21 +32,21 @@ def test_build_aspect_combination_lines_assembles_the_formula():
 
 
 def test_build_aspect_combination_lines_is_deterministic_not_random():
-    a = build_aspect_combination_lines([_ASPECT])
-    b = build_aspect_combination_lines([_ASPECT])
+    a = build_aspect_combination_lines([_ASPECT], kind="aspect_rapide_lente")
+    b = build_aspect_combination_lines([_ASPECT], kind="aspect_rapide_lente")
     assert a == b
 
 
 def test_build_aspect_combination_lines_uses_node_axis_wording():
     aspect = {"date": "2027-02-05", "planet_a": "Mars", "planet_b": "north_node", "aspect_type": "square", "aspect_type_fr": "carré", "score": 4}
-    lines = build_aspect_combination_lines([aspect])
+    lines = build_aspect_combination_lines([aspect], kind="aspect_rapide_lente")
     assert len(lines) == 1
     assert "zone de confort" in lines[0]["text"] or "croissance" in lines[0]["text"]
 
 
 def test_build_aspect_combination_lines_skips_unrecognized_aspect_type():
     aspect = {**_ASPECT, "aspect_type": "quintile"}
-    assert build_aspect_combination_lines([aspect]) == []
+    assert build_aspect_combination_lines([aspect], kind="aspect_rapide_lente") == []
 
 
 # ---------------------------------------------------------------------------
@@ -167,10 +167,37 @@ def test_compute_weekly_combination_lines_always_includes_all_position_lines():
     moon_path = [{"sign": "Cancer"}]
     lines = compute_weekly_combination_lines(
         fast_planets=fast_planets, moon_path=moon_path, generational_aspects=[], moon_generational_aspects=[],
-        daily_fast_positions={}, slow_planet_signs={},
+        transit_transit_aspects=[], daily_fast_positions={}, slow_planet_signs={},
     )
     position_lines = [line for line in lines if line["kind"] == "position_signe"]
     assert len(position_lines) == 4
+
+
+def test_compute_weekly_combination_lines_covers_fast_fast_aspects_too():
+    """Régression : les aspects entre deux planètes rapides (ex. Lune conjonction Vénus,
+    transit_transit_aspects) doivent AUSSI recevoir une phrase descriptive, pas seulement les
+    aspects vers les planètes lentes — le bug initial ne branchait `transit_transit_aspects`
+    nulle part dans compute_weekly_combination_lines, donc ces aspects n'apparaissaient que
+    comme un libellé technique nu dans le tableau séparé, jamais dans le résumé de combinaisons."""
+    fast_planets = [
+        {"name": "Mercury", "sign_start": "Gemini", "retrograde_start": False, "retrograde_end": False},
+        {"name": "Venus", "sign_start": "Taurus", "retrograde_start": False, "retrograde_end": False},
+        {"name": "Mars", "sign_start": "Aries", "retrograde_start": False, "retrograde_end": False},
+    ]
+    moon_path = [{"sign": "Cancer"}]
+    fast_fast_aspect = {
+        "date": "2027-02-05", "planet_a": "Moon", "planet_b": "Venus",
+        "aspect_type": "conjunction", "aspect_type_fr": "conjonction", "score": 3,
+    }
+    lines = compute_weekly_combination_lines(
+        fast_planets=fast_planets, moon_path=moon_path, generational_aspects=[], moon_generational_aspects=[],
+        transit_transit_aspects=[fast_fast_aspect], daily_fast_positions={}, slow_planet_signs={},
+    )
+    fast_fast_lines = [line for line in lines if line["kind"] == "aspect_rapide_rapide"]
+    assert len(fast_fast_lines) == 1
+    assert fast_fast_lines[0]["planet"] == "Moon"
+    assert fast_fast_lines[0]["planet_b"] == "Venus"
+    assert "cette semaine." in fast_fast_lines[0]["text"]
 
 
 def test_compute_weekly_collective_combination_lines_are_capped_and_json_serializable():
@@ -180,6 +207,16 @@ def test_compute_weekly_collective_combination_lines_are_capped_and_json_seriali
     assert 0 < len(data["combination_lines"]) <= 10
     assert all(line["kind"] == "position_signe" for line in data["combination_lines"][-4:])
     json.dumps(data)
+
+
+def test_compute_weekly_collective_includes_fast_fast_aspect_lines_for_reference_week():
+    """Sur la semaine de référence (2027-02-03, déjà utilisée ailleurs dans ce fichier), au
+    moins un aspect rapide-rapide (transit_transit_aspects) doit se traduire en ligne de
+    combinaison — vérifie l'intégration bout en bout, pas seulement l'unité ci-dessus."""
+    data = compute_weekly_collective(date(2027, 2, 3))
+    assert len(data["transit_transit_aspects"]) > 0
+    fast_fast_lines = [line for line in data["combination_lines"] if line["kind"] == "aspect_rapide_rapide"]
+    assert len(fast_fast_lines) > 0
 
 
 def test_compute_weekly_collective_combination_lines_prioritize_fast_over_moon_aspects():

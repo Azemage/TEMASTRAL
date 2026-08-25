@@ -616,9 +616,12 @@ intensité ressentie)."""
     combination_lines_data = """DANS `collective.combination_lines` : ~10 lignes de texte déjà \
 rédigées (français, prêtes à l'emploi), le "profil brut de la semaine" — combinaisons \
 éditoriales notables (`kind`="combinaison_editoriale"), phrases d'aspect rapide vers planète \
-lente/Chiron/axe des Nœuds (`kind`="aspect_rapide_lente"), degrés remarquables (`kind`= \
-"degre_remarquable"), et position de chaque planète rapide dans son signe (`kind`= \
-"position_signe", toujours présentes). NE LES IGNORE JAMAIS ET NE LES RÉGÉNÈRE JAMAIS depuis \
+lente/Chiron/axe des Nœuds (`kind`="aspect_rapide_lente"), phrases d'aspect ENTRE deux \
+planètes rapides elles-mêmes (`kind`="aspect_rapide_rapide", ex. Lune conjonction Vénus — même \
+principe de phrase, une ligne dédiée pour CHAQUE aspect rapide-rapide de la semaine, jamais \
+juste le libellé technique nu), degrés remarquables (`kind`="degre_remarquable"), et position \
+de chaque planète rapide dans son signe (`kind`="position_signe", toujours présentes). NE LES \
+IGNORE JAMAIS ET NE LES RÉGÉNÈRE JAMAIS depuis \
 zéro : synthétise-les et priorise-les dans "Climat de la semaine" (même principe que les \
 `themes_confirmes` du thème natal — la convergence est déjà calculée, tu rédiges à partir \
 d'elle). Elles arrivent déjà classées par ordre d'importance ; tu peux fusionner/reformuler \

@@ -254,20 +254,25 @@ Implémenté :
   weekly_combinations_library.json`) : ~10 lignes de texte français entièrement déterministes
   (formule + lookup, aucun appel LLM), affichées directement dans l'app ET injectées comme
   donnée factuelle dans le prompt de la lecture complète (le LLM les synthétise, il ne les
-  régénère jamais — même principe que les `themes_confirmes` du thème natal). Quatre sources,
+  régénère jamais — même principe que les `themes_confirmes` du thème natal). Cinq sources,
   par ordre de priorité : (1) combinaisons éditoriales composées, une table de configuration
   condition+texte (ex. "Mercure rétrograde + planète lente en signe de terre", "Vénus et Mars
   tous deux en aspect tendu à la même planète lente") ; (2) phrases d'aspect rapide→lente
   assemblées par formule combinable (thème de la planète rapide + modulateur selon le type
   d'aspect + thème du point lent, 2-3 variantes de phrasé sélectionnées de façon déterministe
-  — pas aléatoire — pour rester reproductible) ; (3) degrés remarquables (critiques cardinaux/
-  fixes/mutables, degré anarétique 29°, point 0° Bélier) détectés sur les 4 planètes rapides,
-  orbe serré ; (4) position de chaque planète rapide dans son signe, réutilisant telle quelle
-  `planets_in_signs_full.json` — toujours présentes en entier, même sans aucun signal notable,
-  les 3 autres catégories se partageant le reste du budget de ~10 lignes plutôt que de les
-  évincer (les aspects lunaires, structurellement bien plus fréquents que ceux des 3 autres
-  planètes rapides, sont explicitement relégués en dernier parmi les aspects pour ne pas noyer
-  le reste). Portée volontairement limitée au français pour cet affichage direct (comme
+  — pas aléatoire — pour rester reproductible) ; (3) la MÊME formule appliquée aux aspects
+  ENTRE planètes rapides elles-mêmes (`transit_transit_aspects`, ex. Lune conjonction Vénus —
+  réutilise `fast_planet_themes` pour les deux opérandes plutôt que `slow_point_themes` ;
+  chaque aspect rapide-rapide obtient ainsi sa propre ligne descriptive, pas seulement un
+  libellé technique nu comme dans le tableau séparé "Aspects entre planètes rapides") ;
+  (4) degrés remarquables (critiques cardinaux/fixes/mutables, degré anarétique 29°, point
+  0° Bélier) détectés sur les 4 planètes rapides, orbe serré ; (5) position de chaque planète
+  rapide dans son signe, réutilisant telle quelle `planets_in_signs_full.json` — toujours
+  présentes en entier, même sans aucun signal notable, les 4 autres catégories se partageant
+  le reste du budget de ~10 lignes plutôt que de les évincer (les aspects lunaires vers les
+  planètes lentes, structurellement bien plus fréquents que ceux des 3 autres planètes
+  rapides, sont explicitement relégués en dernier parmi les aspects pour ne pas noyer le
+  reste). Portée volontairement limitée au français pour cet affichage direct (comme
   `meaning_template` ailleurs dans l'app) — pensé d'abord comme matière première pour la
   lecture IA, qui elle traduit dans la langue demandée.
 - Météo de la semaine — **notation par domaine de vie** (`app/core/weekly_weather_domains.py`,

@@ -365,6 +365,7 @@ def compute_weekly_collective(start_date: date_type) -> dict:
         moon_path=moon_path,
         generational_aspects=generational_aspects,
         moon_generational_aspects=moon_generational_aspects,
+        transit_transit_aspects=aspects,
         daily_fast_positions=daily_fast_positions,
         slow_planet_signs=slow_planet_signs,
     )
