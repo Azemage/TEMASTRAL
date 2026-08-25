@@ -15,6 +15,7 @@
   --gold: #a3771f;
   --border: #b7a273;
   --danger: #a13d3d;
+  --amber: #b06b35;
   --display-font: "Cormorant Garamond", "Iowan Old Style", Georgia, serif;
   --body-font: "EB Garamond", "Iowan Old Style", Georgia, serif;
   --data-font: "EB Garamond", Georgia, serif;
@@ -541,14 +542,17 @@ button:disabled { opacity: 0.6; cursor: wait; }
   font-size: 0.75rem;
 }
 
-/* Paliers de brillance : plus la note est haute, plus le remplissage est lumineux (halo doré
-   au maximum) ; en-dessous, il reste terne et discret. */
+/* Une couleur distincte par palier (1 rouge -> 5 doré et lumineux), plutôt qu'une simple
+   variation d'opacité pour les paliers bas qui les rendait quasi invisibles sur le fond clair
+   et strictement indifférenciables entre eux — cohérent avec le principe déjà établi ailleurs
+   (weekly_domain_scoring.json) qu'une mauvaise note doit se voir clairement comme telle, pas
+   se fondre dans le décor. */
 .star-rating--tier-1 .star-rating-fg {
-  color: rgba(255, 255, 255, 0.34);
+  color: var(--danger);
 }
 
 .star-rating--tier-2 .star-rating-fg {
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--amber);
 }
 
 .star-rating--tier-3 .star-rating-fg {
