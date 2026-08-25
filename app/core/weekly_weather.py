@@ -41,6 +41,13 @@ from app.core.root_finding import scan_zero_crossings
 from app.core.witchy_calendar import STATION_PLANETS, compute_station_events, compute_witchy_calendar
 from app.core.zodiac import SIGNS, SIGNS_FR, sign_and_degree, signs_distance
 
+# Incrémenté à chaque changement de la forme du dict retourné par compute_weekly_collective
+# (nouveau champ, renommage...) — voir weekly_weather_service.py::get_or_compute_weekly_weather,
+# qui compare cette valeur à celle stockée dans le cache pour invalider silencieusement une
+# ligne obsolète plutôt que de servir indéfiniment une forme de données périmée (le cache est
+# partagé par tous les visiteurs d'une même semaine et ne se rafraîchit sinon jamais tout seul).
+SCHEMA_VERSION = 2
+
 MOON_PLANETS = ["Moon"]
 FAST_PLANETS = ["Mercury", "Venus", "Mars"]
 # Chiron et l'axe des Nœuds (représenté par north_node seul — un aspect à l'un est
@@ -371,6 +378,7 @@ def compute_weekly_collective(start_date: date_type) -> dict:
     )
 
     return {
+        "schema_version": SCHEMA_VERSION,
         "period_start": start_date.isoformat(),
         "period_end": end_date.isoformat(),
         "moon_path": moon_path,

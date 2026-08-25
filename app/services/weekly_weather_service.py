@@ -17,17 +17,27 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app import models
-from app.core.weekly_weather import compute_weekly_collective
+from app.core.weekly_weather import SCHEMA_VERSION, compute_weekly_collective
 from app.core.weekly_weather_domains import compute_weekly_domain_scores
 from app.services import timing_service
 
 
 def get_or_compute_weekly_weather(db: Session, start_date: date_type) -> dict:
     existing = db.query(models.GlobalWeeklyWeatherCache).filter_by(period_start=start_date).first()
-    if existing:
+    if existing and existing.collective_data.get("schema_version") == SCHEMA_VERSION:
         return existing.collective_data
 
     collective_data = compute_weekly_collective(start_date)
+
+    if existing:
+        # Ligne déjà présente mais d'une forme périmée (compute_weekly_collective a changé
+        # depuis — nouveau champ, etc.) : on la met à jour plutôt que de la servir telle quelle
+        # indéfiniment, le cache étant partagé par tous les visiteurs de cette semaine et ne se
+        # rafraîchissant sinon jamais tout seul.
+        existing.collective_data = collective_data
+        db.commit()
+        return collective_data
+
     row = models.GlobalWeeklyWeatherCache(period_start=start_date, collective_data=collective_data)
     db.add(row)
     try:

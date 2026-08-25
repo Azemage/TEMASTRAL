@@ -251,11 +251,12 @@ def _personal_event(transiting_planet, natal_point, aspect_type, aspect_type_fr,
 
 def test_compute_weekly_domain_scores_benefic_trine_applying_is_favorable():
     start = date(2027, 2, 3)
-    # Vénus trigone Vénus natale (bénéfique, +2), pic après le début de semaine => applicatif (x1.3).
+    # Vénus trigone Vénus natale (bénéfique, +2), pic après le début de semaine => applicatif
+    # (x1.3) => 2.6, au-dessus de la borne du 5/5 recalibrée (2.5, voir weekly_domain_scoring.json).
     events = [_personal_event("Venus", "Venus", "trine", "trigone", "2027-02-05")]
     scores = compute_weekly_domain_scores({"Venus": 5}, events, [], start)
-    assert scores["amour"]["note"] == 4
-    assert scores["amour"]["label"] == "semaine favorable"
+    assert scores["amour"]["note"] == 5
+    assert scores["amour"]["label"] == "semaine particulièrement favorable — convergence forte de signaux positifs"
     assert scores["amour"]["top_positive_signal"] == "Venus transit trigone Venus natal"
     assert scores["amour"]["top_negative_signal"] is None
     # Vénus n'appartient pas aux planètes de référence de santé, ni sa maison (5) à houses_ref
@@ -272,6 +273,18 @@ def test_compute_weekly_domain_scores_demanding_square_is_negative_signal():
     for area in ("sante", "travail_quotidien"):  # Mars ET Saturne y figurent tous les deux
         assert scores[area]["top_negative_signal"] == "Mars transit carré Saturn natal"
         assert scores[area]["note"] < 4
+
+
+def test_compute_weekly_domain_scores_note_1_reachable_without_extreme_convergence():
+    """Recalibrage (retour utilisateur) : le 1/5 ne doit plus exiger la convergence de
+    plusieurs tensions à la fois — un seul aspect exigeant applicatif suffit désormais."""
+    start = date(2027, 2, 3)
+    # Mars carré Saturne natale (exigeante, -3), pic après le début de semaine => applicatif
+    # (x1.3) => -3.9, sous la borne du 1/5 recalibrée (-2.5).
+    events = [_personal_event("Mars", "Saturn", "square", "carré", "2027-02-10")]
+    scores = compute_weekly_domain_scores({"Saturn": 10}, events, [], start)
+    assert scores["sante"]["note"] == 1
+    assert scores["sante"]["label"] == "semaine exigeante — plusieurs tensions convergent, vigilance recommandée"
 
 
 def test_compute_weekly_domain_scores_matches_by_natal_house_even_without_planet_ref():
@@ -370,6 +383,31 @@ def test_get_or_compute_weekly_weather_handles_concurrent_cache_miss(client):
     finally:
         db.close()
         other_db.close()
+
+
+def test_get_or_compute_weekly_weather_refreshes_a_stale_cached_row():
+    """Régression : une ligne de cache écrite par une version antérieure du code (sans
+    schema_version, ou avec une valeur différente) doit être recalculée et mise à jour plutôt
+    que servie indéfiniment telle quelle — sinon une nouvelle fonctionnalité (ex.
+    combination_lines) n'apparaît jamais pour une semaine déjà en cache avant son ajout, même
+    après déploiement du nouveau code."""
+    from app.core.weekly_weather import SCHEMA_VERSION
+
+    db = SessionLocal()
+    try:
+        target_date = date(2032, 5, 10)
+        stale_data = {"period_start": target_date.isoformat(), "schema_version": SCHEMA_VERSION - 1, "combination_lines": "n'existait pas encore"}
+        db.add(GlobalWeeklyWeatherCache(period_start=target_date, collective_data=stale_data))
+        db.commit()
+
+        refreshed = get_or_compute_weekly_weather(db, target_date)
+
+        assert refreshed["schema_version"] == SCHEMA_VERSION
+        assert isinstance(refreshed["combination_lines"], list)  # la forme périmée (une chaîne) a bien été écrasée
+        count = db.query(GlobalWeeklyWeatherCache).filter_by(period_start=target_date).count()
+        assert count == 1  # mis à jour en place, pas dupliqué
+    finally:
+        db.close()
 
 
 def test_compute_domain_scores_for_chart_returns_all_areas_and_reuses_cached_collective():

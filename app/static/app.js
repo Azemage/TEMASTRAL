@@ -1901,8 +1901,10 @@ function buildAstroMapSVG(lines, savedLocations, interestingCities) {
   (interestingCities || []).forEach((c) => {
     const x = astroLonToX(c.longitude, width);
     const y = astroLatToY(c.latitude, height);
-    const normalizedScore = Math.round((c.score / citiesMaxScore) * 10 * 10) / 10;
-    const tooltip = escapeHtml(`${c.name}, ${c.country} — ${t("astro_score_label")} ${normalizedScore}/10`);
+    // Même échelle 5 étoiles que la liste ci-dessous (starRatingHtml) — pas /10, pour rester
+    // cohérent avec la notation unifiée du site.
+    const normalizedScore = Math.round((c.score / citiesMaxScore) * 5 * 10) / 10;
+    const tooltip = escapeHtml(`${c.name}, ${c.country} — ${t("astro_score_label")} ${normalizedScore}/5`);
     markersSvg += `<g class="wheel-hoverable" data-tooltip="${tooltip}"><polygon points="${diamondPoints(x, y, 5)}" fill="#ffd24d" stroke="#12152a" stroke-width="1.2" /></g>`;
   });
   (savedLocations || []).forEach((loc) => {

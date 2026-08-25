@@ -110,8 +110,15 @@ Implémenté :
   classique : étoiles pleines superposées et rognées en largeur sur les étoiles ternes de fond,
   pas seulement des paliers demi-étoile) avec 5 paliers de brillance — terne et discret en bas
   de l'échelle, doré et lumineux (halo) au-delà de 8/10 — plutôt qu'un système par fonctionnalité
-  (jauges, flammes, texte brut). Les notations générées par le modèle (compatibilité, pronostic)
-  reçoivent une rubrique de calibration explicite dans le prompt pour éviter le biais de
+  (jauges, flammes, texte brut). Un point d'incohérence a été corrigé dans le survol des
+  marqueurs de la carte du monde d'astrocartographie (`buildAstroMapSVG` dans `app.js`) : la
+  liste des villes suggérées à côté de la carte utilisait déjà `starRatingHtml`/5 comme partout
+  ailleurs, mais l'info-bulle au survol d'un marqueur recalculait indépendamment un score sur
+  10 (`/10`, jamais passé par le composant unifié) — corrigé pour recalculer la même échelle 0-5
+  que la liste (même base de normalisation, `citiesMaxScore`/`maxScore`), les deux affichages
+  montrant maintenant strictement le même chiffre pour une même ville. Les notations générées
+  par le modèle (compatibilité, pronostic) reçoivent une rubrique de calibration explicite dans
+  le prompt pour éviter le biais de
   prudence qui pousse un LLM à se réfugier systématiquement autour de 5-6/10
 - Astrocartographie & cyclocartographie, dans une partie séparée du thème natal et de la
   lecture interprétée : projette sur une carte du monde (SVG, projection équirectangulaire,
@@ -213,7 +220,15 @@ Implémenté :
   carte du jour (pas seulement à l'événement principal) pour signaler les "résonances
   personnelles" de la journée.
 - Météo de la semaine (`app/core/weekly_weather.py`), collective et mise en cache une fois par
-  semaine (même principe que le calendrier witchy) : parcours jour par jour de la Lune, Mercure,
+  semaine (même principe que le calendrier witchy), une seule ligne partagée par tous les
+  utilisateurs (`GlobalWeeklyWeatherCache`, clé = date de début de semaine) — cache invalidé par
+  un `SCHEMA_VERSION` entier embarqué dans le JSON calculé et vérifié à chaque lecture
+  (`weekly_weather_service.get_or_compute_weekly_weather`) : une ligne déjà en base mais écrite
+  avant l'ajout d'un champ (ex. `combination_lines`, voir plus bas) est recalculée et réécrite en
+  place plutôt que servie indéfiniment sous une forme périmée — sans ce garde-fou une semaine
+  déjà visitée avant un déploiement pouvait silencieusement continuer à masquer les nouveaux
+  champs ajoutés depuis, symptôme réellement rencontré en test (tableau des combinaisons absent
+  malgré le code correct). Parcours jour par jour de la Lune, Mercure,
   Vénus et Mars (les seules planètes pertinentes à l'échelle d'une semaine — les planètes lentes
   n'y produisent aucun changement notable), ingrès détectés par comparaison quotidienne,
   rétrogradations (réutilise directement `compute_station_events` du calendrier witchy, filtré
@@ -289,7 +304,14 @@ Implémenté :
   convergents), jamais exclus par construction — un plancher artificiel à 2/5 avait d'abord été
   découvert dans ce système ainsi que dans le calendrier ésotérique et la météo par signe (voir
   `_score_from_raw`/`_HOUSE_ASPECT_NATURE_SCORE`), corrigé partout pour la même raison : la
-  prudence se joue dans la formulation du texte, jamais dans la manipulation du chiffre. Calcul
+  prudence se joue dans la formulation du texte, jamais dans la manipulation du chiffre. Le
+  plancher structurel levé, les bornes `final_scale` d'origine (-4.5/-1.5/1.5/4.5) se sont
+  révélées trop larges en usage réel — mesuré sur 300 échantillons (3 profils x 20 semaines,
+  climat collectif réel), elles produisaient 65.7% de notes 3 et seulement 3.0%/1.7% de notes
+  1/5 : le 1/5 restait de fait quasi inatteignable sans jamais être interdit par le code, ce qui
+  revient au même pour l'utilisateur. Recalibrées à -2.5/-0.5/0.5/2.5 sur le même échantillon
+  (10.3%/22.7%/35.3%/21.3%/10.3%) — un seul aspect exigeant applicatif suffit désormais à
+  atteindre 1/5, sans exiger la convergence de plusieurs tensions à la fois. Calcul
   entièrement déterministe (code, jamais le LLM) ; exposé via `GET /api/charts/{chart_id}/
   weekly-weather/domain-scores` (personnel, donc jamais mis en cache, contrairement à la couche
   collective) et affiché avec le même composant d'étoiles unifié. La lecture LLM `weekly_weather`

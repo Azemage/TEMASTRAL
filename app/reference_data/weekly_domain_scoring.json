@@ -54,12 +54,12 @@
   "applying_multiplier": 1.3,
   "separating_multiplier": 0.7,
 
-  "final_scale_note": "Bornes décalées à mi-chemin des paliers entiers du doc source v2 (-5/-4, -2/-1, 1/2, 4/5 -> -4.5/-1.5/1.5/4.5) plutôt que les entiers eux-mêmes, pour rester CONTINU (aucun trou) : la pondération applicatif/séparatif (x1.3/x0.7) produit des sommes non entières que le barème d'origine, pensé pour des totaux entiers, ne couvrait pas. Ces bornes reproduisent exactement le mapping du doc pour toute somme entière. Le doc v2 est explicite (note_honnetete) : le 1/5 et le 5/5 doivent rester RARES mais ATTEIGNABLES par le calcul, jamais exclus par construction — si le calcul produit un score <= -4.5, l'afficher tel quel, la prudence se joue dans la formulation du texte, pas dans la manipulation du chiffre.",
+  "final_scale_note": "Recalibré empiriquement (retour utilisateur : le 1/5 et le 5/5 n'apparaissaient quasiment jamais en usage réel, la note 3 dominait très largement). Mesure directe sur 300 échantillons (3 profils de thème x 20 semaines, aspects générationnels réels via compute_weekly_collective) : les bornes -4.5/-1.5/1.5/4.5 d'origine produisaient 65.7% de notes 3 et seulement 3.0%/1.7% de notes 1/5 — la répartition réelle des scores bruts (sommes de modificateurs pondérés applicatif/séparatif) est bien plus resserrée autour de 0 que ces bornes ne le supposaient. Nouvelles bornes -2.5/-0.5/0.5/2.5, mesurées sur le même échantillon : 10.3%/22.7%/35.3%/21.3%/10.3% (notes 1 à 5) — le 1/5 et le 5/5 redeviennent réellement atteignables (environ 1 semaine sur 10 pour un domaine donné, pas un cas théorique jamais observé), tout en restant les moins fréquents comme le veut le doc source (note_honnetete : rares mais jamais exclus par construction). Bornes symétriques par choix (l'aléa des transits n'a pas de raison d'être structurellement plus positif que négatif) et gardées à mi-chemin des paliers entiers pour rester CONTINUES (aucun trou), la pondération applicatif/séparatif (x1.3/x0.7) produisant des sommes non entières.",
   "final_scale": [
-    { "min_score": null, "max_score": -4.5, "note": 1, "label": "semaine exigeante — plusieurs tensions convergent, vigilance recommandée" },
-    { "min_score": -4.5, "max_score": -1.5, "note": 2, "label": "semaine avec frictions notables" },
-    { "min_score": -1.5, "max_score": 1.5, "note": 3, "label": "semaine stable" },
-    { "min_score": 1.5, "max_score": 4.5, "note": 4, "label": "semaine favorable" },
-    { "min_score": 4.5, "max_score": null, "note": 5, "label": "semaine particulièrement favorable — convergence forte de signaux positifs" }
+    { "min_score": null, "max_score": -2.5, "note": 1, "label": "semaine exigeante — plusieurs tensions convergent, vigilance recommandée" },
+    { "min_score": -2.5, "max_score": -0.5, "note": 2, "label": "semaine avec frictions notables" },
+    { "min_score": -0.5, "max_score": 0.5, "note": 3, "label": "semaine stable" },
+    { "min_score": 0.5, "max_score": 2.5, "note": 4, "label": "semaine favorable" },
+    { "min_score": 2.5, "max_score": null, "note": 5, "label": "semaine particulièrement favorable — convergence forte de signaux positifs" }
   ]
 }
