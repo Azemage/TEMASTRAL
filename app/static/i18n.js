@@ -489,6 +489,13 @@ const UI_TEXT = {
     es: "Cálculos deterministas (Swiss Ephemeris) — la interpretación es generada por un modelo de lenguaje y debe leerse como una perspectiva, no una predicción absoluta.",
   },
 
+  day_sky_title: { fr: "Le ciel aujourd'hui", en: "The sky today", es: "El cielo hoy" },
+  day_sky_error: {
+    fr: "Ciel du jour indisponible pour le moment.",
+    en: "Today's sky is unavailable right now.",
+    es: "El cielo de hoy no está disponible por ahora.",
+  },
+
   section1_title: { fr: "1. Données de naissance", en: "1. Birth data", es: "1. Datos de nacimiento" },
   label_name: { fr: "Nom (optionnel)", en: "Name (optional)", es: "Nombre (opcional)" },
   placeholder_name: { fr: "Ex. Benoît", en: "E.g. John", es: "Ej. Juan" },

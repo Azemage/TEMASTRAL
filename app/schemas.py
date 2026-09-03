@@ -99,6 +99,24 @@ class Aspect(BaseModel):
     applying: bool
 
 
+# ---------------------------------------------------------------------------
+# Ciel du jour (page d'accueil, avant création d'un thème)
+# ---------------------------------------------------------------------------
+class DaySkyPlanetPosition(BaseModel):
+    name: str
+    sign: str
+    sign_fr: str
+    degree: float
+    absolute_longitude: float
+    retrograde: bool
+
+
+class DaySkyResponse(BaseModel):
+    datetime_utc: str
+    planets: list[DaySkyPlanetPosition]
+    aspects: list[Aspect]
+
+
 class ElementsBalance(BaseModel):
     fire: int
     earth: int

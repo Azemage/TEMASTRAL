@@ -780,6 +780,14 @@ th { color: var(--accent-2); }
   position: relative;
 }
 
+.day-sky-section {
+  text-align: center;
+}
+
+.day-sky-wheel .wheel-svg {
+  max-width: 320px;
+}
+
 .wheel-svg {
   width: 100%;
   max-width: 560px;

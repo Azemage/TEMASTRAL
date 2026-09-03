@@ -10,6 +10,7 @@ from fastapi.templating import Jinja2Templates
 from app.api import (
     astrocartography,
     charts,
+    day_sky,
     geocode,
     readings,
     reference,
@@ -48,6 +49,7 @@ app.add_middleware(
 )
 
 app.include_router(charts.router)
+app.include_router(day_sky.router)
 app.include_router(readings.router)
 app.include_router(reference.router)
 app.include_router(geocode.router)
