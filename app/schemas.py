@@ -604,6 +604,16 @@ class WeeklyWeatherAspect(BaseModel):
     score: int
 
 
+class AffectedSigns(BaseModel):
+    """Signes natals les plus sensibles à ce highlight, déduits par géométrie zodiacale
+    (élément/modalité), PAS par comparaison à un thème réel — voir app/core/affected_signs.py.
+    `secondary` (axe opposé) n'est renseigné que pour un évènement ponctuel (ingrès/station),
+    jamais pour un aspect."""
+
+    primary: list[str] = Field(default_factory=list)
+    secondary: list[str] = Field(default_factory=list)
+
+
 class WeeklyWeatherHighlight(BaseModel):
     date: str
     kind: str  # 'ingres_lune' | 'ingres_rapide' | 'station' | 'aspect_exact' | 'aspect_generational' | un event_type du calendrier witchy
@@ -616,6 +626,8 @@ class WeeklyWeatherHighlight(BaseModel):
     direction: str | None = None
     meaning_template: str | None = None
     score: int
+    affected_signs: AffectedSigns = Field(default_factory=AffectedSigns)
+    emphasis_points: list[str] = Field(default_factory=list)
 
 
 class WeeklyWeatherMainEvent(BaseModel):

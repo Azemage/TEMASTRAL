@@ -2696,6 +2696,22 @@ function weeklyWeatherHighlightLabel(h) {
   return witchyEventLabel({ event_type: h.kind, planet: h.planet, sign: h.sign, planet_b: h.planet_b, aspect_type: h.aspect_type });
 }
 
+// Points natals à surveiller pour un highlight. Le backend envoie "Ascendant" (majuscule,
+// cohérent avec les noms de planètes) mais PLANET_NAMES l'indexe en minuscule (comme les
+// autres angles — ascendant/midheaven/descendant/imum_coeli) : normaliser avant lookup.
+function emphasisPointLabel(point) {
+  return point === "Ascendant" ? planetLabel("ascendant") : planetLabel(point);
+}
+
+function affectedSignsHtml(h) {
+  const affected = h.affected_signs;
+  if (!affected || (affected.primary.length === 0 && affected.secondary.length === 0)) return "—";
+  const points = (h.emphasis_points || []).map(emphasisPointLabel).join(", ");
+  const badge = (sign, secondary) =>
+    `<span class="affected-sign-badge${secondary ? " is-secondary" : ""}" title="${escapeHtml(tf("weekly_weather_affected_signs_tooltip", { points }))}">${signLabel(sign)}</span>`;
+  return `<span class="affected-signs">${affected.primary.map((s) => badge(s, false)).join("")}${affected.secondary.map((s) => badge(s, true)).join("")}</span>`;
+}
+
 function renderWeeklyWeatherHighlights() {
   const container = document.getElementById("weekly-weather-highlights");
   if (!container || !weeklyWeatherData) return;
@@ -2715,6 +2731,7 @@ function renderWeeklyWeatherHighlights() {
             <td>${h.date}</td>
             <td>${escapeHtml(weeklyWeatherHighlightLabel(h))}</td>
             <td>${starRatingHtml(h.score, { max: 5, compact: true, showScore: false })}</td>
+            <td title="${escapeHtml(t("weekly_weather_th_affected_signs"))}">${affectedSignsHtml(h)}</td>
           </tr>`
           )
           .join("")}

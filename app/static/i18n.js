@@ -967,6 +967,12 @@ const UI_TEXT = {
   weekly_weather_th_start: { fr: "Début de semaine", en: "Start of week", es: "Inicio de semana" },
   weekly_weather_th_end: { fr: "Fin de semaine", en: "End of week", es: "Fin de semana" },
   weekly_weather_th_movement: { fr: "Mouvement", en: "Movement", es: "Movimiento" },
+  weekly_weather_th_affected_signs: { fr: "Signes concernés", en: "Signs affected", es: "Signos afectados" },
+  weekly_weather_affected_signs_tooltip: {
+    fr: "Surtout si vous avez {points} dans ce signe",
+    en: "Especially if you have {points} in this sign",
+    es: "Sobre todo si tienes {points} en este signo",
+  },
   weekly_weather_ingress_note: { fr: "entre en {sign} le {date}", en: "enters {sign} on {date}", es: "entra en {sign} el {date}" },
   weekly_weather_aspects_title: {
     fr: "Aspects entre planètes rapides cette semaine",

@@ -580,8 +580,10 @@ appuie-toi exclusivement sur les données fournies."""
 def _weekly_weather_max_tokens(request: schemas.ReadingRequest) -> int:
     """Deux blocs (climat collectif de la semaine + impact personnel, désormais avec la
     notation par domaine de vie) sur une seule semaine : plus court qu'une lecture annuelle mais
-    plus développé qu'un item du calendrier witchy."""
-    return 4600
+    plus développé qu'un item du calendrier witchy. Légèrement relevé pour laisser de la place
+    aux callouts conditionnels par signe (`affected_signs_data`) sur les highlights principaux,
+    sans risquer de tronquer la section personnelle."""
+    return 4800
 
 
 def _weekly_weather_prompt_block(request: schemas.ReadingRequest) -> str:
@@ -612,6 +614,21 @@ domine déjà la semaine) ; et `highlights`, la fusion triée par importance (`s
 calculé, ne le recalcule jamais) de tout ce qui précède — utilise cette liste pour savoir sur \
 quoi insister et dans quel ordre, sans jamais citer le chiffre brut dans le texte (traduis-le en \
 intensité ressentie)."""
+
+    affected_signs_data = """DANS chaque élément de `highlights` : `affected_signs` \
+(`primary`, et `secondary` uniquement pour un ingrès/une station — l'axe opposé, activé en \
+écho) et `emphasis_points` (les points natals à nommer explicitement — planète(s) concernée(s) \
+puis toujours l'Ascendant). Ces deux champs sont calculés par géométrie zodiacale (carré/\
+opposition = même modalité, trigone = même élément, sextile = même polarité), PAS comparés au \
+thème réel du lecteur (ça, c'est `personal_highlights`, uniquement si un thème existe) : sers-\
+t'en pour transformer le climat collectif en callouts CONDITIONNELS qui parlent à chacun sans \
+connaître son thème, sur le modèle "Attention, si vous avez votre Ascendant ou votre Vénus \
+natale en Taureau, Lion, Scorpion ou Verseau, cette dynamique vous touche plus particulièrement \
+cette semaine" — jamais "les Taureau seront impactés" (ça, c'est le signe solaire seul, que ce \
+callout a justement vocation à dépasser). Ne fais pas ce callout pour CHAQUE highlight — \
+seulement pour les 2-3 highlights au score le plus élevé, pour ne pas noyer le lecteur sous les \
+conditions ; les highlights secondaires restent traités simplement comme aujourd'hui. \
+N'invente jamais un signe ou un point non présent dans ces champs."""
 
     combination_lines_data = """DANS `collective.combination_lines` : ~10 lignes de texte déjà \
 rédigées (français, prêtes à l'emploi), le "profil brut de la semaine" — combinaisons \
@@ -685,6 +702,8 @@ N'invente aucune position, aspect ou événement hors des données fournies."""
     return f"""{intro}
 
 {collective_data}
+
+{affected_signs_data}
 
 {combination_lines_data}
 
