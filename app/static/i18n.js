@@ -583,6 +583,17 @@ const UI_TEXT = {
   zr_mode_current: { fr: "Vue actuelle", en: "Current view", es: "Vista actual" },
   zr_mode_predictive: { fr: "Prévisionnelle (10 ans)", en: "Forecast (10 years)", es: "Previsional (10 años)" },
   btn_generate_zr_reading: { fr: "Générer la lecture des phases", en: "Generate phases reading", es: "Generar lectura de fases" },
+  btn_read_this_lot: { fr: "Lire ce lot", en: "Read this lot", es: "Leer este lote" },
+  zr_synthesis_hint: {
+    fr: "Lisez au moins deux lots individuellement ci-dessus (bouton \"Lire ce lot\") pour débloquer une synthèse qui croise leurs périodes dans le temps.",
+    en: "Read at least two lots individually above (the \"Read this lot\" button) to unlock a synthesis that cross-references their periods over time.",
+    es: "Lea al menos dos lotes individualmente arriba (botón \"Leer este lote\") para desbloquear una síntesis que cruza sus períodos en el tiempo.",
+  },
+  btn_generate_zr_synthesis: {
+    fr: "Voir la synthèse ({count} lots)",
+    en: "See the synthesis ({count} lots)",
+    es: "Ver la síntesis ({count} lotes)",
+  },
   zr_axis_intro: { fr: "Axes thématiques (raccourcis de sélection, projection 10 ans) :", en: "Thematic axes (selection shortcuts, 10-year projection):", es: "Ejes temáticos (atajos de selección, proyección a 10 años):" },
   zr_relations_group_direct: { fr: "Relations directes", en: "Direct relations", es: "Relaciones directas" },
   zr_hint_check_lots: {

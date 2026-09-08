@@ -1177,6 +1177,14 @@ const ZR_DEFAULT_SELECTED_LOTS = new Set(["Fortune", "Esprit"]);
 let selectedZrAxisKey = null;
 let axesThematiquesLotsConfig = null;
 
+// Lectures individuelles générées via le bouton "Lire ce lot" de chaque carte (voir
+// renderZrLotCard) : mises en cache ici (texte déjà rédigé, jamais régénéré au ré-affichage
+// de la carte) et suivies dans `zrIndividuallyReadLots` pour piloter la visibilité du bouton
+// de synthèse (`updateZrSynthesisButton`) — la synthèse ne prend son sens qu'une fois
+// plusieurs lots lus un par un, voir generateZrSynthesis.
+const zrIndividualReadings = new Map();
+const zrIndividuallyReadLots = new Set();
+
 function renderZrLotCard(lotName, lotResult, checked) {
   const l2Rows = lotResult.current_l1_l2_periods
     .map((p) => {
@@ -1185,6 +1193,8 @@ function renderZrLotCard(lotName, lotResult, checked) {
       return `<tr class="${isCurrent ? "zr-current-row" : ""}"><td>${signLabel(p.sign)}</td><td>${p.start_date} → ${p.end_date}</td><td>${badges || "—"}</td></tr>`;
     })
     .join("");
+
+  const cachedReading = zrIndividualReadings.get(lotName);
 
   return `
     <div class="zr-lot-card">
@@ -1207,7 +1217,49 @@ function renderZrLotCard(lotName, lotResult, checked) {
           </table>
         </details>
       </details>
+      <button type="button" class="zr-read-lot-btn" data-lot="${lotName}">${t("btn_read_this_lot")}</button>
+      <p class="error zr-lot-reading-error" data-lot="${lotName}"></p>
+      <div class="reading-output zr-lot-reading-output" data-lot="${lotName}">${cachedReading ? tinyMarkdownToHtml(cachedReading) : ""}</div>
     </div>`;
+}
+
+async function generateSingleLotReading(lotName, btn) {
+  if (!currentChart) return;
+  const card = btn.closest(".zr-lot-card");
+  const errorEl = card.querySelector(".zr-lot-reading-error");
+  const outputEl = card.querySelector(".zr-lot-reading-output");
+  const defaultLabel = t("btn_read_this_lot");
+  errorEl.textContent = "";
+  btn.disabled = true;
+  btn.textContent = t("status_generating");
+  try {
+    const dateInput = document.getElementById("zr-date");
+    const res = await fetch(`/api/charts/${currentChart.id}/readings`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        reading_type: "zodiacal_releasing",
+        as_of_date: dateInput ? dateInput.value : undefined,
+        zr_selected_lots: [lotName],
+        zr_mode: selectedZrMode,
+        language: getLanguage(),
+      }),
+    });
+    if (!res.ok) {
+      const detail = await res.json().catch(() => ({}));
+      throw new Error(detail.detail || `${t("error_prefix")} ${res.status}`);
+    }
+    const reading = await res.json();
+    zrIndividualReadings.set(lotName, reading.reading_text);
+    zrIndividuallyReadLots.add(lotName);
+    outputEl.innerHTML = tinyMarkdownToHtml(reading.reading_text);
+    updateZrSynthesisButton();
+  } catch (err) {
+    errorEl.textContent = err.message;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = defaultLabel;
+  }
 }
 
 function renderZrDataPanel(zr, previouslyChecked) {
@@ -1239,6 +1291,28 @@ function renderZrDataPanel(zr, previouslyChecked) {
       selectedZrAxisKey = null; // sélection manuelle : la présélection d'axe ne verrouille jamais le choix
     });
   });
+  container.querySelectorAll(".zr-read-lot-btn").forEach((btn) => {
+    btn.addEventListener("click", () => generateSingleLotReading(btn.dataset.lot, btn));
+  });
+}
+
+// Bouton de synthèse (voir zr-synthesis-panel dans index.html) : n'apparaît qu'une fois au
+// moins deux lots lus individuellement (`zrIndividuallyReadLots`) — une synthèse d'un seul
+// lot n'a rien à croiser, elle n'a donc pas d'intérêt propre par rapport à la lecture simple.
+function updateZrSynthesisButton() {
+  const btn = document.getElementById("generate-zr-synthesis-btn");
+  const hint = document.getElementById("zr-synthesis-hint");
+  if (!btn) return;
+  const count = zrIndividuallyReadLots.size;
+  if (count < 2) {
+    btn.classList.add("hidden");
+    hint.classList.remove("hidden");
+    return;
+  }
+  hint.classList.add("hidden");
+  btn.classList.remove("hidden");
+  btn.disabled = false;
+  btn.textContent = tf("btn_generate_zr_synthesis", { count });
 }
 
 async function loadAxesThematiquesLotsConfig() {
@@ -1283,6 +1357,12 @@ async function renderZrAxisPanel() {
 async function loadZrDataPanel(date) {
   if (!currentChart) return;
   renderZrAxisPanel();
+  // Nouvelle date/thème/langue : les lectures individuelles mises en cache ne correspondent
+  // plus forcément aux données affichées (date différente, texte dans une autre langue) —
+  // on repart d'un état propre plutôt que de risquer un mélange incohérent.
+  zrIndividualReadings.clear();
+  zrIndividuallyReadLots.clear();
+  updateZrSynthesisButton();
   const container = document.getElementById("zr-data-panel");
   const previouslyChecked = new Set(
     Array.from(container.querySelectorAll(".zr-lot-checkbox:checked")).map((el) => el.value)
@@ -1844,6 +1924,36 @@ document.getElementById("generate-zr-reading-btn").addEventListener("click", () 
       zr_selected_lots: selectedLots,
       zr_mode: selectedZrMode,
       zr_axis_key: selectedZrMode === "predictive" ? selectedZrAxisKey : null,
+    },
+  });
+});
+
+document.getElementById("generate-zr-synthesis-btn").addEventListener("click", () => {
+  // La synthèse croise les périodes des lots déjà lus individuellement : coche exactement ces
+  // lots (cohérence visuelle avec ce qui vient d'être demandé) et force le mode prévisionnel,
+  // seul mode qui couvre assez d'années pour repérer des convergences (voir
+  // _zodiacal_releasing_prompt_block, cross_lot_guidance côté serveur).
+  const selectedLots = Array.from(zrIndividuallyReadLots);
+  document.querySelectorAll(".zr-lot-checkbox").forEach((el) => {
+    el.checked = selectedLots.includes(el.value);
+  });
+  selectedZrMode = "predictive";
+  selectedZrAxisKey = null;
+  document.querySelectorAll(".zr-mode-btn").forEach((b) => b.classList.toggle("active", b.dataset.zrMode === "predictive"));
+  document.querySelectorAll(".zr-axis-btn").forEach((b) => b.classList.remove("active"));
+
+  const dateInput = document.getElementById("zr-date");
+  generateSpecializedReading({
+    btnId: "generate-zr-synthesis-btn",
+    errorId: "zr-synthesis-error",
+    outputId: "zr-synthesis-output",
+    defaultLabel: tf("btn_generate_zr_synthesis", { count: selectedLots.length }),
+    requestBody: {
+      reading_type: "zodiacal_releasing",
+      as_of_date: dateInput ? dateInput.value : undefined,
+      zr_selected_lots: selectedLots,
+      zr_mode: "predictive",
+      zr_axis_key: null,
     },
   });
 });

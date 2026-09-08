@@ -339,6 +339,19 @@ button:disabled { opacity: 0.6; cursor: wait; }
   font-size: 0.88rem;
 }
 
+.zr-read-lot-btn {
+  margin-top: 0.6rem;
+  font-size: 0.85rem;
+}
+
+.zr-lot-reading-output:empty {
+  display: none;
+}
+
+.zr-lot-reading-output {
+  margin-top: 0.5rem;
+}
+
 .zr-lot-card details summary {
   cursor: pointer;
   color: var(--muted);

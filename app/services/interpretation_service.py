@@ -1091,8 +1091,14 @@ convergence pourrait recouvrir dans la vie de la personne. Exemple de raisonneme
 un lot lié à l'argent en climat tendu EN MÊME TEMPS qu'un lot lié au mariage également tendu \
 peut évoquer une tension financière qui pèse sur le couple, une dépense commune difficile, ou \
 une décision à deux compliquée par l'argent — ose nommer ce genre de scénario concret plutôt \
-que de rester au niveau de l'énergie abstraite. Formule toujours ces hypothèses avec prudence \
-('cela peut se traduire par...', 'un scénario possible est...', 'cela peut annoncer...'), \
+que de rester au niveau de l'énergie abstraite. Quand TROIS domaines ou plus convergent sur la \
+même fenêtre (ex. argent + relation + santé, tous trois en climat tendu en même temps), ne les \
+présente pas comme trois événements séparés qui tombent par hasard au même moment : cherche \
+explicitement UN scénario unificateur plausible qui pourrait expliquer les trois à la fois \
+(ex. un deuil ou une séparation majeure pèse souvent à la fois sur les finances, le couple et \
+la santé/l'énergie) — c'est ce niveau de lecture, la convergence donnant sens à l'ensemble, qui \
+distingue cette synthèse d'une simple lecture lot par lot. Formule toujours ces hypothèses avec \
+prudence ('cela peut se traduire par...', 'un scénario possible est...', 'cela peut annoncer...'), \
 jamais comme une certitude absolue — mais ne les édulcore pas non plus au point de les rendre \
 méconnaissables."""
     else:

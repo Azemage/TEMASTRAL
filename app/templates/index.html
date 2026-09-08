@@ -202,6 +202,17 @@
         <button id="generate-zr-reading-btn" data-i18n="btn_generate_zr_reading">Générer la lecture des phases</button>
         <p id="zr-reading-error" class="error"></p>
         <div id="zr-reading-output" class="reading-output"></div>
+
+        <hr class="reading-subsection-divider" />
+        <div id="zr-synthesis-panel">
+          <p id="zr-synthesis-hint" class="reading-section-intro" data-i18n="zr_synthesis_hint">
+            Lisez au moins deux lots individuellement ci-dessus (bouton "Lire ce lot") pour
+            débloquer une synthèse qui croise leurs périodes dans le temps.
+          </p>
+          <button id="generate-zr-synthesis-btn" class="hidden" disabled></button>
+          <p id="zr-synthesis-error" class="error"></p>
+          <div id="zr-synthesis-output" class="reading-output"></div>
+        </div>
       </div>
 
       <div id="reading-tab-derived" class="reading-tab-panel hidden">
