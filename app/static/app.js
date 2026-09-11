@@ -221,10 +221,18 @@ function renderDaySkyHighlights(data) {
   if (data.retrograde_planets && data.retrograde_planets.length > 0) {
     items.push(tf("day_sky_retrograde", { planets: data.retrograde_planets.map(planetLabel).join(", ") }));
   }
-  (data.top_aspects || []).forEach((a) => {
-    items.push(`${planetLabel(a.planet1)} ${aspectTypeLabel(a.type)} ${planetLabel(a.planet2)} (${t("orb_prefix")} ${a.orb}°)`);
-  });
   list.innerHTML = items.map((line) => `<li>${escapeHtml(line)}</li>`).join("");
+
+  // Les aspects portent en plus les signes concernés (mêmes champs `affected_signs`/
+  // `emphasis_points` et même composant que les points clés de la météo de la semaine — voir
+  // affectedSignsHtml) : ajoutés à part car ils mélangent texte échappé et badges HTML, à
+  // l'inverse des lignes ci-dessus qui restent du texte pur.
+  (data.top_aspects || []).forEach((a) => {
+    const line = escapeHtml(
+      `${planetLabel(a.planet1)} ${aspectTypeLabel(a.type)} ${planetLabel(a.planet2)} (${t("orb_prefix")} ${a.orb}°)`
+    );
+    list.insertAdjacentHTML("beforeend", `<li>${line} ${affectedSignsHtml(a)}</li>`);
+  });
 }
 
 async function loadDaySky() {

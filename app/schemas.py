@@ -111,12 +111,27 @@ class DaySkyPlanetPosition(BaseModel):
     retrograde: bool
 
 
+class AffectedSigns(BaseModel):
+    """Signes natals les plus sensibles à un évènement donné, déduits par géométrie zodiacale
+    (élément/modalité), PAS par comparaison à un thème réel — voir app/core/affected_signs.py.
+    `secondary` (axe opposé) n'est renseigné que pour un évènement ponctuel (ingrès/station),
+    jamais pour un aspect."""
+
+    primary: list[str] = Field(default_factory=list)
+    secondary: list[str] = Field(default_factory=list)
+
+
+class DaySkyTopAspect(Aspect):
+    affected_signs: AffectedSigns = Field(default_factory=AffectedSigns)
+    emphasis_points: list[str] = Field(default_factory=list)
+
+
 class DaySkyResponse(BaseModel):
     datetime_utc: str
     planets: list[DaySkyPlanetPosition]
     aspects: list[Aspect]
     retrograde_planets: list[str] = Field(default_factory=list)
-    top_aspects: list[Aspect] = Field(default_factory=list)
+    top_aspects: list[DaySkyTopAspect] = Field(default_factory=list)
 
 
 class ElementsBalance(BaseModel):
@@ -604,16 +619,6 @@ class WeeklyWeatherAspect(BaseModel):
     aspect_type: str
     aspect_type_fr: str
     score: int
-
-
-class AffectedSigns(BaseModel):
-    """Signes natals les plus sensibles à ce highlight, déduits par géométrie zodiacale
-    (élément/modalité), PAS par comparaison à un thème réel — voir app/core/affected_signs.py.
-    `secondary` (axe opposé) n'est renseigné que pour un évènement ponctuel (ingrès/station),
-    jamais pour un aspect."""
-
-    primary: list[str] = Field(default_factory=list)
-    secondary: list[str] = Field(default_factory=list)
 
 
 class WeeklyWeatherHighlight(BaseModel):

@@ -54,3 +54,13 @@ def affected_signs_for_position(sign: str) -> dict:
     traversé (`primary`) et son axe opposé (`secondary`), classiquement activé en écho."""
     opposite = SIGNS[(SIGNS.index(sign) + 6) % 12]
     return {"primary": [sign], "secondary": [opposite]}
+
+
+def emphasis_points(*planets: str | None) -> list[str]:
+    """Points natals à regarder en priorité pour un évènement donné, pour la personnalisation
+    "si vous avez tel placement..." : les planètes directement impliquées (dédupliquées, dans
+    l'ordre), puis l'Ascendant — toujours pertinent, quel que soit l'évènement, car c'est le
+    point le plus individualisé du thème."""
+    points = [p for p in dict.fromkeys(planets) if p]
+    points.append("Ascendant")
+    return points

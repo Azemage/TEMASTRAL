@@ -36,6 +36,7 @@ import swisseph as swe
 
 from app.core import ephemeris
 from app.core.affected_signs import affected_signs_for_aspect, affected_signs_for_position
+from app.core.affected_signs import emphasis_points as _emphasis_points
 from app.core.aspects import angular_separation
 from app.core.reference_data import aspects_reference, houses_meanings
 from app.core.root_finding import scan_zero_crossings
@@ -282,16 +283,6 @@ def _fast_station_events(start_date: date_type, end_date: date_type) -> list[dic
     end_jd = _jd_at_noon(end_date) + 1
     all_stations = compute_station_events(start_jd, end_jd)
     return [e for e in all_stations if e["planet"] in FAST_PLANETS and e["planet"] in STATION_PLANETS]
-
-
-def _emphasis_points(*planets: str | None) -> list[str]:
-    """Points natals à regarder en priorité pour ce highlight, pour la personnalisation \"si vous
-    avez tel placement...\" (voir affected_signs.py) : les planètes directement impliquées
-    (dédupliquées, dans l'ordre), puis l'Ascendant — toujours pertinent, quel que soit
-    l'évènement, car c'est le point le plus individualisé du thème."""
-    points = [p for p in dict.fromkeys(planets) if p]
-    points.append("Ascendant")
-    return points
 
 
 def _assemble_highlights(

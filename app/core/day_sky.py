@@ -7,6 +7,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 
 from app.core import ephemeris
+from app.core.affected_signs import affected_signs_for_aspect, emphasis_points
 from app.core.aspects import BodyForAspect, compute_aspects
 from app.core.reference_data import aspects_reference
 from app.core.zodiac import SIGNS_FR, sign_and_degree
@@ -63,10 +64,19 @@ def compute_day_sky(now: datetime | None = None) -> dict:
     # facteur d'ambiance durable, contrairement aux positions qui changent chaque jour) et les
     # quelques aspects majeurs les plus exacts (les plus "actifs" du moment).
     retrograde_planets = [p["name"] for p in planets if p["retrograde"]]
+    sign_by_planet = {p["name"]: p["sign"] for p in planets}
     major_aspect_names = {a["name"] for a in aspects_reference()["major_aspects"]}
     top_aspects = sorted(
         (a for a in aspects if a["type"] in major_aspect_names), key=lambda a: a["orb"]
     )[:_TOP_ASPECTS_COUNT]
+    # Mêmes champs `affected_signs`/`emphasis_points` que les highlights de la météo de la
+    # semaine (voir app/core/weekly_weather.py) — personnalisation "si vous avez tel placement
+    # natal..." sans connaître le thème du lecteur, cohérente sur tout le site.
+    for aspect in top_aspects:
+        aspect["affected_signs"] = affected_signs_for_aspect(
+            sign_by_planet[aspect["planet1"]], sign_by_planet[aspect["planet2"]], aspect["type"]
+        )
+        aspect["emphasis_points"] = emphasis_points(aspect["planet1"], aspect["planet2"])
 
     return {
         "datetime_utc": now_utc.isoformat(),
