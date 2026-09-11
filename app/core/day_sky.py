@@ -8,7 +8,13 @@ from datetime import datetime, timezone
 
 from app.core import ephemeris
 from app.core.aspects import BodyForAspect, compute_aspects
+from app.core.reference_data import aspects_reference
 from app.core.zodiac import SIGNS_FR, sign_and_degree
+
+# Nombre d'aspects majeurs les plus exacts (orbe la plus fine) mis en avant dans les "points
+# forts" du jour (voir `top_aspects` ci-dessous) — au-delà, ça devient une liste plate plutôt
+# qu'un vrai résumé.
+_TOP_ASPECTS_COUNT = 3
 
 DAY_SKY_PLANETS = ["Sun", "Moon", "Mercury", "Venus", "Mars", "Jupiter", "Saturn", "Uranus", "Neptune", "Pluto"]
 
@@ -51,8 +57,21 @@ def compute_day_sky(now: datetime | None = None) -> dict:
 
     aspects = compute_aspects(aspect_bodies, DEFAULT_ASPECT_ORBS, include_minor=True)
 
+    # "Points forts" du jour, purement déterministes (aucun texte interprétatif généré ici,
+    # seulement une sélection de faits calculés — c'est le frontend qui les met en mots via
+    # i18n.js, sur le même principe que le reste de l'app) : les rétrogrades en cours (un
+    # facteur d'ambiance durable, contrairement aux positions qui changent chaque jour) et les
+    # quelques aspects majeurs les plus exacts (les plus "actifs" du moment).
+    retrograde_planets = [p["name"] for p in planets if p["retrograde"]]
+    major_aspect_names = {a["name"] for a in aspects_reference()["major_aspects"]}
+    top_aspects = sorted(
+        (a for a in aspects if a["type"] in major_aspect_names), key=lambda a: a["orb"]
+    )[:_TOP_ASPECTS_COUNT]
+
     return {
         "datetime_utc": now_utc.isoformat(),
         "planets": planets,
         "aspects": aspects,
+        "retrograde_planets": retrograde_planets,
+        "top_aspects": top_aspects,
     }

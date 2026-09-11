@@ -115,6 +115,8 @@ class DaySkyResponse(BaseModel):
     datetime_utc: str
     planets: list[DaySkyPlanetPosition]
     aspects: list[Aspect]
+    retrograde_planets: list[str] = Field(default_factory=list)
+    top_aspects: list[Aspect] = Field(default_factory=list)
 
 
 class ElementsBalance(BaseModel):

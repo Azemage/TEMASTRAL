@@ -495,6 +495,13 @@ const UI_TEXT = {
     en: "Today's sky is unavailable right now.",
     es: "El cielo de hoy no está disponible por ahora.",
   },
+  day_sky_sun: { fr: "☉ Soleil en {sign}", en: "☉ Sun in {sign}", es: "☉ Sol en {sign}" },
+  day_sky_moon: { fr: "☽ Lune en {sign}", en: "☽ Moon in {sign}", es: "☽ Luna en {sign}" },
+  day_sky_retrograde: {
+    fr: "⟲ Rétrogrades : {planets}",
+    en: "⟲ Retrograde: {planets}",
+    es: "⟲ Retrógrados: {planets}",
+  },
 
   section1_title: { fr: "1. Données de naissance", en: "1. Birth data", es: "1. Datos de nacimiento" },
   label_name: { fr: "Nom (optionnel)", en: "Name (optional)", es: "Nombre (opcional)" },

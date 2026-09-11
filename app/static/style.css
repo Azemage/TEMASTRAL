@@ -820,7 +820,26 @@ th { color: var(--accent-2); }
 }
 
 .day-sky-wheel .wheel-svg {
-  max-width: 320px;
+  max-width: 480px;
+}
+
+.day-sky-highlights {
+  list-style: none;
+  margin: 1rem auto 0;
+  padding: 0;
+  max-width: 480px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  text-align: left;
+}
+
+.day-sky-highlights li {
+  padding: 0.4rem 0.7rem;
+  background: var(--inset-bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 0.92rem;
 }
 
 .wheel-svg {
