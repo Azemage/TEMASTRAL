@@ -100,6 +100,159 @@ async function loadTimezonesInto(selectId, fallbackDefault = "Europe/Paris") {
 loadTimezonesInto("timezone");
 
 // ---------------------------------------------------------------------
+// Ciel du jour (page d'accueil, avant la recherche/création d'un thème) : roue compacte des
+// planètes classiques positionnées maintenant, sans maisons ni Ascendant puisqu'aucun lieu de
+// naissance n'entre en jeu ici — le zodiaque est fixe, Bélier 0° à 9h (ascendant=0 dans
+// longitudeToWheelAngle), même convention visuelle que la roue natale.
+function buildDaySkyWheelSVG(planets, aspects) {
+  const cx = 300;
+  const cy = 300;
+  const rOuter = 290;
+  const rZodiacInner = 250;
+  const rPlanetBase = 195;
+  const rPlanetLaneStep = 18;
+  const rAspectCircle = 135;
+  const ascendant = 0;
+
+  let zodiacSvg = "";
+  ZODIAC_SIGNS_ORDER.forEach((sign, i) => {
+    const signStartLon = i * 30;
+    const startAngle = longitudeToWheelAngle(signStartLon, ascendant);
+    const outer = arcPoints(cx, cy, rOuter, startAngle, 30);
+    const inner = arcPoints(cx, cy, rZodiacInner, startAngle + 30, -30);
+    const path = pointsToPath([...outer, ...inner]) + " Z";
+    const color = ELEMENT_WHEEL_COLORS[SIGN_ELEMENTS[sign]];
+    zodiacSvg += `<path d="${path}" fill="${color}" stroke="#b7a273" stroke-width="1" />`;
+
+    const midAngle = startAngle + 15;
+    const labelPos = polarToXY(cx, cy, (rOuter + rZodiacInner) / 2, midAngle);
+    zodiacSvg += `<text x="${labelPos.x.toFixed(2)}" y="${labelPos.y.toFixed(2)}" class="wheel-sign-symbol" text-anchor="middle" dominant-baseline="middle">${SIGN_SYMBOLS[sign]}</text>`;
+  });
+
+  const aspectCircleSvg = `<circle cx="${cx}" cy="${cy}" r="${rAspectCircle}" fill="none" stroke="#b7a273" stroke-width="1" />`;
+
+  const sortedPlanets = [...planets].sort(
+    (a, b) => longitudeToWheelAngle(a.absolute_longitude, ascendant) - longitudeToWheelAngle(b.absolute_longitude, ascendant)
+  );
+
+  const aspectsByPlanet = {};
+  aspects.forEach((aspect) => {
+    if (!MAJOR_ASPECTS.has(aspect.type)) return;
+    const describe = (otherPlanet) => ({
+      orb: aspect.orb,
+      text: `${aspectTypeLabel(aspect.type)} ${planetLabel(otherPlanet)} (${t("orb_prefix")} ${aspect.orb}°)`,
+    });
+    (aspectsByPlanet[aspect.planet1] ||= []).push(describe(aspect.planet2));
+    (aspectsByPlanet[aspect.planet2] ||= []).push(describe(aspect.planet1));
+  });
+
+  let lastAngle = null;
+  let lane = 0;
+  let planetsSvg = "";
+  const planetPoints = {};
+  sortedPlanets.forEach((planet) => {
+    const trueAngle = longitudeToWheelAngle(planet.absolute_longitude, ascendant);
+    if (lastAngle !== null && forwardOffset(0, trueAngle - lastAngle) < 6) {
+      lane = (lane + 1) % 3;
+    } else {
+      lane = 0;
+    }
+    lastAngle = trueAngle;
+
+    const displayRadius = rPlanetBase + lane * rPlanetLaneStep;
+    const glyphPos = polarToXY(cx, cy, displayRadius, trueAngle);
+    const tickInner = polarToXY(cx, cy, rAspectCircle, trueAngle);
+    const tickOuter = polarToXY(cx, cy, rZodiacInner, trueAngle);
+    planetPoints[planet.name] = polarToXY(cx, cy, rAspectCircle, trueAngle);
+
+    const planetAspects = (aspectsByPlanet[planet.name] || []).sort((a, b) => a.orb - b.orb);
+    const aspectsLines = planetAspects.length ? "\n" + planetAspects.map((a) => a.text).join("\n") : "";
+    const planetTooltip = escapeHtml(
+      `${planetLabel(planet.name)} — ${signLabel(planet.sign)} ${planet.degree}°${planet.retrograde ? " · " + t("retrograde") : ""}` +
+        aspectsLines
+    );
+
+    planetsSvg += `<line x1="${tickInner.x.toFixed(2)}" y1="${tickInner.y.toFixed(2)}" x2="${tickOuter.x.toFixed(2)}" y2="${tickOuter.y.toFixed(2)}" stroke="#8a7c5c" stroke-width="0.75" stroke-dasharray="2,2" />`;
+    planetsSvg += `<g class="wheel-hoverable wheel-planet-glyph${planet.retrograde ? " is-retrograde" : ""}" data-tooltip="${planetTooltip}">`;
+    planetsSvg += `<circle cx="${glyphPos.x.toFixed(2)}" cy="${glyphPos.y.toFixed(2)}" r="16" fill="transparent" pointer-events="all" />`;
+    planetsSvg += `<circle cx="${glyphPos.x.toFixed(2)}" cy="${glyphPos.y.toFixed(2)}" r="11" fill="#f2e9d6" stroke="${planet.retrograde ? "#a13d3d" : "#2d3a6b"}" stroke-width="1.5" />`;
+    planetsSvg += `<text x="${glyphPos.x.toFixed(2)}" y="${glyphPos.y.toFixed(2)}" class="wheel-planet-symbol" text-anchor="middle" dominant-baseline="middle">${PLANET_SYMBOLS[planet.name] || "•"}</text>`;
+    planetsSvg += `</g>`;
+  });
+
+  let aspectsSvg = "";
+  aspects.forEach((aspect) => {
+    if (!MAJOR_ASPECTS.has(aspect.type)) return;
+    const p1 = planetPoints[aspect.planet1];
+    const p2 = planetPoints[aspect.planet2];
+    if (!p1 || !p2) return;
+    const color = ASPECT_COLORS[aspect.type] || "#888";
+    const aspectTooltip = escapeHtml(
+      `${planetLabel(aspect.planet1)} ${aspectTypeLabel(aspect.type)} ${planetLabel(aspect.planet2)} — ${t("orb_prefix")} ${aspect.orb}° (${aspect.applying ? t("applying") : t("separating")})`
+    );
+    aspectsSvg += `<g class="wheel-hoverable" data-tooltip="${aspectTooltip}">`;
+    aspectsSvg += `<line x1="${p1.x.toFixed(2)}" y1="${p1.y.toFixed(2)}" x2="${p2.x.toFixed(2)}" y2="${p2.y.toFixed(2)}" stroke="transparent" stroke-width="10" pointer-events="all" />`;
+    aspectsSvg += `<line x1="${p1.x.toFixed(2)}" y1="${p1.y.toFixed(2)}" x2="${p2.x.toFixed(2)}" y2="${p2.y.toFixed(2)}" stroke="${color}" stroke-width="1.4" stroke-opacity="0.75" style="filter:drop-shadow(0 0 3px ${color})" pointer-events="none" />`;
+    aspectsSvg += `</g>`;
+  });
+
+  return `
+    <svg viewBox="0 0 600 600" class="wheel-svg" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="${cx}" cy="${cy}" r="${rOuter}" fill="#ecdfc0" />
+      ${zodiacSvg}
+      <circle cx="${cx}" cy="${cy}" r="${rZodiacInner}" fill="none" stroke="#b7a273" stroke-width="1.5" />
+      ${aspectCircleSvg}
+      ${aspectsSvg}
+      ${planetsSvg}
+    </svg>
+  `;
+}
+
+// Points forts du jour : purement une mise en mots des champs déjà calculés côté serveur
+// (`retrograde_planets`, `top_aspects` — voir app/core/day_sky.py), rien n'est décidé ici.
+function renderDaySkyHighlights(data) {
+  const list = document.getElementById("day-sky-highlights");
+  if (!list) return;
+  const sun = data.planets.find((p) => p.name === "Sun");
+  const moon = data.planets.find((p) => p.name === "Moon");
+  const items = [];
+  if (sun) items.push(tf("day_sky_sun", { sign: signLabel(sun.sign) }));
+  if (moon) items.push(tf("day_sky_moon", { sign: signLabel(moon.sign) }));
+  if (data.retrograde_planets && data.retrograde_planets.length > 0) {
+    items.push(tf("day_sky_retrograde", { planets: data.retrograde_planets.map(planetLabel).join(", ") }));
+  }
+  list.innerHTML = items.map((line) => `<li>${escapeHtml(line)}</li>`).join("");
+
+  // Les aspects portent en plus les signes concernés (mêmes champs `affected_signs`/
+  // `emphasis_points` et même composant que les points clés de la météo de la semaine — voir
+  // affectedSignsHtml) : ajoutés à part car ils mélangent texte échappé et badges HTML, à
+  // l'inverse des lignes ci-dessus qui restent du texte pur.
+  (data.top_aspects || []).forEach((a) => {
+    const line = escapeHtml(
+      `${planetLabel(a.planet1)} ${aspectTypeLabel(a.type)} ${planetLabel(a.planet2)} (${t("orb_prefix")} ${a.orb}°)`
+    );
+    list.insertAdjacentHTML("beforeend", `<li>${line} ${affectedSignsHtml(a)}</li>`);
+  });
+}
+
+async function loadDaySky() {
+  const wrapper = document.getElementById("day-sky-wheel");
+  const errorEl = document.getElementById("day-sky-error");
+  if (!wrapper) return;
+  try {
+    const res = await fetch("/api/day-sky");
+    if (!res.ok) throw new Error(`${t("error_prefix")} ${res.status}`);
+    const data = await res.json();
+    wrapper.innerHTML = buildDaySkyWheelSVG(data.planets, data.aspects);
+    attachWheelTooltip(wrapper);
+    renderDaySkyHighlights(data);
+  } catch (err) {
+    errorEl.textContent = t("day_sky_error");
+  }
+}
+loadDaySky();
+
+// ---------------------------------------------------------------------
 // Recherche de ville (géocodage)
 // ---------------------------------------------------------------------
 document.getElementById("search-city-btn").addEventListener("click", async () => {
@@ -1052,6 +1205,14 @@ const ZR_DEFAULT_SELECTED_LOTS = new Set(["Fortune", "Esprit"]);
 let selectedZrAxisKey = null;
 let axesThematiquesLotsConfig = null;
 
+// Lectures individuelles générées via le bouton "Lire ce lot" de chaque carte (voir
+// renderZrLotCard) : mises en cache ici (texte déjà rédigé, jamais régénéré au ré-affichage
+// de la carte) et suivies dans `zrIndividuallyReadLots` pour piloter la visibilité du bouton
+// de synthèse (`updateZrSynthesisButton`) — la synthèse ne prend son sens qu'une fois
+// plusieurs lots lus un par un, voir generateZrSynthesis.
+const zrIndividualReadings = new Map();
+const zrIndividuallyReadLots = new Set();
+
 function renderZrLotCard(lotName, lotResult, checked) {
   const l2Rows = lotResult.current_l1_l2_periods
     .map((p) => {
@@ -1060,6 +1221,8 @@ function renderZrLotCard(lotName, lotResult, checked) {
       return `<tr class="${isCurrent ? "zr-current-row" : ""}"><td>${signLabel(p.sign)}</td><td>${p.start_date} → ${p.end_date}</td><td>${badges || "—"}</td></tr>`;
     })
     .join("");
+
+  const cachedReading = zrIndividualReadings.get(lotName);
 
   return `
     <div class="zr-lot-card">
@@ -1082,7 +1245,49 @@ function renderZrLotCard(lotName, lotResult, checked) {
           </table>
         </details>
       </details>
+      <button type="button" class="zr-read-lot-btn" data-lot="${lotName}">${t("btn_read_this_lot")}</button>
+      <p class="error zr-lot-reading-error" data-lot="${lotName}"></p>
+      <div class="reading-output zr-lot-reading-output" data-lot="${lotName}">${cachedReading ? tinyMarkdownToHtml(cachedReading) : ""}</div>
     </div>`;
+}
+
+async function generateSingleLotReading(lotName, btn) {
+  if (!currentChart) return;
+  const card = btn.closest(".zr-lot-card");
+  const errorEl = card.querySelector(".zr-lot-reading-error");
+  const outputEl = card.querySelector(".zr-lot-reading-output");
+  const defaultLabel = t("btn_read_this_lot");
+  errorEl.textContent = "";
+  btn.disabled = true;
+  btn.textContent = t("status_generating");
+  try {
+    const dateInput = document.getElementById("zr-date");
+    const res = await fetch(`/api/charts/${currentChart.id}/readings`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        reading_type: "zodiacal_releasing",
+        as_of_date: dateInput ? dateInput.value : undefined,
+        zr_selected_lots: [lotName],
+        zr_mode: selectedZrMode,
+        language: getLanguage(),
+      }),
+    });
+    if (!res.ok) {
+      const detail = await res.json().catch(() => ({}));
+      throw new Error(detail.detail || `${t("error_prefix")} ${res.status}`);
+    }
+    const reading = await res.json();
+    zrIndividualReadings.set(lotName, reading.reading_text);
+    zrIndividuallyReadLots.add(lotName);
+    outputEl.innerHTML = tinyMarkdownToHtml(reading.reading_text);
+    updateZrSynthesisButton();
+  } catch (err) {
+    errorEl.textContent = err.message;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = defaultLabel;
+  }
 }
 
 function renderZrDataPanel(zr, previouslyChecked) {
@@ -1114,6 +1319,28 @@ function renderZrDataPanel(zr, previouslyChecked) {
       selectedZrAxisKey = null; // sélection manuelle : la présélection d'axe ne verrouille jamais le choix
     });
   });
+  container.querySelectorAll(".zr-read-lot-btn").forEach((btn) => {
+    btn.addEventListener("click", () => generateSingleLotReading(btn.dataset.lot, btn));
+  });
+}
+
+// Bouton de synthèse (voir zr-synthesis-panel dans index.html) : n'apparaît qu'une fois au
+// moins deux lots lus individuellement (`zrIndividuallyReadLots`) — une synthèse d'un seul
+// lot n'a rien à croiser, elle n'a donc pas d'intérêt propre par rapport à la lecture simple.
+function updateZrSynthesisButton() {
+  const btn = document.getElementById("generate-zr-synthesis-btn");
+  const hint = document.getElementById("zr-synthesis-hint");
+  if (!btn) return;
+  const count = zrIndividuallyReadLots.size;
+  if (count < 2) {
+    btn.classList.add("hidden");
+    hint.classList.remove("hidden");
+    return;
+  }
+  hint.classList.add("hidden");
+  btn.classList.remove("hidden");
+  btn.disabled = false;
+  btn.textContent = tf("btn_generate_zr_synthesis", { count });
 }
 
 async function loadAxesThematiquesLotsConfig() {
@@ -1158,6 +1385,12 @@ async function renderZrAxisPanel() {
 async function loadZrDataPanel(date) {
   if (!currentChart) return;
   renderZrAxisPanel();
+  // Nouvelle date/thème/langue : les lectures individuelles mises en cache ne correspondent
+  // plus forcément aux données affichées (date différente, texte dans une autre langue) —
+  // on repart d'un état propre plutôt que de risquer un mélange incohérent.
+  zrIndividualReadings.clear();
+  zrIndividuallyReadLots.clear();
+  updateZrSynthesisButton();
   const container = document.getElementById("zr-data-panel");
   const previouslyChecked = new Set(
     Array.from(container.querySelectorAll(".zr-lot-checkbox:checked")).map((el) => el.value)
@@ -1719,6 +1952,36 @@ document.getElementById("generate-zr-reading-btn").addEventListener("click", () 
       zr_selected_lots: selectedLots,
       zr_mode: selectedZrMode,
       zr_axis_key: selectedZrMode === "predictive" ? selectedZrAxisKey : null,
+    },
+  });
+});
+
+document.getElementById("generate-zr-synthesis-btn").addEventListener("click", () => {
+  // La synthèse croise les périodes des lots déjà lus individuellement : coche exactement ces
+  // lots (cohérence visuelle avec ce qui vient d'être demandé) et force le mode prévisionnel,
+  // seul mode qui couvre assez d'années pour repérer des convergences (voir
+  // _zodiacal_releasing_prompt_block, cross_lot_guidance côté serveur).
+  const selectedLots = Array.from(zrIndividuallyReadLots);
+  document.querySelectorAll(".zr-lot-checkbox").forEach((el) => {
+    el.checked = selectedLots.includes(el.value);
+  });
+  selectedZrMode = "predictive";
+  selectedZrAxisKey = null;
+  document.querySelectorAll(".zr-mode-btn").forEach((b) => b.classList.toggle("active", b.dataset.zrMode === "predictive"));
+  document.querySelectorAll(".zr-axis-btn").forEach((b) => b.classList.remove("active"));
+
+  const dateInput = document.getElementById("zr-date");
+  generateSpecializedReading({
+    btnId: "generate-zr-synthesis-btn",
+    errorId: "zr-synthesis-error",
+    outputId: "zr-synthesis-output",
+    defaultLabel: tf("btn_generate_zr_synthesis", { count: selectedLots.length }),
+    requestBody: {
+      reading_type: "zodiacal_releasing",
+      as_of_date: dateInput ? dateInput.value : undefined,
+      zr_selected_lots: selectedLots,
+      zr_mode: "predictive",
+      zr_axis_key: null,
     },
   });
 });
@@ -2571,6 +2834,22 @@ function weeklyWeatherHighlightLabel(h) {
   return witchyEventLabel({ event_type: h.kind, planet: h.planet, sign: h.sign, planet_b: h.planet_b, aspect_type: h.aspect_type });
 }
 
+// Points natals à surveiller pour un highlight. Le backend envoie "Ascendant" (majuscule,
+// cohérent avec les noms de planètes) mais PLANET_NAMES l'indexe en minuscule (comme les
+// autres angles — ascendant/midheaven/descendant/imum_coeli) : normaliser avant lookup.
+function emphasisPointLabel(point) {
+  return point === "Ascendant" ? planetLabel("ascendant") : planetLabel(point);
+}
+
+function affectedSignsHtml(h) {
+  const affected = h.affected_signs;
+  if (!affected || (affected.primary.length === 0 && affected.secondary.length === 0)) return "—";
+  const points = (h.emphasis_points || []).map(emphasisPointLabel).join(", ");
+  const badge = (sign, secondary) =>
+    `<span class="affected-sign-badge${secondary ? " is-secondary" : ""}" title="${escapeHtml(tf("weekly_weather_affected_signs_tooltip", { points }))}">${signLabel(sign)}</span>`;
+  return `<span class="affected-signs">${affected.primary.map((s) => badge(s, false)).join("")}${affected.secondary.map((s) => badge(s, true)).join("")}</span>`;
+}
+
 function renderWeeklyWeatherHighlights() {
   const container = document.getElementById("weekly-weather-highlights");
   if (!container || !weeklyWeatherData) return;
@@ -2590,6 +2869,7 @@ function renderWeeklyWeatherHighlights() {
             <td>${h.date}</td>
             <td>${escapeHtml(weeklyWeatherHighlightLabel(h))}</td>
             <td>${starRatingHtml(h.score, { max: 5, compact: true, showScore: false })}</td>
+            <td title="${escapeHtml(t("weekly_weather_th_affected_signs"))}">${affectedSignsHtml(h)}</td>
           </tr>`
           )
           .join("")}

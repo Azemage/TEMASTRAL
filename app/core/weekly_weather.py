@@ -35,6 +35,8 @@ from itertools import combinations
 import swisseph as swe
 
 from app.core import ephemeris
+from app.core.affected_signs import affected_signs_for_aspect, affected_signs_for_position
+from app.core.affected_signs import emphasis_points as _emphasis_points
 from app.core.aspects import angular_separation
 from app.core.reference_data import aspects_reference, houses_meanings
 from app.core.root_finding import scan_zero_crossings
@@ -49,7 +51,7 @@ from app.core.zodiac import SIGNS, SIGNS_FR, sign_and_degree, signs_distance
 # stockée dans le cache pour invalider silencieusement une ligne obsolète plutôt que de servir
 # indéfiniment une forme ou un contenu périmés (le cache est partagé par tous les visiteurs
 # d'une même semaine et ne se rafraîchit sinon jamais tout seul).
-SCHEMA_VERSION = 3
+SCHEMA_VERSION = 4
 
 MOON_PLANETS = ["Moon"]
 FAST_PLANETS = ["Mercury", "Venus", "Mars"]
@@ -199,11 +201,15 @@ def _scan_pair_aspect_events(start_jd: float, end_jd: float, planet_a: str, plan
 
             for jd in scan_zero_crossings(f, start_jd, end_jd, step=_ASPECT_SCAN_STEP_DAYS):
                 year, month, day, _hour = swe.revjul(jd)
+                sign_a, _ = sign_and_degree(_longitude(jd, id_a))
+                sign_b, _ = sign_and_degree(_longitude(jd, id_b))
                 events.append(
                     {
                         "date": f"{year:04d}-{month:02d}-{day:02d}",
                         "planet_a": planet_a,
                         "planet_b": planet_b,
+                        "sign_a": sign_a,
+                        "sign_b": sign_b,
                         "aspect_type": aspect_type,
                         "aspect_type_fr": _ASPECT_TYPE_FR[aspect_type],
                         "score": score_table[aspect_type],
@@ -294,6 +300,8 @@ def _assemble_highlights(
             {
                 "date": ingress["date"], "kind": "ingres_lune", "planet": "Moon",
                 "sign": ingress["to_sign"], "from_sign": ingress["from_sign"], "score": _MOON_INGRESS_SCORE,
+                "affected_signs": affected_signs_for_position(ingress["to_sign"]),
+                "emphasis_points": _emphasis_points("Moon"),
             }
         )
     for planet in fast_planets:
@@ -303,6 +311,8 @@ def _assemble_highlights(
                     "date": planet["ingress"]["date"], "kind": "ingres_rapide", "planet": planet["name"],
                     "sign": planet["ingress"]["to_sign"], "from_sign": planet["ingress"]["from_sign"],
                     "score": _FAST_INGRESS_SCORE,
+                    "affected_signs": affected_signs_for_position(planet["ingress"]["to_sign"]),
+                    "emphasis_points": _emphasis_points(planet["name"]),
                 }
             )
     for station in stations:
@@ -311,14 +321,19 @@ def _assemble_highlights(
                 "date": station["event_date"], "kind": "station", "planet": station["planet"],
                 "sign": station["sign"], "direction": station["direction"],
                 "meaning_template": station["meaning_template"], "score": station["score"],
+                "affected_signs": affected_signs_for_position(station["sign"]),
+                "emphasis_points": _emphasis_points(station["planet"]),
             }
         )
     for event in witchy_events:
+        sign = event.get("sign")
         highlights.append(
             {
                 "date": event["event_date"], "kind": event["event_type"], "planet": event.get("planet"),
-                "sign": event.get("sign"), "meaning_template": event.get("meaning_template"),
+                "sign": sign, "meaning_template": event.get("meaning_template"),
                 "score": event["score"],
+                "affected_signs": affected_signs_for_position(sign) if sign else {"primary": [], "secondary": []},
+                "emphasis_points": _emphasis_points(event.get("planet")),
             }
         )
     for aspect in aspects:
@@ -327,6 +342,8 @@ def _assemble_highlights(
                 "date": aspect["date"], "kind": "aspect_exact", "planet": aspect["planet_a"],
                 "planet_b": aspect["planet_b"], "aspect_type": aspect["aspect_type"],
                 "aspect_type_fr": aspect["aspect_type_fr"], "sign": None, "score": aspect["score"],
+                "affected_signs": affected_signs_for_aspect(aspect["sign_a"], aspect["sign_b"], aspect["aspect_type"]),
+                "emphasis_points": _emphasis_points(aspect["planet_a"], aspect["planet_b"]),
             }
         )
     for aspect in generational_aspects + moon_generational_aspects:
@@ -335,6 +352,8 @@ def _assemble_highlights(
                 "date": aspect["date"], "kind": "aspect_generational", "planet": aspect["planet_a"],
                 "planet_b": aspect["planet_b"], "aspect_type": aspect["aspect_type"],
                 "aspect_type_fr": aspect["aspect_type_fr"], "sign": None, "score": aspect["score"],
+                "affected_signs": affected_signs_for_aspect(aspect["sign_a"], aspect["sign_b"], aspect["aspect_type"]),
+                "emphasis_points": _emphasis_points(aspect["planet_a"], aspect["planet_b"]),
             }
         )
     highlights.sort(key=lambda h: (-h["score"], h["date"]))

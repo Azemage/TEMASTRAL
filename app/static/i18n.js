@@ -489,6 +489,20 @@ const UI_TEXT = {
     es: "Cálculos deterministas (Swiss Ephemeris) — la interpretación es generada por un modelo de lenguaje y debe leerse como una perspectiva, no una predicción absoluta.",
   },
 
+  day_sky_title: { fr: "Le ciel aujourd'hui", en: "The sky today", es: "El cielo hoy" },
+  day_sky_error: {
+    fr: "Ciel du jour indisponible pour le moment.",
+    en: "Today's sky is unavailable right now.",
+    es: "El cielo de hoy no está disponible por ahora.",
+  },
+  day_sky_sun: { fr: "☉ Soleil en {sign}", en: "☉ Sun in {sign}", es: "☉ Sol en {sign}" },
+  day_sky_moon: { fr: "☽ Lune en {sign}", en: "☽ Moon in {sign}", es: "☽ Luna en {sign}" },
+  day_sky_retrograde: {
+    fr: "⟲ Rétrogrades : {planets}",
+    en: "⟲ Retrograde: {planets}",
+    es: "⟲ Retrógrados: {planets}",
+  },
+
   section1_title: { fr: "1. Données de naissance", en: "1. Birth data", es: "1. Datos de nacimiento" },
   label_name: { fr: "Nom (optionnel)", en: "Name (optional)", es: "Nombre (opcional)" },
   placeholder_name: { fr: "Ex. Benoît", en: "E.g. John", es: "Ej. Juan" },
@@ -576,6 +590,17 @@ const UI_TEXT = {
   zr_mode_current: { fr: "Vue actuelle", en: "Current view", es: "Vista actual" },
   zr_mode_predictive: { fr: "Prévisionnelle (10 ans)", en: "Forecast (10 years)", es: "Previsional (10 años)" },
   btn_generate_zr_reading: { fr: "Générer la lecture des phases", en: "Generate phases reading", es: "Generar lectura de fases" },
+  btn_read_this_lot: { fr: "Lire ce lot", en: "Read this lot", es: "Leer este lote" },
+  zr_synthesis_hint: {
+    fr: "Lisez au moins deux lots individuellement ci-dessus (bouton \"Lire ce lot\") pour débloquer une synthèse qui croise leurs périodes dans le temps.",
+    en: "Read at least two lots individually above (the \"Read this lot\" button) to unlock a synthesis that cross-references their periods over time.",
+    es: "Lea al menos dos lotes individualmente arriba (botón \"Leer este lote\") para desbloquear una síntesis que cruza sus períodos en el tiempo.",
+  },
+  btn_generate_zr_synthesis: {
+    fr: "Voir la synthèse ({count} lots)",
+    en: "See the synthesis ({count} lots)",
+    es: "Ver la síntesis ({count} lotes)",
+  },
   zr_axis_intro: { fr: "Axes thématiques (raccourcis de sélection, projection 10 ans) :", en: "Thematic axes (selection shortcuts, 10-year projection):", es: "Ejes temáticos (atajos de selección, proyección a 10 años):" },
   zr_relations_group_direct: { fr: "Relations directes", en: "Direct relations", es: "Relaciones directas" },
   zr_hint_check_lots: {
@@ -960,6 +985,12 @@ const UI_TEXT = {
   weekly_weather_th_start: { fr: "Début de semaine", en: "Start of week", es: "Inicio de semana" },
   weekly_weather_th_end: { fr: "Fin de semaine", en: "End of week", es: "Fin de semana" },
   weekly_weather_th_movement: { fr: "Mouvement", en: "Movement", es: "Movimiento" },
+  weekly_weather_th_affected_signs: { fr: "Signes concernés", en: "Signs affected", es: "Signos afectados" },
+  weekly_weather_affected_signs_tooltip: {
+    fr: "Surtout si vous avez {points} dans ce signe",
+    en: "Especially if you have {points} in this sign",
+    es: "Sobre todo si tienes {points} en este signo",
+  },
   weekly_weather_ingress_note: { fr: "entre en {sign} le {date}", en: "enters {sign} on {date}", es: "entra en {sign} el {date}" },
   weekly_weather_aspects_title: {
     fr: "Aspects entre planètes rapides cette semaine",

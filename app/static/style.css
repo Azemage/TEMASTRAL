@@ -339,6 +339,19 @@ button:disabled { opacity: 0.6; cursor: wait; }
   font-size: 0.88rem;
 }
 
+.zr-read-lot-btn {
+  margin-top: 0.6rem;
+  font-size: 0.85rem;
+}
+
+.zr-lot-reading-output:empty {
+  display: none;
+}
+
+.zr-lot-reading-output {
+  margin-top: 0.5rem;
+}
+
 .zr-lot-card details summary {
   cursor: pointer;
   color: var(--muted);
@@ -408,6 +421,28 @@ button:disabled { opacity: 0.6; cursor: wait; }
 .lot-badge-disputed {
   background: rgba(163, 119, 31, 0.18);
   color: var(--gold);
+}
+
+.affected-signs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+
+.affected-sign-badge {
+  display: inline-block;
+  font-size: 0.7rem;
+  font-weight: 600;
+  border-radius: 999px;
+  padding: 0.1rem 0.5rem;
+  background: rgba(45, 58, 107, 0.12);
+  color: var(--accent);
+  cursor: help;
+}
+
+.affected-sign-badge.is-secondary {
+  background: rgba(45, 58, 107, 0.06);
+  opacity: 0.8;
 }
 
 .compat-mode-tabs {
@@ -778,6 +813,33 @@ th { color: var(--accent-2); }
   justify-content: center;
   width: 100%;
   position: relative;
+}
+
+.day-sky-section {
+  text-align: center;
+}
+
+.day-sky-wheel .wheel-svg {
+  max-width: 480px;
+}
+
+.day-sky-highlights {
+  list-style: none;
+  margin: 1rem auto 0;
+  padding: 0;
+  max-width: 480px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  text-align: left;
+}
+
+.day-sky-highlights li {
+  padding: 0.4rem 0.7rem;
+  background: var(--inset-bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 0.92rem;
 }
 
 .wheel-svg {
