@@ -103,8 +103,8 @@
               <select id="optional_points" multiple size="8">
                 <option value="north_node" selected data-i18n="point_north_node">Nœud Nord</option>
                 <option value="south_node" selected data-i18n="point_south_node">Nœud Sud</option>
-                <option value="chiron" data-i18n="point_chiron">Chiron</option>
-                <option value="lilith_mean" data-i18n="point_lilith">Lilith moyenne</option>
+                <option value="chiron" selected data-i18n="point_chiron">Chiron</option>
+                <option value="lilith_mean" selected data-i18n="point_lilith">Lilith moyenne</option>
                 <option value="ceres" data-i18n="point_ceres">Cérès</option>
                 <option value="pallas" data-i18n="point_pallas">Pallas</option>
                 <option value="juno" data-i18n="point_juno">Junon</option>
@@ -158,6 +158,7 @@
       <div class="tabs reading-type-tabs">
         <button class="reading-tab-btn active" data-reading-tab="global" data-i18n="reading_tab_global">Générale</button>
         <button class="reading-tab-btn" data-reading-tab="lots" data-i18n="reading_tab_lots">Lots</button>
+        <button class="reading-tab-btn" data-reading-tab="draconic" data-i18n="reading_tab_draconic">Thème draconique</button>
         <button class="reading-tab-btn" data-reading-tab="derived" data-i18n="reading_tab_derived">Maisons dérivées</button>
         <button class="reading-tab-btn" data-reading-tab="timing" data-i18n="reading_tab_timing">Pronostic</button>
         <button class="reading-tab-btn" data-reading-tab="compatibility" data-i18n="reading_tab_compatibility">Compatibilité</button>
@@ -213,6 +214,44 @@
           <p id="zr-synthesis-error" class="error"></p>
           <div id="zr-synthesis-output" class="reading-output"></div>
         </div>
+      </div>
+
+      <div id="reading-tab-draconic" class="reading-tab-panel hidden">
+        <p class="reading-section-intro" data-i18n="draconic_section_intro">
+          Le thème draconique fait pivoter l'ensemble du thème natal pour que le Nœud Nord
+          tombe à 0° Bélier — traditionnellement lu comme la carte de l'âme avant
+          l'incarnation, sous la personnalité que le thème natal exprime concrètement. Les
+          maisons occupées par chaque planète et les aspects entre elles restent strictement
+          identiques au thème natal (une rotation globale ne change aucune distance
+          angulaire) : seuls les signes changent.
+        </p>
+        <div id="draconic-wheel" class="wheel-wrapper"></div>
+
+        <button id="generate-draconic-reading-btn" data-i18n="btn_generate_draconic_reading">Lecture draconique</button>
+        <p id="draconic-reading-error" class="error"></p>
+        <div id="draconic-reading-output" class="reading-output"></div>
+
+        <hr class="reading-subsection-divider" />
+        <h3 data-i18n="draconic_incarnation_title">Incarnation &amp; but de vie</h3>
+        <p class="reading-section-intro" data-i18n="draconic_incarnation_intro">
+          Lecture ciblée : Nœud Nord/Sud natal (chemin de vie), Ascendant/Descendant draconique
+          vs natal (posture de l'âme vs personnalité), et Chiron/Lilith (blessure et blocages
+          profonds) — pas un survol complet du thème.
+        </p>
+        <button id="generate-draconic-incarnation-btn" data-i18n="btn_generate_draconic_incarnation">Incarnation &amp; but de vie</button>
+        <p id="draconic-incarnation-error" class="error"></p>
+        <div id="draconic-incarnation-output" class="reading-output"></div>
+
+        <hr class="reading-subsection-divider" />
+        <h3 data-i18n="draconic_comparison_title">Comparaison natal ↔ draconique</h3>
+        <p class="reading-section-intro" data-i18n="draconic_comparison_intro">
+          Vue d'ensemble plus large : toutes les planètes personnelles et sociales, où l'âme
+          (draconique) et la personnalité (natal) se rejoignent ou créent une tension à
+          intégrer.
+        </p>
+        <button id="generate-draconic-comparison-btn" data-i18n="btn_generate_draconic_comparison">Comparaison natal ↔ draconique</button>
+        <p id="draconic-comparison-error" class="error"></p>
+        <div id="draconic-comparison-output" class="reading-output"></div>
       </div>
 
       <div id="reading-tab-derived" class="reading-tab-panel hidden">

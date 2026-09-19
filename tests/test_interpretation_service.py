@@ -89,6 +89,68 @@ def test_lots_reading_payload_contains_only_lots_and_identity():
     assert set(payload["identity"].keys()) == {"sun", "moon", "ascendant", "is_day_chart"}
 
 
+def test_draconic_reading_payload_contains_full_draconic_chart():
+    chart = _make_chart()
+    request = schemas.ReadingRequest(reading_type="draconic")
+    payload = interpretation_service._build_user_payload(chart, request)
+
+    assert set(payload["draconic"].keys()) >= {"planets", "angles", "houses", "aspects"}
+    assert set(payload["identity"].keys()) == {"sun", "moon", "ascendant", "is_day_chart"}
+
+
+def test_draconic_incarnation_payload_flags_missing_points_without_optional_selection():
+    # _make_chart() calcule sans points optionnels : Nœuds/Chiron/Lilith doivent être signalés
+    # absents plutôt que silencieusement ignorés (voir missing_points dans _build_user_payload).
+    chart = _make_chart()
+    request = schemas.ReadingRequest(reading_type="draconic_incarnation")
+    payload = interpretation_service._build_user_payload(chart, request)
+
+    assert set(payload["missing_points"]) == {"north_node", "south_node", "chiron", "lilith_mean"}
+    assert set(payload["natal_points"].keys()) == {"Sun", "Moon"}
+    assert set(payload["draconic_points"].keys()) == {"Sun", "Moon"}
+    assert set(payload["natal_angles"].keys()) == {"ascendant", "descendant"}
+    assert set(payload["draconic_angles"].keys()) == {"ascendant", "descendant"}
+
+
+def test_draconic_incarnation_payload_includes_nodes_and_their_aspects_when_selected():
+    data = calculate_natal_chart(
+        birth_date="1990-05-15",
+        birth_time="14:32:00",
+        time_known=True,
+        timezone="Europe/Paris",
+        latitude=45.7640,
+        longitude=4.8357,
+        optional_points=["north_node", "south_node", "chiron", "lilith_mean"],
+    )
+    chart = _FakeChart(data)
+    request = schemas.ReadingRequest(reading_type="draconic_incarnation")
+    payload = interpretation_service._build_user_payload(chart, request)
+
+    assert payload["missing_points"] == []
+    assert set(payload["natal_points"].keys()) == {"Sun", "Moon", "north_node", "south_node", "chiron", "lilith_mean"}
+    # Chaque aspect renvoyé doit bien impliquer au moins un des points ciblés (Nœuds/Chiron/
+    # Lilith/Soleil/Lune), pas un aspect quelconque du thème.
+    focus = {"Sun", "Moon", "north_node", "south_node", "chiron", "lilith_mean"}
+    for aspect in payload["natal_aspects_to_focus_points"]:
+        assert aspect["planet1"] in focus or aspect["planet2"] in focus
+
+
+def test_draconic_comparison_payload_reuses_identical_aspects():
+    chart = _make_chart()
+    request = schemas.ReadingRequest(reading_type="draconic_comparison")
+    payload = interpretation_service._build_user_payload(chart, request)
+
+    assert payload["aspects"] == chart.computed_chart_data["aspects"]
+    assert set(payload["natal"].keys()) == {"planets", "angles", "elements_balance", "modality_balance"}
+    assert set(payload["draconic"].keys()) == {"planets", "angles", "elements_balance", "modality_balance"}
+
+
+def test_draconic_system_prompts_mention_draconic_concept():
+    for reading_type in ("draconic", "draconic_incarnation", "draconic_comparison"):
+        prompt = interpretation_service._build_system_prompt(schemas.ReadingRequest(reading_type=reading_type))
+        assert "draconi" in prompt.lower()
+
+
 def test_derived_houses_reading_payload_uses_requested_reference_house():
     chart = _make_chart()
     request = schemas.ReadingRequest(reading_type="derived_houses", reference_house=4)
@@ -714,6 +776,9 @@ def test_all_reading_type_payloads_are_strictly_json_serializable():
     requests_by_type = [
         (schemas.ReadingRequest(reading_type="global", focus_areas=["general"]), None),
         (schemas.ReadingRequest(reading_type="lots"), None),
+        (schemas.ReadingRequest(reading_type="draconic"), None),
+        (schemas.ReadingRequest(reading_type="draconic_incarnation"), None),
+        (schemas.ReadingRequest(reading_type="draconic_comparison"), None),
         (schemas.ReadingRequest(reading_type="derived_houses"), None),
         (schemas.ReadingRequest(reading_type="timing", as_of_date=date(2026, 1, 1)), None),
         (schemas.ReadingRequest(reading_type="zodiacal_releasing", as_of_date=date(2026, 1, 1)), None),

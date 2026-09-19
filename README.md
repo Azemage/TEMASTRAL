@@ -28,9 +28,10 @@ Implémenté :
 - Thème natal complet (planètes, angles, maisons — Placidus/Koch/Whole Sign/Équal/Regiomontanus,
   aspects majeurs et mineurs avec orbes configurables, applicatif/séparatif, balance éléments/modalités)
 - Points additionnels optionnels (voir `optional_points`, sélecteur dans "Options avancées") :
-  Nœud Nord/Sud et Lilith moyenne (calcul orbital pur, aucun fichier supplémentaire) sont
-  sélectionnés par défaut à la création d'un thème ; Chiron et les 4 principaux astéroïdes
-  (Cérès, Pallas, Junon, Vesta) sont opt-in et nécessitent le fichier Swiss Ephemeris
+  Nœud Nord/Sud, Lilith moyenne (calcul orbital pur, aucun fichier supplémentaire) et Chiron
+  sont sélectionnés par défaut à la création d'un thème (Chiron nécessite le fichier Swiss
+  Ephemeris ci-dessous, mais reste activé par défaut car ce fichier est fourni avec le dépôt) ;
+  seuls les 4 principaux astéroïdes (Cérès, Pallas, Junon, Vesta) restent opt-in et nécessitent
   `seas_18.se1` (fourni dans `app/ephe/`, ~220 Ko, couvre ~1900-2200 pour ces 5 corps) —
   `swe.set_ephe_path()` est repositionné **par thread** (`app/core/ephemeris.py::
   _ensure_ephe_path_for_this_thread`) car cet appel est thread-local dans pyswisseph, ce qui
@@ -335,9 +336,23 @@ Implémenté :
   ni les maisons dérivées), et six lectures spécialisées (Lots, Maisons dérivées, Timing,
   Libération zodiacale, Compatibilité, Astrocartographie) qui ne reçoivent que les données de
   leur propre technique
+- Thème draconique (`app/core/draconic.py`) : rotation de l'ensemble du thème natal pour que
+  le Nœud Nord tombe à 0° Bélier, traditionnellement lue comme la carte de l'âme avant
+  l'incarnation, sous la personnalité exprimée par le thème natal. Calculé directement dans
+  `calculate_natal_chart` (même principe que les maisons dérivées, stocké dans
+  `computed_chart_data.draconic`, pas d'endpoint séparé) : comme tous les points subissent
+  exactement la même rotation, la maison occupée par chaque planète et les aspects entre elles
+  restent rigoureusement identiques au thème natal (seuls les signes changent) — `houses` et
+  `aspects` sont donc réutilisés tels quels, jamais recalculés. Trois lectures dans l'onglet
+  dédié : la lecture draconique seule, une lecture ciblée "Incarnation & but de vie" (Nœud
+  Nord/Sud natal, Ascendant/Descendant draconique vs natal, Chiron/Lilith pour la dimension
+  blessure/blocage profond) et une comparaison natal ↔ draconique plus large (toutes les
+  planètes personnelles et sociales). Nœud Nord/Sud, Lilith moyenne et Chiron étant désormais
+  sélectionnés par défaut sur tout nouveau thème (voir ci-dessus), ces trois lectures
+  disposent de leurs données sans configuration supplémentaire.
 - Web app simple pour saisir une naissance, visualiser le thème et générer une lecture,
   organisée en "Thème natal" (données calculées) et "Lecture interprétée" (générale + les
-  5 lectures spécialisées, chacune affichant d'abord ses données puis un bouton de génération ;
+  6 lectures spécialisées, chacune affichant d'abord ses données puis un bouton de génération ;
   la lecture des phases de Libération zodiacale est un second bouton dans l'onglet Lots ;
   l'onglet Compatibilité permet de sélectionner une carte existante ou d'en créer une nouvelle
   pour la deuxième personne, directement depuis cet onglet)

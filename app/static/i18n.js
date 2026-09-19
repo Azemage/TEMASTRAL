@@ -559,6 +559,7 @@ const UI_TEXT = {
   },
   reading_tab_global: { fr: "Générale", en: "General", es: "General" },
   reading_tab_lots: { fr: "Lots", en: "Lots", es: "Suertes" },
+  reading_tab_draconic: { fr: "Thème draconique", en: "Draconic chart", es: "Carta dracónica" },
   reading_tab_derived: { fr: "Maisons dérivées", en: "Derived houses", es: "Casas derivadas" },
   reading_tab_timing: { fr: "Pronostic", en: "Forecast", es: "Pronóstico" },
   reading_tab_compatibility: { fr: "Compatibilité", en: "Compatibility", es: "Compatibilidad" },
@@ -574,6 +575,28 @@ const UI_TEXT = {
   error_select_focus_area: { fr: "Sélectionnez au moins une zone.", en: "Select at least one area.", es: "Selecciona al menos un área." },
 
   btn_generate_lots_reading: { fr: "Générer la lecture des lots", en: "Generate lots reading", es: "Generar lectura de suertes" },
+
+  draconic_section_intro: {
+    fr: "Le thème draconique fait pivoter l'ensemble du thème natal pour que le Nœud Nord tombe à 0° Bélier — traditionnellement lu comme la carte de l'âme avant l'incarnation, sous la personnalité que le thème natal exprime concrètement. Les maisons occupées par chaque planète et les aspects entre elles restent strictement identiques au thème natal (une rotation globale ne change aucune distance angulaire) : seuls les signes changent.",
+    en: "The draconic chart rotates the entire natal chart so the North Node falls at 0° Aries — traditionally read as the soul's chart before incarnation, beneath the personality the natal chart expresses concretely. The houses each planet occupies and the aspects between them stay strictly identical to the natal chart (a global rotation changes no angular distance): only the signs change.",
+    es: "La carta dracónica hace girar toda la carta natal para que el Nodo Norte caiga en 0° Aries — tradicionalmente leída como la carta del alma antes de la encarnación, bajo la personalidad que la carta natal expresa concretamente. Las casas ocupadas por cada planeta y los aspectos entre ellos siguen siendo estrictamente idénticos a la carta natal (una rotación global no cambia ninguna distancia angular): solo cambian los signos.",
+  },
+  btn_generate_draconic_reading: { fr: "Lecture draconique", en: "Draconic reading", es: "Lectura dracónica" },
+  draconic_incarnation_title: { fr: "Incarnation & but de vie", en: "Incarnation & life purpose", es: "Encarnación y propósito de vida" },
+  draconic_incarnation_intro: {
+    fr: "Lecture ciblée : Nœud Nord/Sud natal (chemin de vie), Ascendant/Descendant draconique vs natal (posture de l'âme vs personnalité), et Chiron/Lilith (blessure et blocages profonds) — pas un survol complet du thème.",
+    en: "Focused reading: natal North/South Node (life path), draconic vs natal Ascendant/Descendant (soul's posture vs personality), and Chiron/Lilith (deep wound and blockages) — not a full overview of the chart.",
+    es: "Lectura enfocada: Nodo Norte/Sur natal (camino de vida), Ascendente/Descendente dracónico vs natal (postura del alma vs personalidad), y Quirón/Lilith (herida y bloqueos profundos) — no un repaso completo de la carta.",
+  },
+  btn_generate_draconic_incarnation: { fr: "Incarnation & but de vie", en: "Incarnation & life purpose", es: "Encarnación y propósito de vida" },
+  draconic_comparison_title: { fr: "Comparaison natal ↔ draconique", en: "Natal ↔ draconic comparison", es: "Comparación natal ↔ dracónica" },
+  draconic_comparison_intro: {
+    fr: "Vue d'ensemble plus large : toutes les planètes personnelles et sociales, où l'âme (draconique) et la personnalité (natal) se rejoignent ou créent une tension à intégrer.",
+    en: "A wider overview: all personal and social planets, where the soul (draconic) and the personality (natal) align or create a tension to integrate.",
+    es: "Una vista más amplia: todos los planetas personales y sociales, donde el alma (dracónica) y la personalidad (natal) coinciden o crean una tensión por integrar.",
+  },
+  btn_generate_draconic_comparison: { fr: "Comparaison natal ↔ draconique", en: "Natal ↔ draconic comparison", es: "Comparación natal ↔ dracónica" },
+
   zr_section_title: { fr: "Phases de vie (Libération zodiacale)", en: "Life phases (Zodiacal Releasing)", es: "Fases de vida (Liberación zodiacal)" },
   zr_section_intro: {
     fr: "Technique de timing hellénistique distincte des lots ci-dessus : elle découpe la vie en grandes périodes (L1) et sous-périodes (L2), calculées ici pour chacun des 17 lots. Formellement définie pour le lot Fortune et le lot Esprit ; son application aux autres lots est une extension exploratoire du même algorithme à un domaine de vie plus précis.",

@@ -694,6 +694,7 @@ function renderChart(chart) {
   renderBalanceTab(data);
   renderDispositorsTab(data);
   renderLotsDataPanel(data);
+  renderDraconicTab(data);
   renderDerivedHousesDataPanel(data);
   timingLoadedForChartId = null; // nouveau thème : re-fetcher le timing au prochain accès
   zrLoadedForChartId = null; // nouveau thème : re-fetcher les phases au prochain accès
@@ -893,6 +894,18 @@ function renderLotsDataPanel(data) {
       <tbody>${rows}</tbody>
     </table>
   `;
+}
+
+// ---------------------------------------------------------------------
+// Thème draconique — affiché dans "Lecture interprétée > Thème draconique". Déjà calculé et
+// stocké dans computed_chart_data.draconic (voir app/core/draconic.py, appelé depuis
+// calculate_natal_chart comme les maisons dérivées) : aucun appel réseau supplémentaire.
+// ---------------------------------------------------------------------
+function renderDraconicTab(data) {
+  const wrapper = document.getElementById("draconic-wheel");
+  if (!wrapper || !data.draconic) return;
+  wrapper.innerHTML = buildWheelSVG(data.draconic, { showMinorAspects: false });
+  attachWheelTooltip(wrapper);
 }
 
 // ---------------------------------------------------------------------
@@ -1888,6 +1901,36 @@ document.getElementById("generate-lots-reading-btn").addEventListener("click", (
     outputId: "lots-reading-output",
     defaultLabel: t("btn_generate_lots_reading"),
     requestBody: { reading_type: "lots" },
+  });
+});
+
+document.getElementById("generate-draconic-reading-btn").addEventListener("click", () => {
+  generateSpecializedReading({
+    btnId: "generate-draconic-reading-btn",
+    errorId: "draconic-reading-error",
+    outputId: "draconic-reading-output",
+    defaultLabel: t("btn_generate_draconic_reading"),
+    requestBody: { reading_type: "draconic" },
+  });
+});
+
+document.getElementById("generate-draconic-incarnation-btn").addEventListener("click", () => {
+  generateSpecializedReading({
+    btnId: "generate-draconic-incarnation-btn",
+    errorId: "draconic-incarnation-error",
+    outputId: "draconic-incarnation-output",
+    defaultLabel: t("btn_generate_draconic_incarnation"),
+    requestBody: { reading_type: "draconic_incarnation" },
+  });
+});
+
+document.getElementById("generate-draconic-comparison-btn").addEventListener("click", () => {
+  generateSpecializedReading({
+    btnId: "generate-draconic-comparison-btn",
+    errorId: "draconic-comparison-error",
+    outputId: "draconic-comparison-output",
+    defaultLabel: t("btn_generate_draconic_comparison"),
+    requestBody: { reading_type: "draconic_comparison" },
   });
 });
 

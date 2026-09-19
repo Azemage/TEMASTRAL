@@ -44,7 +44,7 @@ class ChartSettings(BaseModel):
     rulership_system: str = "both"
     aspect_orbs: AspectOrbs = Field(default_factory=AspectOrbs)
     include_minor_aspects: bool = True
-    optional_points: list[str] = Field(default_factory=lambda: ["north_node", "south_node"])
+    optional_points: list[str] = Field(default_factory=lambda: ["north_node", "south_node", "chiron", "lilith_mean"])
 
 
 class ChartCreateRequest(BaseModel):
@@ -234,6 +234,21 @@ class DerivedHouseSet(BaseModel):
     mapping: list[DerivedHouseMappingEntry]
 
 
+class DraconicChart(BaseModel):
+    """Thème draconique — voir app/core/draconic.py. `houses` (numéro de maison par planète)
+    et `aspects` sont volontairement identiques au thème natal (une rotation globale ne change
+    ni les distances planète<->cuspide ni les distances planète<->planète) : seul le signe de
+    chaque point diffère."""
+
+    schema_version: int = 1
+    planets: list[PlanetPosition]
+    angles: Angles
+    houses: list[HouseCusp]
+    aspects: list[Aspect]
+    elements_balance: ElementsBalance
+    modality_balance: ModalityBalance
+
+
 class NatalChartComputed(BaseModel):
     schema_version: int = 1
     time_known: bool = True
@@ -249,6 +264,7 @@ class NatalChartComputed(BaseModel):
     character_traits: CharacterTraits
     lots: list[Lot] = Field(default_factory=list)
     derived_houses: list[DerivedHouseSet] = Field(default_factory=list)
+    draconic: DraconicChart | None = None
     unavailable_points: list[str] = Field(default_factory=list)
 
 
@@ -417,7 +433,7 @@ class NatalChartResponse(BaseModel):
 # Interprétation LLM (cf. cahier des charges, section 4.7)
 # ---------------------------------------------------------------------------
 class ReadingRequest(BaseModel):
-    reading_type: str = "global"  # 'global' | 'love' | 'career' | 'family' | 'lots' | 'derived_houses' | 'timing' | 'zodiacal_releasing' | 'compatibility' | 'astrocartography' | 'astrocartography_forecast' | 'witchy_calendar' | 'witchy_day_detail' | 'weekly_weather' | 'weekly_weather_by_sign'
+    reading_type: str = "global"  # 'global' | 'love' | 'career' | 'family' | 'lots' | 'derived_houses' | 'timing' | 'zodiacal_releasing' | 'compatibility' | 'astrocartography' | 'astrocartography_forecast' | 'witchy_calendar' | 'witchy_day_detail' | 'weekly_weather' | 'weekly_weather_by_sign' | 'draconic' | 'draconic_incarnation' | 'draconic_comparison'
     focus_areas: list[str] = Field(default_factory=lambda: ["general"])
     level: str = "débutant"
     tone: str = "accessible et bienveillant"

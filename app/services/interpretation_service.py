@@ -59,6 +59,9 @@ READING_TYPE_MAX_TOKENS = {
     "lots": 3000,
     "derived_houses": 2400,
     "compatibility": 4500,
+    "draconic": 3000,
+    "draconic_incarnation": 2600,
+    "draconic_comparison": 3800,
 }
 
 COMPATIBILITY_MODE_LABELS_FR = {
@@ -801,6 +804,61 @@ niveau de fiabilité pour les lots moins bien attestés (`certainty` moyenne, ou
 en faire un sujet central. Priorise Fortune et Esprit (les deux lots fondamentaux), et les \
 lots dont un aspect a une orbe serrée (< 3°) : ne traite pas les 17 lots avec la même \
 profondeur, ce serait répétitif et diluerait la lecture.""",
+    "draconic": """Cette lecture porte sur le THÈME DRACONIQUE, une technique qui fait pivoter \
+l'ensemble du thème natal pour que le Nœud Nord tombe à 0° Bélier. Elle est traditionnellement \
+lue comme la carte de l'âme AVANT l'incarnation — sa nature profonde, ce qu'elle visait avant \
+de revêtir la personnalité concrète décrite par le thème natal. Commence par expliquer ce \
+principe en une phrase accessible. Tu reçois `draconic` (planètes/angles/maisons/aspects en \
+draconique) et `identity` (contexte natal minimal, pour mémoire). Point technique important à \
+respecter : les MAISONS occupées par chaque planète et les ASPECTS entre elles sont \
+rigoureusement identiques au thème natal (une rotation globale ne change aucune distance \
+angulaire) — ne les présente donc jamais comme une découverte propre au draconique, seuls les \
+SIGNES ont changé. Structure la lecture autour du Soleil, de la Lune et de l'Ascendant \
+draconiques (l'identité et la posture de l'âme), puis des planètes personnelles et de leurs \
+aspects (déjà connus du thème natal, mais relus ici sous l'angle de l'âme plutôt que de la \
+personnalité). Reste au niveau du ressenti intérieur et du sens, jamais d'une prédiction \
+d'événement.""",
+    "draconic_incarnation": """Cette lecture est CIBLÉE sur l'INCARNATION ET LE BUT DE VIE, à \
+partir du thème draconique croisé avec les points les plus "karmiques" du thème natal — ne \
+traite QUE les éléments ci-dessous, volontairement resserrés, plutôt que de survoler tout le \
+thème (c'est le rôle d'une autre lecture, plus large). Trois axes, dans cet ordre :
+1. `natal_points.north_node`/`south_node` (l'axe du Nœud Nord/Sud natal, la direction de \
+croissance de cette incarnation vs les schémas familiers à dépasser) et \
+`natal_aspects_to_focus_points` filtré aux aspects impliquant ces deux points : quelles \
+planètes sont mobilisées par ce chemin. Si absents (voir `missing_points`), dis-le simplement \
+plutôt que d'improviser.
+2. `natal_angles`/`draconic_angles` (Ascendant/Descendant) : compare comment l'âme voulait se \
+présenter au monde à l'origine (Ascendant draconique) et comment la personnalité de cette vie \
+le donne réellement à voir (Ascendant natal) — une convergence de signe/élément est une \
+continuité fluide, un écart marqué (signes en tension, éléments opposés) signale un décalage \
+à intégrer entre l'intention de l'âme et son expression concrète.
+3. `natal_points.chiron`/`lilith_mean` et `draconic_points.chiron`/`lilith_mean` (avec leurs \
+aspects dans `natal_aspects_to_focus_points`) pour la dimension BLESSURE/BLOCAGE PROFOND : \
+Chiron comme blessure fondamentale dont la guérison fait partie du chemin plutôt qu'un accident \
+à éviter, Lilith comme part instinctive ou rejetée portée depuis "avant" l'incarnation. Si l'un \
+des deux est absent (voir `missing_points` — Chiron n'est pas activé par défaut sur tous les \
+thèmes), dis-le simplement sans en faire un manque.
+Formule toujours ces liens comme un sens ou une direction à explorer ("ce chemin invite à...", \
+"une blessure qui, intégrée, devient..."), jamais comme un événement ou un diagnostic. Termine \
+par une phrase de synthèse qui relie les trois axes en une seule direction de vie cohérente, \
+pas trois paragraphes indépendants.""",
+    "draconic_comparison": """Cette lecture COMPARE largement le thème NATAL et le thème \
+DRACONIQUE de la personne — contrairement à la lecture "Incarnation & but de vie" (ciblée sur \
+Nœuds/Angles/Chiron/Lilith), ici tu couvres l'ensemble des planètes personnelles et sociales \
+(Soleil à Saturne) et les angles, thème par thème (identité, vie affective, communication, \
+action, structure). Tu reçois `natal` et `draconic` (planètes/angles/balances élément-modalité \
+de chaque thème) et `aspects` (identiques entre les deux — un aspect natal EST l'aspect \
+draconique correspondant, une rotation globale ne change aucune distance angulaire : ne les \
+recalcule jamais, contente-toi de les relire sous l'angle qui t'intéresse à chaque section). \
+Pour chaque planète personnelle, compare son signe natal et son signe draconique : même \
+élément/modalité = continuité fluide entre l'âme et la personnalité sur ce registre ; signes en \
+tension (carré/opposition implicite) ou éléments opposés = zone où la personnalité de cette vie \
+prend une direction différente de l'élan initial de l'âme, à nommer comme une tension féconde à \
+intégrer plutôt qu'un problème. Appuie-toi aussi sur `natal.elements_balance`/`modality_balance` \
+vs leurs équivalents draconiques pour une lecture d'ensemble (ex. un thème natal très terre mais \
+draconique très feu : une personnalité qui a appris la prudence sur un élan d'âme plus \
+spontané). Termine par une synthèse de 2-3 tensions ou continuités les plus marquantes, pas une \
+liste exhaustive planète par planète sans hiérarchie.""",
 }
 
 
@@ -1359,6 +1417,47 @@ def _build_user_payload(
     elif request.reading_type == "lots":
         payload["identity"] = _identity_context(chart_data)
         payload["lots"] = chart_data["lots"]
+    elif request.reading_type == "draconic":
+        payload["identity"] = _identity_context(chart_data)
+        payload["draconic"] = chart_data["draconic"]
+    elif request.reading_type == "draconic_incarnation":
+        draconic = chart_data["draconic"]
+        natal_by_name = {p["name"]: p for p in chart_data["planets"]}
+        draconic_by_name = {p["name"]: p for p in draconic["planets"]}
+        focus_names = ["Sun", "Moon", "north_node", "south_node", "chiron", "lilith_mean"]
+        payload["identity"] = _identity_context(chart_data)
+        payload["natal_angles"] = {
+            "ascendant": chart_data["angles"]["ascendant"],
+            "descendant": chart_data["angles"]["descendant"],
+        }
+        payload["draconic_angles"] = {
+            "ascendant": draconic["angles"]["ascendant"],
+            "descendant": draconic["angles"]["descendant"],
+        }
+        payload["natal_points"] = {name: natal_by_name[name] for name in focus_names if name in natal_by_name}
+        payload["draconic_points"] = {
+            name: draconic_by_name[name] for name in focus_names if name in draconic_by_name
+        }
+        payload["natal_aspects_to_focus_points"] = [
+            a for a in chart_data["aspects"] if a["planet1"] in focus_names or a["planet2"] in focus_names
+        ]
+        payload["missing_points"] = [name for name in focus_names[2:] if name not in natal_by_name]
+    elif request.reading_type == "draconic_comparison":
+        draconic = chart_data["draconic"]
+        payload["identity"] = _identity_context(chart_data)
+        payload["natal"] = {
+            "planets": chart_data["planets"],
+            "angles": chart_data["angles"],
+            "elements_balance": chart_data["elements_balance"],
+            "modality_balance": chart_data["modality_balance"],
+        }
+        payload["draconic"] = {
+            "planets": draconic["planets"],
+            "angles": draconic["angles"],
+            "elements_balance": draconic["elements_balance"],
+            "modality_balance": draconic["modality_balance"],
+        }
+        payload["aspects"] = chart_data["aspects"]
     elif request.reading_type == "derived_houses":
         relation = None
         if request.relation_key:

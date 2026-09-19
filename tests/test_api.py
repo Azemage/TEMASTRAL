@@ -215,7 +215,7 @@ def test_compatibility_endpoint_returns_synastry_data(client):
     assert body["chart_a_id"] == chart_a_id
     assert body["chart_b_id"] == chart_b_id
     assert len(body["inter_aspects"]) > 0
-    assert len(body["house_overlay"]["a_planets_in_b_houses"]) == 12  # 10 classiques + nœuds N/S par défaut
+    assert len(body["house_overlay"]["a_planets_in_b_houses"]) == 14  # 10 classiques + nœuds N/S + Chiron + Lilith par défaut
     assert "Sun" in body["composite_chart"]["points"]
 
 

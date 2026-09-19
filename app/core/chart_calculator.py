@@ -6,6 +6,7 @@ from app.core import ephemeris
 from app.core.aspects import BodyForAspect, compute_aspects
 from app.core.derived_houses import compute_derived_houses
 from app.core.dispositors import CLASSIC_PLANETS, compute_dispositors
+from app.core.draconic import compute_draconic_chart
 from app.core.lots import compute_lots
 from app.core.traits import compute_character_traits
 from app.core.zodiac import ELEMENTS, MODALITIES, sign_and_degree
@@ -150,6 +151,16 @@ def calculate_natal_chart(
 
     derived_houses = compute_derived_houses(planets)
 
+    north_node_raw = bodies_result.bodies.get("north_node")
+    draconic = compute_draconic_chart(
+        planets,
+        angles,
+        houses,
+        aspects,
+        jd_ut,
+        north_node_raw.longitude if north_node_raw else None,
+    )
+
     return {
         "schema_version": 1,
         "time_known": time_known,
@@ -165,5 +176,6 @@ def calculate_natal_chart(
         "character_traits": character_traits,
         "lots": lots,
         "derived_houses": derived_houses,
+        "draconic": draconic,
         "unavailable_points": bodies_result.unavailable_points,
     }
