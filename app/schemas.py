@@ -121,17 +121,10 @@ class AffectedSigns(BaseModel):
     secondary: list[str] = Field(default_factory=list)
 
 
-class DaySkyTopAspect(Aspect):
-    affected_signs: AffectedSigns = Field(default_factory=AffectedSigns)
-    emphasis_points: list[str] = Field(default_factory=list)
-
-
 class DaySkyResponse(BaseModel):
     datetime_utc: str
     planets: list[DaySkyPlanetPosition]
     aspects: list[Aspect]
-    retrograde_planets: list[str] = Field(default_factory=list)
-    top_aspects: list[DaySkyTopAspect] = Field(default_factory=list)
 
 
 class ElementsBalance(BaseModel):

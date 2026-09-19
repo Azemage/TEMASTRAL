@@ -208,33 +208,6 @@ function buildDaySkyWheelSVG(planets, aspects) {
   `;
 }
 
-// Points forts du jour : purement une mise en mots des champs déjà calculés côté serveur
-// (`retrograde_planets`, `top_aspects` — voir app/core/day_sky.py), rien n'est décidé ici.
-function renderDaySkyHighlights(data) {
-  const list = document.getElementById("day-sky-highlights");
-  if (!list) return;
-  const sun = data.planets.find((p) => p.name === "Sun");
-  const moon = data.planets.find((p) => p.name === "Moon");
-  const items = [];
-  if (sun) items.push(tf("day_sky_sun", { sign: signLabel(sun.sign) }));
-  if (moon) items.push(tf("day_sky_moon", { sign: signLabel(moon.sign) }));
-  if (data.retrograde_planets && data.retrograde_planets.length > 0) {
-    items.push(tf("day_sky_retrograde", { planets: data.retrograde_planets.map(planetLabel).join(", ") }));
-  }
-  list.innerHTML = items.map((line) => `<li>${escapeHtml(line)}</li>`).join("");
-
-  // Les aspects portent en plus les signes concernés (mêmes champs `affected_signs`/
-  // `emphasis_points` et même composant que les points clés de la météo de la semaine — voir
-  // affectedSignsHtml) : ajoutés à part car ils mélangent texte échappé et badges HTML, à
-  // l'inverse des lignes ci-dessus qui restent du texte pur.
-  (data.top_aspects || []).forEach((a) => {
-    const line = escapeHtml(
-      `${planetLabel(a.planet1)} ${aspectTypeLabel(a.type)} ${planetLabel(a.planet2)} (${t("orb_prefix")} ${a.orb}°)`
-    );
-    list.insertAdjacentHTML("beforeend", `<li>${line} ${affectedSignsHtml(a)}</li>`);
-  });
-}
-
 async function loadDaySky() {
   const wrapper = document.getElementById("day-sky-wheel");
   const errorEl = document.getElementById("day-sky-error");
@@ -245,7 +218,6 @@ async function loadDaySky() {
     const data = await res.json();
     wrapper.innerHTML = buildDaySkyWheelSVG(data.planets, data.aspects);
     attachWheelTooltip(wrapper);
-    renderDaySkyHighlights(data);
   } catch (err) {
     errorEl.textContent = t("day_sky_error");
   }
