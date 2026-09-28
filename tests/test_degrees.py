@@ -58,6 +58,17 @@ def test_degree_value_uses_floor_not_rounding():
     assert result["is_critical_degree"] is True  # 17 est critique (mutable), 18 ne l'est pas
 
 
+def test_dissolution_predisposition_note_only_on_degrees_12_and_24():
+    note_12 = analyze_degree("Venus", "Pisces", 12.5)["dissolution_predisposition_note"]
+    note_24 = analyze_degree("Mars", "Pisces", 24.1)["dissolution_predisposition_note"]
+    assert note_12 is not None
+    assert note_24 is not None
+    assert note_12 != note_24  # deux textes distincts (première vague / seconde vague)
+    # Un degré voisin (11 ou 13, thèmes Verseau/Bélier) ne doit rien déclencher.
+    assert analyze_degree("Venus", "Pisces", 11.9)["dissolution_predisposition_note"] is None
+    assert analyze_degree("Venus", "Pisces", 13.0)["dissolution_predisposition_note"] is None
+
+
 def test_chart_calculator_includes_degree_analysis_for_every_planet():
     chart = calculate_natal_chart(**BIRTH_KWARGS, optional_points=[])
     names = {d["planet"] for d in chart["degree_analysis"]}

@@ -11,11 +11,13 @@ statut épistémique (voir doc source degree_theory.json) :
    distinct du signe réel du point. [Documenté comme système, mais d'origine populaire/XXe
    siècle — Symboles Sabians de Jones/Wheeler 1925, popularisés par Rudhyar 1973 — jamais à
    présenter comme une règle classique établie]
-
-Volontairement PAS de synthèse psychologique inventée ici (ex. hypothèses sur des thèmes
-d'obsession/dépendance à des degrés précis) : seules les couches documentées ci-dessus sont
-calculées ; toute mise en récit combinant plusieurs couches reste le rôle du modèle de
-lecture, avec les mêmes garde-fous de prudence que le reste de l'app."""
+5. Prédisposition dissolution/évasion aux degrés 12 et 24 (thème de degré Poissons, deux
+   passages) — [Synthèse interprétative, appuyée sur une association de signe bien documentée
+   (Poissons/Neptune = dissolution des limites, évasion, idéalisation), voir
+   dissolution_predisposition_degrees dans degree_theory.json]. TOUJOURS présentée comme une
+   prédisposition/sensibilité à surveiller avec bienveillance, jamais un diagnostic ni une
+   fatalité — c'est le seul niveau de synthèse fait ici plutôt que laissé au modèle de
+   lecture, car il demandait explicitement d'être conservé plutôt qu'omis."""
 
 from __future__ import annotations
 
@@ -33,6 +35,11 @@ def _critical_degrees_by_modality() -> dict[str, set[int]]:
 
 def _degree_theme_cycle() -> dict[int, tuple[str, str]]:
     return {entry["degree"]: (entry["sign"], entry["theme"]) for entry in degree_theory()["degree_theme_cycle"]}
+
+
+def _dissolution_predisposition_notes() -> dict[int, str]:
+    entries = degree_theory()["dissolution_predisposition_degrees"]
+    return {12: entries["12"], 24: entries["24"]}
 
 
 def analyze_degree(planet_name: str, sign: str, raw_degree_in_sign: float) -> dict:
@@ -53,6 +60,7 @@ def analyze_degree(planet_name: str, sign: str, raw_degree_in_sign: float) -> di
         "degree_theme_sign_fr": None,
         "degree_theme_label": None,
         "is_exact_exaltation": False,
+        "dissolution_predisposition_note": None,
     }
 
     theme_cycle = _degree_theme_cycle()
@@ -65,5 +73,9 @@ def analyze_degree(planet_name: str, sign: str, raw_degree_in_sign: float) -> di
     exaltation = _exaltation_points().get(planet_name)
     if exaltation is not None and exaltation == (sign, degree_value):
         result["is_exact_exaltation"] = True
+
+    dissolution_notes = _dissolution_predisposition_notes()
+    if degree_value in dissolution_notes:
+        result["dissolution_predisposition_note"] = dissolution_notes[degree_value]
 
     return result

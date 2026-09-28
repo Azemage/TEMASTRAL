@@ -700,6 +700,16 @@ def test_generate_reading_extracts_timing_ratings_and_strips_json_block(monkeypa
     }
 
 
+def test_degrees_and_spirituality_focus_areas_produce_dedicated_guidance():
+    request = schemas.ReadingRequest(reading_type="global", focus_areas=["degrees", "spirituality"])
+    prompt = interpretation_service._build_system_prompt(request)
+    assert "- degrees :" in prompt
+    assert "- spirituality :" in prompt
+    # Les deux règles dédiées (degré approfondi, dons/sensibilités) doivent être présentes.
+    assert "dissolution_predisposition_note" in prompt
+    assert "maison XII" in prompt
+
+
 def test_basic_reading_types_include_focus_zone_section():
     request = schemas.ReadingRequest(reading_type="love", focus_areas=["love"])
     prompt = interpretation_service._build_system_prompt(request)

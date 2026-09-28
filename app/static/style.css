@@ -454,6 +454,11 @@ button:disabled { opacity: 0.6; cursor: wait; }
   color: var(--muted);
 }
 
+.degree-badge-dissolution {
+  background: rgba(90, 110, 140, 0.16);
+  color: var(--accent-2);
+}
+
 .affected-signs {
   display: flex;
   flex-wrap: wrap;

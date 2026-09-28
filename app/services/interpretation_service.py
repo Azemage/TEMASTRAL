@@ -49,6 +49,19 @@ FOCUS_AREA_GUIDANCE = {
     "love": "vie affective et amoureuse (Vénus, Mars, maison VII, aspects vers ces points)",
     "career": "vocation et carrière (Midciel, maison X, Saturne, dispositeur du Midciel)",
     "family": "famille, foyer, racines (Lune, maison IV, maison X selon la tradition retenue)",
+    "degrees": (
+        "analyse approfondie par DEGRÉ exact (`degree_analysis`), pas seulement par signe/maison : "
+        "pour chaque planète personnelle (et les angles si notable), développe ce que son degré précis "
+        "ajoute (exaltation exacte, degré critique, degré anarétique, thème de degré) plutôt que de ne "
+        "mentionner ces signaux qu'en passant — voir la règle dédiée sur `degree_analysis` ci-dessous"
+    ),
+    "spirituality": (
+        "sensibilités et dons spirituels/intuitifs potentiels : maison XII et son maître (spiritualité, "
+        "vie intérieure, dons discrets ou non exprimés), la Lune (réceptivité, intuition), les aspects de "
+        "Neptune aux planètes personnelles (perméabilité au subtil, imagination, empathie), et toute "
+        "convergence marquée sur l'eau (Cancer/Scorpion/Poissons, maison VIII/XII) — voir la règle dédiée "
+        "sur les dons potentiels ci-dessous"
+    ),
 }
 
 READING_TYPE_MAX_TOKENS = {
@@ -1350,19 +1363,43 @@ les données. Si son `level` vaut 'forte' ou 'notable', la majorité des chaîne
 dispositeurs du thème se referment sur une même planète (`dominant_dispositor`) : \
 signale explicitement ce pattern comme une planète clé de voûte du thème.
 8. `degree_analysis` affine chaque planète avec le DEGRÉ exact qu'elle occupe dans son signe \
-(0-29), en plus du signe lui-même : mentionne-le UNIQUEMENT quand un champ notable est \
-présent (`is_exact_exaltation`, `is_critical_degree`, `is_anaretic`, ou `degree_theme_label` \
-non nul) — n'énumère jamais le degré de chaque planète par défaut, ce serait mécanique et \
-diluerait la lecture. Chaque signal a son propre statut, à ne jamais fusionner ni présenter \
-avec la même autorité : `is_exact_exaltation` est un héritage classique (hellénistique/\
-Ptolémée) — la planète exprime sa forme la plus élevée et harmonieuse ; `is_critical_degree` \
-est un motif largement cité (XXe siècle) — un point de tension ou d'intensité accrue selon la \
-modalité du signe ; `is_anaretic` (degré 29) signale une urgence ou une maturité forcée sur ce \
-thème, le cycle du signe touchant à sa fin ; `degree_theme_sign`/`degree_theme_label` (théorie \
-des degrés) est un système POPULAIRE plus récent (pas une règle classique établie) — \
-présente-le avec plus de réserve que les trois précédents, comme une nuance possible plutôt \
-qu'un fait astrologique assuré. Une planète peut cumuler plusieurs de ces signaux à la fois : \
-dans ce cas, mentionne-les ensemble mais garde leurs statuts distincts dans la formulation.
+(0-29), en plus du signe lui-même. Par défaut, mentionne-le UNIQUEMENT quand un champ notable \
+est présent (`is_exact_exaltation`, `is_critical_degree`, `is_anaretic`, `degree_theme_label` \
+ou `dissolution_predisposition_note` non nuls) — n'énumère jamais le degré de chaque planète \
+par défaut, ce serait mécanique et diluerait la lecture. Si la zone `degrees` fait partie des \
+zones demandées (voir plus bas), fais l'inverse pour les planètes personnelles (Soleil à \
+Mars) : développe leur degré en détail même sans signal notable, le degré exact étant alors le \
+sujet central de cette lecture plutôt qu'un aparté. Chaque signal a son propre statut, à ne \
+jamais fusionner ni présenter avec la même autorité : `is_exact_exaltation` est un héritage \
+classique (hellénistique/Ptolémée) — la planète exprime sa forme la plus élevée et harmonieuse ; \
+`is_critical_degree` est un motif largement cité (XXe siècle) — un point de tension ou \
+d'intensité accrue selon la modalité du signe ; `is_anaretic` (degré 29) signale une urgence ou \
+une maturité forcée sur ce thème, le cycle du signe touchant à sa fin ; \
+`degree_theme_sign`/`degree_theme_label` (théorie des degrés) est un système POPULAIRE plus \
+récent (pas une règle classique établie) — présente-le avec plus de réserve que les trois \
+précédents, comme une nuance possible plutôt qu'un fait astrologique assuré. \
+`dissolution_predisposition_note` (degrés 12 et 24, thème Poissons répété) est une synthèse \
+interprétative encore plus prudente : présente-la TOUJOURS comme une simple prédisposition ou \
+sensibilité à surveiller avec bienveillance ("vous pourriez avoir une appétence pour...", \
+"une sensibilité à..."), JAMAIS comme un diagnostic, une fatalité ou une prédiction — et \
+mentionne systématiquement à côté la face constructive du même thème (sensibilité, \
+créativité, intuition, spiritualité), jamais isolée comme un simple risque. Une planète peut \
+cumuler plusieurs de ces signaux à la fois : dans ce cas, mentionne-les ensemble mais garde \
+leurs statuts distincts dans la formulation.
+9. Si la zone `spirituality` fait partie des zones demandées (voir plus bas), cherche \
+spécifiquement des indices de sensibilités ou dons intuitifs/spirituels potentiels, à partir \
+de significateurs bien établis : le maître de la maison XII et les planètes qui s'y trouvent \
+(vie intérieure, dons discrets peu exprimés au grand jour, aisance avec l'invisible/\
+l'inconscient) ; la Lune, son signe et ses aspects (réceptivité, intuition, capacité à \
+ressentir ce qui n'est pas dit) ; les aspects de Neptune aux planètes personnelles \
+(perméabilité au subtil, imagination, sens artistique ou empathique) ; les aspects d'Uranus \
+aux planètes personnelles (intuitions soudaines, éclairs de compréhension) ; une \
+concentration marquée en signes/maisons d'eau (Cancer/Scorpion/Poissons, maisons IV/VIII/XII) ; \
+et un Jupiter bien aspecté (une forme de grâce ou de facilité récurrente, ce que certains \
+appellent "avoir de la chance"). Formule TOUJOURS ces observations comme des sensibilités ou \
+prédispositions à explorer/cultiver ("vous pourriez avoir une facilité pour...", "une \
+sensibilité qui, développée, peut devenir..."), jamais comme une promesse de pouvoir \
+surnaturel ou une capacité déjà maîtrisée et certaine.
 
 ZONES À COUVRIR DANS CETTE LECTURE :
 {focus_descriptions}

@@ -724,6 +724,11 @@ function degreeBadgesHtml(planetName, data) {
       `<span class="degree-badge degree-badge-theme" title="${escapeHtml(entry.degree_theme_label)}">${escapeHtml(tf("degree_theme_badge", { sign: signLabel(entry.degree_theme_sign) }))}</span>`
     );
   }
+  if (entry.dissolution_predisposition_note) {
+    badges.push(
+      `<span class="degree-badge degree-badge-dissolution" title="${escapeHtml(entry.dissolution_predisposition_note)}">${t("degree_dissolution_badge")}</span>`
+    );
+  }
   return badges.length ? badges.join(" ") : "—";
 }
 

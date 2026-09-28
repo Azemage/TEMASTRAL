@@ -269,6 +269,7 @@ class DegreeAnalysis(BaseModel):
     degree_theme_sign_fr: str | None = None
     degree_theme_label: str | None = None
     is_exact_exaltation: bool
+    dissolution_predisposition_note: str | None = None
 
 
 class NatalChartComputed(BaseModel):
