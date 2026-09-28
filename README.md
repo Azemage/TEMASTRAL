@@ -360,29 +360,6 @@ Implémenté :
 Pas encore implémenté (voir cahier des charges fourni, section V2/V3) : révolution solaire,
 progressions secondaires, mode de compatibilité personne/entreprise, comptes utilisateurs.
 
-### Durée de vie estimée — Hyleg/Alcocoden (recherche personnelle)
-
-`app/core/lifespan_estimate.py` implémente la couche médiévale (table fixe d'années
-planétaires) de la technique hellénistique/médiévale du Hyleg et de l'Alcocoden — pas la
-direction primaire par ascension oblique (phase 2 de la source, non implémentée). C'est le seul
-type de résultat (un chiffre d'années de vie) que le reste de l'app exclut systématiquement de
-toute lecture destinée à un utilisateur quelconque (voir la règle "jamais de prédiction... sur
-la santé ou la mort" du prompt de base, `interpretation_service.py`) : l'app étant pour l'instant
-à usage strictement personnel (un seul utilisateur, un seul ordinateur, jamais déployée
-publiquement), le calcul est exposé comme un onglet dédié — "Durée de vie (recherche)" dans la
-section Lecture interprétée — mais volontairement traité à part du reste :
-- endpoint dédié (`GET /api/charts/{chart_id}/lifespan-estimate`), calcul entièrement
-  déterministe, jamais narré par le modèle (pas de `reading_type` LLM associé) ;
-- non stocké avec le thème : recalculé à chaque clic sur "Calculer l'estimation" ;
-- bandeau d'avertissement permanent dans l'onglet et dans chaque réponse de l'API
-  (`warning`), rappelant qu'il s'agit d'une technique interprétative parmi plusieurs
-  variantes documentées, pas d'une prédiction.
-
-`scripts/backtest_lifespan.py --csv fichier.csv` reste disponible en ligne de commande pour
-comparer l'estimation en lot à l'âge réel de personnages historiques dont la naissance ET la
-mort sont des faits publics déjà survenus (même démarche de validation que l'exemple travaillé
-de la source) — plus pratique qu'un clic par personne pour dépouiller des dizaines de cas.
-
 ## Installation
 
 ```bash

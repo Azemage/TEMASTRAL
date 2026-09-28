@@ -119,13 +119,6 @@ def spiritual_gifts() -> dict:
     return _load("spiritual_gifts.json")
 
 
-def lifespan_technique() -> dict:
-    """Technique hellénistique/médiévale du Hyleg et de l'Alcocoden — voir
-    app/core/lifespan_estimate.py (outil de recherche/backtest, PAS une fonctionnalité de
-    l'app web grand public — voir scripts/backtest_lifespan.py)."""
-    return _load("lifespan_technique.json")
-
-
 def world_cities() -> list[dict]:
     """Grandes villes mondiales (Natural Earth 110m populated places, domaine public) —
     capitales et métropoles majeures, utilisées comme bassin de candidats pour la suggestion
