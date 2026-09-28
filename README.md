@@ -360,6 +360,19 @@ Implémenté :
 Pas encore implémenté (voir cahier des charges fourni, section V2/V3) : révolution solaire,
 progressions secondaires, mode de compatibilité personne/entreprise, comptes utilisateurs.
 
+### Outil de recherche hors app (Hyleg/Alcocoden)
+
+`app/core/lifespan_estimate.py` implémente la couche médiévale (table fixe d'années
+planétaires) de la technique hellénistique/médiévale du Hyleg et de l'Alcocoden — pas la
+direction primaire par ascension oblique (phase 2 de la source, non implémentée). Délibérément
+absent de l'API et de l'interface web : cette technique produit un chiffre d'années de vie, le
+seul type de résultat que le reste de l'app exclut systématiquement de toute lecture destinée
+à un utilisateur quelconque (voir la règle "jamais de prédiction... sur la santé ou la mort"
+du prompt de base, `interpretation_service.py`). Accessible uniquement en ligne de commande via
+`scripts/backtest_lifespan.py --csv fichier.csv`, pensé pour comparer l'estimation de la
+technique à l'âge réel de personnes dont la naissance ET la mort sont des faits publics déjà
+survenus (même démarche de validation que l'exemple travaillé de la source).
+
 ## Installation
 
 ```bash
