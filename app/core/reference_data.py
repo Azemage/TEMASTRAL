@@ -111,6 +111,14 @@ def degree_theory() -> dict:
     return _load("degree_theory.json")
 
 
+def spiritual_gifts() -> dict:
+    """Indicateurs documentés de sensibilité psychique/spirituelle (maisons IV/VIII/XII,
+    planètes, aspects, astéroïdes) — voir app/core/spiritual_gifts.py pour le calcul
+    déterministe des signaux présents dans un thème réel et doc source spiritual_gifts.json
+    pour l'avertissement méthodologique à répercuter dans toute lecture."""
+    return _load("spiritual_gifts.json")
+
+
 def world_cities() -> list[dict]:
     """Grandes villes mondiales (Natural Earth 110m populated places, domaine public) —
     capitales et métropoles majeures, utilisées comme bassin de candidats pour la suggestion

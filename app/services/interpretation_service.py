@@ -27,7 +27,8 @@ from app.core.astrocartography import analyze_nearby_lines
 from app.core.astrocartography_personalization import personalize_nearby_lines
 from app.core.derived_houses import resolve_relation
 from app.core.profections import compute_profection
-from app.core.reference_data import astrocartography_significations, houses_meanings, rulerships
+from app.core.reference_data import astrocartography_significations, houses_meanings, rulerships, spiritual_gifts
+from app.core.spiritual_gifts import compute_spiritual_gifts_signals
 from app.core.day_chart import compute_day_chart
 from app.core.witchy_calendar import (
     compute_location_context,
@@ -56,11 +57,9 @@ FOCUS_AREA_GUIDANCE = {
         "mentionner ces signaux qu'en passant — voir la règle dédiée sur `degree_analysis` ci-dessous"
     ),
     "spirituality": (
-        "sensibilités et dons spirituels/intuitifs potentiels : maison XII et son maître (spiritualité, "
-        "vie intérieure, dons discrets ou non exprimés), la Lune (réceptivité, intuition), les aspects de "
-        "Neptune aux planètes personnelles (perméabilité au subtil, imagination, empathie), et toute "
-        "convergence marquée sur l'eau (Cancer/Scorpion/Poissons, maison VIII/XII) — voir la règle dédiée "
-        "sur les dons potentiels ci-dessous"
+        "sensibilités et dons potentiels — perception/intuition, pouvoir de transformation, faculté de "
+        "\"transport\" (projection) — composés à partir des signaux déjà repérés dans `spiritual_gifts_signals` "
+        "(maisons IV/VIII/XII, aspects documentés, eau, astéroïdes) — voir la règle dédiée ci-dessous"
     ),
 }
 
@@ -1386,20 +1385,35 @@ mentionne systématiquement à côté la face constructive du même thème (sens
 créativité, intuition, spiritualité), jamais isolée comme un simple risque. Une planète peut \
 cumuler plusieurs de ces signaux à la fois : dans ce cas, mentionne-les ensemble mais garde \
 leurs statuts distincts dans la formulation.
-9. Si la zone `spirituality` fait partie des zones demandées (voir plus bas), cherche \
-spécifiquement des indices de sensibilités ou dons intuitifs/spirituels potentiels, à partir \
-de significateurs bien établis : le maître de la maison XII et les planètes qui s'y trouvent \
-(vie intérieure, dons discrets peu exprimés au grand jour, aisance avec l'invisible/\
-l'inconscient) ; la Lune, son signe et ses aspects (réceptivité, intuition, capacité à \
-ressentir ce qui n'est pas dit) ; les aspects de Neptune aux planètes personnelles \
-(perméabilité au subtil, imagination, sens artistique ou empathique) ; les aspects d'Uranus \
-aux planètes personnelles (intuitions soudaines, éclairs de compréhension) ; une \
-concentration marquée en signes/maisons d'eau (Cancer/Scorpion/Poissons, maisons IV/VIII/XII) ; \
-et un Jupiter bien aspecté (une forme de grâce ou de facilité récurrente, ce que certains \
-appellent "avoir de la chance"). Formule TOUJOURS ces observations comme des sensibilités ou \
-prédispositions à explorer/cultiver ("vous pourriez avoir une facilité pour...", "une \
-sensibilité qui, développée, peut devenir..."), jamais comme une promesse de pouvoir \
-surnaturel ou une capacité déjà maîtrisée et certaine.
+9. Si la zone `spirituality` fait partie des zones demandées (voir plus bas), tu reçois \
+`spiritual_gifts_signals` (les signaux DÉJÀ REPÉRÉS dans ce thème précis — occupants des \
+maisons IV/VIII/XII, aspects documentés présents, concentration en eau, astéroïdes notables, \
+Nœud Sud) et `reference.spiritual_gifts` (les dictionnaires de composition). Distingue \
+d'abord les TROIS types de don (`gift_types`) : perception/intuition (Lune, Mercure, Neptune, \
+signes d'eau), pouvoir opératif/magie de transformation (Pluton, Scorpion, maison VIII), et \
+faculté de "transport"/projection (maison XII, Neptune, Uranus). Compose ensuite chaque \
+observation à partir des dictionnaires plutôt que d'une formule figée : pour un aspect \
+documenté, combine `gift_nature_by_body` des deux points + `aspect_activation_mode` de \
+l'aspect + `expression_channel_by_sign` du signe où il se forme (schéma : "[nature A] combiné \
+à [nature B], en [mode d'activation], s'exprime à travers [canal du signe]"). Pour un occupant \
+de maison clé (IV/VIII/XII dans `key_house_occupants`), combine sa `gift_nature_by_body` avec \
+`life_area_by_house`/`key_houses` de cette maison. Si `has_water_stellium` ou \
+`water_grand_trine` est présent, signale-le explicitement comme un amplificateur fort de \
+TOUS les dons déjà repérés, pas comme un signal séparé. Les astéroïdes dans \
+`notable_asteroids` (Lilith = pouvoir non domestiqué, Vesta = dévotion disciplinée à une \
+pratique, Cérès = lien à la terre/aux cycles) sont l'indicateur le plus spécifique de la \
+source documentée : ne les passe pas sous silence s'ils sont présents. N'évoque JAMAIS \
+Hécate ou un autre corps non listé dans `notable_asteroids`/`key_house_occupants` (voir \
+`asteroid_caveats`) — ce point n'est pas calculé dans cette app. Respecte scrupuleusement \
+`methodological_warning` : n'affirme un type de don que si PLUSIEURS signaux du même type \
+convergent (jamais sur la base d'un seul aspect isolé), et rappelle une fois dans la lecture \
+que ce que l'astrologie moderne appelle "don" ou "magie" se lit surtout en termes \
+psychologiques (perception fine, charisme, sens du symbole) plutôt que comme un pouvoir \
+surnaturel littéral. Si aucun signal n'apparaît dans `spiritual_gifts_signals`, dis-le \
+simplement plutôt que d'inventer un don de remplissage. Formule TOUJOURS ces observations \
+comme des sensibilités ou prédispositions à explorer/cultiver ("vous pourriez avoir une \
+facilité pour...", "une sensibilité qui, développée, peut devenir..."), jamais comme une \
+promesse de pouvoir surnaturel ou une capacité déjà maîtrisée et certaine.
 
 ZONES À COUVRIR DANS CETTE LECTURE :
 {focus_descriptions}
@@ -1465,6 +1479,19 @@ def _build_user_payload(
             "houses_meanings": houses_meanings()["houses"],
             "rulerships_notes": rulerships()["notes"],
         }
+        if "spirituality" in request.focus_areas:
+            gifts_ref = spiritual_gifts()
+            payload["spiritual_gifts_signals"] = compute_spiritual_gifts_signals(chart_data)
+            payload["reference"]["spiritual_gifts"] = {
+                "gift_types": gifts_ref["gift_types"],
+                "key_houses": gifts_ref["key_houses"],
+                "gift_nature_by_body": gifts_ref["gift_nature_by_body"],
+                "aspect_activation_mode": gifts_ref["aspect_activation_mode"],
+                "expression_channel_by_sign": gifts_ref["expression_channel_by_sign"],
+                "life_area_by_house": gifts_ref["life_area_by_house"],
+                "asteroid_caveats": gifts_ref["asteroid_caveats"],
+                "methodological_warning": gifts_ref["methodological_warning"],
+            }
     elif request.reading_type == "lots":
         payload["identity"] = _identity_context(chart_data)
         payload["lots"] = chart_data["lots"]

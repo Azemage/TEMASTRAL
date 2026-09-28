@@ -79,6 +79,33 @@ def test_global_reading_payload_excludes_lots_and_derived_houses():
     assert "planets" in payload["chart_data"]  # les données de base restent présentes
 
 
+def test_global_reading_payload_omits_spiritual_gifts_signals_by_default():
+    chart = _make_chart()
+    request = schemas.ReadingRequest(reading_type="global", focus_areas=["general"])
+    payload = interpretation_service._build_user_payload(chart, request)
+
+    assert "spiritual_gifts_signals" not in payload
+    assert "spiritual_gifts" not in payload["reference"]
+
+
+def test_global_reading_payload_includes_spiritual_gifts_signals_when_requested():
+    chart = _make_chart()
+    request = schemas.ReadingRequest(reading_type="global", focus_areas=["general", "spirituality"])
+    payload = interpretation_service._build_user_payload(chart, request)
+
+    assert "spiritual_gifts_signals" in payload
+    assert set(payload["spiritual_gifts_signals"].keys()) == {
+        "key_house_occupants", "documented_aspects_present", "water_sign_classic_planets",
+        "has_water_stellium", "water_grand_trine", "notable_asteroids", "south_node_sign_house",
+    }
+    gifts_ref = payload["reference"]["spiritual_gifts"]
+    assert set(gifts_ref.keys()) == {
+        "gift_types", "key_houses", "gift_nature_by_body", "aspect_activation_mode",
+        "expression_channel_by_sign", "life_area_by_house", "asteroid_caveats", "methodological_warning",
+    }
+    json.dumps(payload)  # doit rester strictement sérialisable (voir test dédié plus bas)
+
+
 def test_lots_reading_payload_contains_only_lots_and_identity():
     chart = _make_chart()
     request = schemas.ReadingRequest(reading_type="lots")
@@ -707,7 +734,7 @@ def test_degrees_and_spirituality_focus_areas_produce_dedicated_guidance():
     assert "- spirituality :" in prompt
     # Les deux règles dédiées (degré approfondi, dons/sensibilités) doivent être présentes.
     assert "dissolution_predisposition_note" in prompt
-    assert "maison XII" in prompt
+    assert "spiritual_gifts_signals" in prompt
 
 
 def test_basic_reading_types_include_focus_zone_section():
@@ -785,6 +812,7 @@ def test_all_reading_type_payloads_are_strictly_json_serializable():
     chart_b = _make_chart_b()
     requests_by_type = [
         (schemas.ReadingRequest(reading_type="global", focus_areas=["general"]), None),
+        (schemas.ReadingRequest(reading_type="global", focus_areas=["general", "spirituality"]), None),
         (schemas.ReadingRequest(reading_type="lots"), None),
         (schemas.ReadingRequest(reading_type="draconic"), None),
         (schemas.ReadingRequest(reading_type="draconic_incarnation"), None),
