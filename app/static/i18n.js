@@ -563,6 +563,7 @@ const UI_TEXT = {
   reading_tab_derived: { fr: "Maisons dérivées", en: "Derived houses", es: "Casas derivadas" },
   reading_tab_timing: { fr: "Pronostic", en: "Forecast", es: "Pronóstico" },
   reading_tab_compatibility: { fr: "Compatibilité", en: "Compatibility", es: "Compatibilidad" },
+  reading_tab_lifespan: { fr: "Durée de vie (recherche)", en: "Lifespan (research)", es: "Duración de vida (investigación)" },
 
   label_focus_areas: { fr: "Zones à couvrir", en: "Areas to cover", es: "Áreas a cubrir" },
   focus_general: { fr: "Vue d'ensemble", en: "Overview", es: "Visión general" },
@@ -843,6 +844,38 @@ const UI_TEXT = {
   error_prefix: { fr: "Erreur", en: "Error", es: "Error" },
   compat_ratings_title: { fr: "Notes de compatibilité", en: "Compatibility ratings", es: "Puntuaciones de compatibilidad" },
   timing_ratings_title: { fr: "Notes du pronostic", en: "Forecast ratings", es: "Puntuaciones del pronóstico" },
+
+  lifespan_warning: {
+    fr: "Technique interprétative traditionnelle (couche médiévale, hellénistique/arabe), pas une prédiction. Un chiffre d'années n'est ni un diagnostic ni un fait garanti — le reste de l'app exclut délibérément ce type de résultat pour toute lecture destinée à un tiers ; cet onglet n'existe que pour votre propre usage de recherche (comparer la technique à des cas connus, l'expérimenter sur votre propre thème).",
+    en: "Traditional interpretive technique (medieval, Hellenistic/Arabic layer), not a prediction. A number of years is neither a diagnosis nor a guaranteed fact — the rest of the app deliberately excludes this kind of result for any reading meant for someone else; this tab exists only for your own research use (comparing the technique to known cases, trying it on your own chart).",
+    es: "Técnica interpretativa tradicional (capa medieval, helenística/árabe), no una predicción. Una cifra de años no es un diagnóstico ni un hecho garantizado — el resto de la app excluye deliberadamente este tipo de resultado en cualquier lectura destinada a otra persona; esta pestaña existe solo para tu propio uso de investigación (comparar la técnica con casos conocidos, probarla en tu propia carta).",
+  },
+  lifespan_section_intro: {
+    fr: "Technique du Hyleg (significateur de vitalité) et de l'Alcocoden (planète qui donne le nombre d'années) : hiérarchie luminaire de secte → Part de Fortune → sizygie prénatale → Ascendant pour le Hyleg, puis la planète classique la mieux dignifiée à son degré exact parmi celles en aspect ptolémaïque. Calcul entièrement déterministe, non stocké avec le thème (recalculé à chaque clic).",
+    en: "The Hyleg (vitality significator) and Alcocoden (the planet giving the number of years) technique: sect luminary → Part of Fortune → prenatal syzygy → Ascendant hierarchy for the Hyleg, then the classical planet best dignified at its exact degree among those in Ptolemaic aspect. Fully deterministic calculation, not stored with the chart (recomputed on every click).",
+    es: "Técnica del Hyleg (significador de vitalidad) y el Alcocoden (el planeta que da el número de años): jerarquía luminar de secta → Parte de la Fortuna → sicigia prenatal → Ascendente para el Hyleg, y luego el planeta clásico mejor dignificado en su grado exacto entre los que están en aspecto ptolemaico. Cálculo totalmente determinista, no almacenado con la carta (se recalcula en cada clic).",
+  },
+  btn_calculate_lifespan: { fr: "Calculer l'estimation", en: "Calculate the estimate", es: "Calcular la estimación" },
+  status_computing_lifespan: { fr: "Calcul en cours...", en: "Computing...", es: "Calculando..." },
+  error_loading_lifespan: { fr: "Impossible de calculer l'estimation :", en: "Could not compute the estimate:", es: "No se pudo calcular la estimación:" },
+  lifespan_hyleg_title: { fr: "Hyleg (significateur de vitalité)", en: "Hyleg (vitality significator)", es: "Hyleg (significador de vitalidad)" },
+  lifespan_alcocoden_title: { fr: "Alcocoden", en: "Alcocoden", es: "Alcocoden" },
+  lifespan_unavailable_note: {
+    fr: "Aucune planète classique n'est en aspect ptolémaïque avec le degré exact du Hyleg : résultat valide de la technique (documenté par la source), pas une erreur — elle ne donne simplement pas de chiffre pour ce thème.",
+    en: "No classical planet is in Ptolemaic aspect with the Hyleg's exact degree: a valid result of the technique (documented by the source), not an error — it simply gives no figure for this chart.",
+    es: "Ningún planeta clásico está en aspecto ptolemaico con el grado exacto del Hyleg: resultado válido de la técnica (documentado por la fuente), no un error — simplemente no da una cifra para esta carta.",
+  },
+  th_dignity_score: { fr: "Dignité au degré du Hyleg", en: "Dignity at Hyleg's degree", es: "Dignidad en el grado del Hyleg" },
+  lifespan_year_level_title: { fr: "Niveau d'années", en: "Year level", es: "Nivel de años" },
+  lifespan_year_level_minor: { fr: "mineures", en: "minor", es: "menores" },
+  lifespan_year_level_medium: { fr: "moyennes", en: "medium", es: "medias" },
+  lifespan_year_level_major: { fr: "majeures", en: "major", es: "mayores" },
+  lifespan_base_years_label: { fr: "Années de base", en: "Base years", es: "Años base" },
+  lifespan_adjustments_title: { fr: "Ajustements (aspects vers l'Alcocoden)", en: "Adjustments (aspects to the Alcocoden)", es: "Ajustes (aspectos hacia el Alcocoden)" },
+  lifespan_no_adjustment: { fr: "Aucun ajustement (aucune planète bénéfique/maléfique en aspect ptolémaïque).", en: "No adjustment (no benefic/malefic planet in Ptolemaic aspect).", es: "Sin ajuste (ningún planeta benéfico/maléfico en aspecto ptolemaico)." },
+  lifespan_estimated_years_label: { fr: "Estimation", en: "Estimate", es: "Estimación" },
+  lifespan_years_suffix: { fr: "ans", en: "years", es: "años" },
+  lifespan_prenatal_syzygy: { fr: "Sizygie prénatale", en: "Prenatal syzygy", es: "Sicigia prenatal" },
 
   astro_section_title: { fr: "4. Astrocartographie", en: "4. Astrocartography", es: "4. Astrocartografía" },
   astro_section_intro: {

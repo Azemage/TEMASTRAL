@@ -167,6 +167,26 @@ def test_timing_forecast_endpoint_returns_events(client):
     assert body["events"] == sorted(body["events"], key=lambda e: e["peak_date"])
 
 
+def test_lifespan_estimate_endpoint_returns_hyleg_and_warning(client):
+    create_res = client.post("/api/charts", json=VALID_CHART_PAYLOAD)
+    chart_id = create_res.json()["id"]
+
+    res = client.get(f"/api/charts/{chart_id}/lifespan-estimate")
+    assert res.status_code == 200
+    body = res.json()
+    assert "warning" in body and body["warning"]
+    assert "available" in body
+    assert body["hyleg"]["house"] in {1, 7, 9, 10, 11}
+    if body["available"]:
+        assert body["year_level"] in {"minor", "medium", "major"}
+        assert body["estimated_years"] > 0
+
+
+def test_lifespan_estimate_endpoint_404_for_unknown_chart(client):
+    res = client.get("/api/charts/does-not-exist/lifespan-estimate")
+    assert res.status_code == 404
+
+
 def test_zodiacal_releasing_endpoint_returns_current_phases_for_all_lots(client):
     create_res = client.post("/api/charts", json=VALID_CHART_PAYLOAD)
     chart_id = create_res.json()["id"]

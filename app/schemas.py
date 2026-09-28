@@ -351,6 +351,42 @@ class TransitForecastResponse(BaseModel):
     events: list[UpcomingTransitEvent]
 
 
+class LifespanHyleg(BaseModel):
+    name: str
+    longitude: float
+    sign: str
+    degree: float
+    house: int
+
+
+class LifespanAlcocoden(BaseModel):
+    name: str
+    dignity_score_at_hyleg: int
+
+
+class LifespanAdjustment(BaseModel):
+    planet: str
+    aspect_type: str
+    delta_years: float
+
+
+class LifespanEstimateResponse(BaseModel):
+    """Technique hellénistique/médiévale du Hyleg et de l'Alcocoden — voir
+    app/core/lifespan_estimate.py. `warning` doit toujours être affiché avec le résultat ;
+    `available=False` est un résultat valide de la technique (aucune planète en aspect
+    ptolémaïque avec le Hyleg), pas une erreur."""
+
+    available: bool
+    hyleg: LifespanHyleg
+    alcocoden: LifespanAlcocoden | None = None
+    year_level: str | None = None
+    base_years: float | None = None
+    adjustments: list[LifespanAdjustment] = []
+    estimated_years: float | None = None
+    note: str | None = None
+    warning: str
+
+
 class ZodiacalReleasingPeriod(BaseModel):
     level: int
     sign: str

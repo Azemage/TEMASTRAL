@@ -700,6 +700,8 @@ function renderChart(chart) {
   zrLoadedForChartId = null; // nouveau thème : re-fetcher les phases au prochain accès
   compatChartsLoadedForChartId = null; // nouveau thème : re-fetcher la liste des cartes au prochain accès
   compatChartBId = null;
+  document.getElementById("lifespan-data-panel").innerHTML = ""; // nouveau thème : ne pas garder l'estimation précédente affichée
+  document.getElementById("lifespan-error").textContent = "";
 }
 
 // Signaux notables du degré exact d'une planète (voir app/core/degrees.py) : affichés en
@@ -1197,6 +1199,96 @@ async function loadTimingDataPanel(date) {
     container.innerHTML = `<p class="error">${t("error_loading_timing")} ${err.message}</p>`;
   }
 }
+
+// ---------------------------------------------------------------------
+// Durée de vie estimée (Hyleg/Alcocoden) — onglet "Durée de vie (recherche)". Volontairement
+// pas de bouton de lecture IA (calcul déterministe uniquement, jamais narré) : voir
+// app/core/lifespan_estimate.py pour le raisonnement complet.
+// ---------------------------------------------------------------------
+function lifespanPointLabel(name) {
+  if (name === "Ascendant") return planetLabel("ascendant");
+  if (name === "prenatal_syzygy") return t("lifespan_prenatal_syzygy");
+  if (name === "Fortune") return lotLabel("Fortune");
+  return planetLabel(name);
+}
+
+function renderLifespanDataPanel(result) {
+  const hyleg = result.hyleg;
+  const hylegHtml = `
+    <h3>${t("lifespan_hyleg_title")}</h3>
+    <p>${lifespanPointLabel(hyleg.name)} — ${signLabel(hyleg.sign)} ${hyleg.degree}° (${t("house_prefix")} ${hyleg.house})</p>
+  `;
+
+  if (!result.available) {
+    document.getElementById("lifespan-data-panel").innerHTML = `
+      ${hylegHtml}
+      <p>${result.note || t("lifespan_unavailable_note")}</p>
+      <p class="warning-banner">${result.warning}</p>
+    `;
+    return;
+  }
+
+  const alcocoden = result.alcocoden;
+  const adjustmentRows = result.adjustments.length
+    ? result.adjustments
+        .map(
+          (adj) => `
+      <tr>
+        <td>${planetLabel(adj.planet)}</td>
+        <td>${aspectTypeLabel(adj.aspect_type)}</td>
+        <td>${adj.delta_years > 0 ? "+" : ""}${adj.delta_years}</td>
+      </tr>`
+        )
+        .join("")
+    : `<tr><td colspan="3">${t("lifespan_no_adjustment")}</td></tr>`;
+
+  document.getElementById("lifespan-data-panel").innerHTML = `
+    ${hylegHtml}
+
+    <h3>${t("lifespan_alcocoden_title")}</h3>
+    <p>${planetLabel(alcocoden.name)} — ${t("th_dignity_score")} : ${alcocoden.dignity_score_at_hyleg}/15</p>
+
+    <h3>${t("lifespan_year_level_title")}</h3>
+    <p>${t(`lifespan_year_level_${result.year_level}`)} — ${t("lifespan_base_years_label")} : ${result.base_years} ${t("lifespan_years_suffix")}</p>
+
+    <h3>${t("lifespan_adjustments_title")}</h3>
+    <table>
+      <thead><tr><th>${t("th_planet")}</th><th>${t("th_aspect")}</th><th>Δ</th></tr></thead>
+      <tbody>${adjustmentRows}</tbody>
+    </table>
+
+    <h3>${t("lifespan_estimated_years_label")}</h3>
+    <p><strong>${result.estimated_years} ${t("lifespan_years_suffix")}</strong></p>
+
+    <p class="warning-banner">${result.warning}</p>
+  `;
+}
+
+async function loadLifespanEstimate() {
+  if (!currentChart) return;
+  const btn = document.getElementById("load-lifespan-btn");
+  const errorEl = document.getElementById("lifespan-error");
+  const container = document.getElementById("lifespan-data-panel");
+  errorEl.textContent = "";
+  btn.disabled = true;
+  container.innerHTML = `<p>${t("status_computing_lifespan")}</p>`;
+  try {
+    const res = await fetch(`/api/charts/${currentChart.id}/lifespan-estimate`);
+    if (!res.ok) {
+      const detail = await res.json().catch(() => ({}));
+      throw new Error(detail.detail || `${t("error_prefix")} ${res.status}`);
+    }
+    const result = await res.json();
+    renderLifespanDataPanel(result);
+  } catch (err) {
+    container.innerHTML = "";
+    errorEl.textContent = `${t("error_loading_lifespan")} ${err.message}`;
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+document.getElementById("load-lifespan-btn").addEventListener("click", loadLifespanEstimate);
 
 // ---------------------------------------------------------------------
 // Libération zodiacale (phases L1/L2) — affichée dans "Lecture interprétée > Lots"

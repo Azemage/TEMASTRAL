@@ -12,6 +12,7 @@ from app.api import (
     charts,
     day_sky,
     geocode,
+    lifespan_estimate,
     readings,
     reference,
     synastry,
@@ -59,6 +60,7 @@ app.include_router(synastry.router)
 app.include_router(astrocartography.router)
 app.include_router(witchy_calendar.router)
 app.include_router(weekly_weather.router)
+app.include_router(lifespan_estimate.router)
 
 app.mount("/static", StaticFiles(directory=BASE_DIR / "static"), name="static")
 templates = Jinja2Templates(directory=BASE_DIR / "templates")
