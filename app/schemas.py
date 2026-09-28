@@ -249,6 +249,28 @@ class DraconicChart(BaseModel):
     modality_balance: ModalityBalance
 
 
+class DegreeAnalysis(BaseModel):
+    """Analyse déterministe du degré (0-29) occupé par un point dans son signe — voir
+    app/core/degrees.py. `degree_theme_*` (théorie des degrés cyclique) est un système
+    documenté mais d'origine populaire/XXe siècle, à ne jamais présenter comme une règle
+    classique établie — contrairement à `is_exact_exaltation` (héritage babylonien/
+    hellénistique/Ptolémée) et `is_critical_degree` (systématisé au XXe siècle mais très
+    largement cité)."""
+
+    planet: str
+    sign: str
+    sign_fr: str
+    house: int
+    degree_value: int
+    is_pure_entry: bool
+    is_anaretic: bool
+    is_critical_degree: bool
+    degree_theme_sign: str | None = None
+    degree_theme_sign_fr: str | None = None
+    degree_theme_label: str | None = None
+    is_exact_exaltation: bool
+
+
 class NatalChartComputed(BaseModel):
     schema_version: int = 1
     time_known: bool = True
@@ -265,6 +287,7 @@ class NatalChartComputed(BaseModel):
     lots: list[Lot] = Field(default_factory=list)
     derived_houses: list[DerivedHouseSet] = Field(default_factory=list)
     draconic: DraconicChart | None = None
+    degree_analysis: list[DegreeAnalysis] = Field(default_factory=list)
     unavailable_points: list[str] = Field(default_factory=list)
 
 

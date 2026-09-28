@@ -748,6 +748,26 @@ const UI_TEXT = {
 
   th_body: { fr: "Corps", en: "Body", es: "Cuerpo" },
   th_degree: { fr: "Degré", en: "Degree", es: "Grado" },
+  th_degree_notes: { fr: "Degré notable", en: "Notable degree", es: "Grado notable" },
+  degree_exaltation_badge: { fr: "Exaltation exacte", en: "Exact exaltation", es: "Exaltación exacta" },
+  degree_exaltation_tooltip: {
+    fr: "Cette planète est exactement sur son degré d'exaltation (héritage hellénistique/Ptolémée) — sa forme la plus élevée et harmonieuse.",
+    en: "This planet sits exactly on its exaltation degree (Hellenistic/Ptolemaic heritage) — its most elevated, harmonious form.",
+    es: "Este planeta está exactamente en su grado de exaltación (herencia helenística/ptolemaica) — su forma más elevada y armoniosa.",
+  },
+  degree_critical_badge: { fr: "Degré critique", en: "Critical degree", es: "Grado crítico" },
+  degree_critical_tooltip: {
+    fr: "Degré critique (motif répété selon la modalité du signe, XXe siècle) : un point de tension ou d'intensité accrue.",
+    en: "Critical degree (a pattern repeated by the sign's modality, 20th century): a point of heightened tension or intensity.",
+    es: "Grado crítico (patrón repetido según la modalidad del signo, siglo XX): un punto de tensión o intensidad acrecentada.",
+  },
+  degree_anaretic_badge: { fr: "Degré anarétique (29°)", en: "Anaretic degree (29°)", es: "Grado anarético (29°)" },
+  degree_anaretic_tooltip: {
+    fr: "29° : urgence, maturité forcée — le thème du signe touche à sa fin.",
+    en: "29°: urgency, forced maturity — the sign's theme is reaching its end.",
+    es: "29°: urgencia, madurez forzada — el tema del signo llega a su fin.",
+  },
+  degree_theme_badge: { fr: "Thème de degré : {sign}", en: "Degree theme: {sign}", es: "Tema de grado: {sign}" },
   th_direction: { fr: "Direction", en: "Direction", es: "Dirección" },
   th_lot: { fr: "Lot", en: "Lot", es: "Suerte" },
   th_natal_aspects: { fr: "Aspects natals", en: "Natal aspects", es: "Aspectos natales" },

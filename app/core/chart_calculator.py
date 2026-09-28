@@ -5,6 +5,7 @@ from __future__ import annotations
 from app.core import ephemeris
 from app.core.aspects import BodyForAspect, compute_aspects
 from app.core.derived_houses import compute_derived_houses
+from app.core.degrees import analyze_degree
 from app.core.dispositors import CLASSIC_PLANETS, compute_dispositors
 from app.core.draconic import compute_draconic_chart
 from app.core.lots import compute_lots
@@ -79,13 +80,15 @@ def calculate_natal_chart(
 
     planets = []
     planet_signs: dict[str, str] = {}
+    degree_analysis = []
     aspect_bodies: list[BodyForAspect] = []
     for name, raw in bodies_result.bodies.items():
         house = find_house(raw.longitude, cusps)
         planets.append(_position_dict(name, raw.longitude, house, raw.retrograde))
         aspect_bodies.append(BodyForAspect(name=name, longitude=raw.longitude, speed_longitude=raw.speed_longitude))
+        sign, degree = sign_and_degree(raw.longitude)
+        degree_analysis.append({**analyze_degree(name, sign, degree), "house": house})
         if name in CLASSIC_PLANETS:
-            sign, _ = sign_and_degree(raw.longitude)
             planet_signs[name] = sign
 
     ascendant = houses_result.ascendant
@@ -177,5 +180,6 @@ def calculate_natal_chart(
         "lots": lots,
         "derived_houses": derived_houses,
         "draconic": draconic,
+        "degree_analysis": degree_analysis,
         "unavailable_points": bodies_result.unavailable_points,
     }

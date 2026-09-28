@@ -1295,9 +1295,9 @@ jugeais B dans l'absolu. N'invente aucun fait biographique sur B."""
 
 
 def _basic_chart_data(chart_data: dict) -> dict:
-    """Sous-ensemble du thème calculé pour les lectures basiques : pas de lots ni de
-    maisons dérivées, qui ont leurs propres lectures dédiées."""
-    excluded = {"lots", "derived_houses"}
+    """Sous-ensemble du thème calculé pour les lectures basiques : pas de lots, maisons
+    dérivées ou thème draconique, qui ont leurs propres lectures dédiées."""
+    excluded = {"lots", "derived_houses", "draconic"}
     return {key: value for key, value in chart_data.items() if key not in excluded}
 
 
@@ -1349,6 +1349,20 @@ parfait") à une phrase générique ("vous avez un fort besoin de perfection")."
 les données. Si son `level` vaut 'forte' ou 'notable', la majorité des chaînes de \
 dispositeurs du thème se referment sur une même planète (`dominant_dispositor`) : \
 signale explicitement ce pattern comme une planète clé de voûte du thème.
+8. `degree_analysis` affine chaque planète avec le DEGRÉ exact qu'elle occupe dans son signe \
+(0-29), en plus du signe lui-même : mentionne-le UNIQUEMENT quand un champ notable est \
+présent (`is_exact_exaltation`, `is_critical_degree`, `is_anaretic`, ou `degree_theme_label` \
+non nul) — n'énumère jamais le degré de chaque planète par défaut, ce serait mécanique et \
+diluerait la lecture. Chaque signal a son propre statut, à ne jamais fusionner ni présenter \
+avec la même autorité : `is_exact_exaltation` est un héritage classique (hellénistique/\
+Ptolémée) — la planète exprime sa forme la plus élevée et harmonieuse ; `is_critical_degree` \
+est un motif largement cité (XXe siècle) — un point de tension ou d'intensité accrue selon la \
+modalité du signe ; `is_anaretic` (degré 29) signale une urgence ou une maturité forcée sur ce \
+thème, le cycle du signe touchant à sa fin ; `degree_theme_sign`/`degree_theme_label` (théorie \
+des degrés) est un système POPULAIRE plus récent (pas une règle classique établie) — \
+présente-le avec plus de réserve que les trois précédents, comme une nuance possible plutôt \
+qu'un fait astrologique assuré. Une planète peut cumuler plusieurs de ces signaux à la fois : \
+dans ce cas, mentionne-les ensemble mais garde leurs statuts distincts dans la formulation.
 
 ZONES À COUVRIR DANS CETTE LECTURE :
 {focus_descriptions}

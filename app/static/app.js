@@ -702,6 +702,31 @@ function renderChart(chart) {
   compatChartBId = null;
 }
 
+// Signaux notables du degré exact d'une planète (voir app/core/degrees.py) : affichés en
+// badges directement dans le tableau des planètes, gratuit (pas de lecture LLM nécessaire
+// pour les voir) — cohérent avec le principe de l'app de toujours montrer le calcul
+// déterministe avant/à côté de l'interprétation.
+function degreeBadgesHtml(planetName, data) {
+  const entry = (data.degree_analysis || []).find((d) => d.planet === planetName);
+  if (!entry) return "—";
+  const badges = [];
+  if (entry.is_exact_exaltation) {
+    badges.push(`<span class="degree-badge degree-badge-exaltation" title="${escapeHtml(t("degree_exaltation_tooltip"))}">${t("degree_exaltation_badge")}</span>`);
+  }
+  if (entry.is_critical_degree) {
+    badges.push(`<span class="degree-badge degree-badge-critical" title="${escapeHtml(t("degree_critical_tooltip"))}">${t("degree_critical_badge")}</span>`);
+  }
+  if (entry.is_anaretic) {
+    badges.push(`<span class="degree-badge degree-badge-anaretic" title="${escapeHtml(t("degree_anaretic_tooltip"))}">${t("degree_anaretic_badge")}</span>`);
+  }
+  if (entry.degree_theme_label) {
+    badges.push(
+      `<span class="degree-badge degree-badge-theme" title="${escapeHtml(entry.degree_theme_label)}">${escapeHtml(tf("degree_theme_badge", { sign: signLabel(entry.degree_theme_sign) }))}</span>`
+    );
+  }
+  return badges.length ? badges.join(" ") : "—";
+}
+
 function renderPlanetsTab(data) {
   const rows = data.planets
     .map(
@@ -712,6 +737,7 @@ function renderPlanetsTab(data) {
         <td>${p.degree}°</td>
         <td>${t("house_prefix")} ${p.house ?? "—"}</td>
         <td>${p.retrograde ? `<span class="retro">${t("retrograde")}</span>` : "—"}</td>
+        <td>${degreeBadgesHtml(p.name, data)}</td>
       </tr>`
     )
     .join("");
@@ -719,13 +745,13 @@ function renderPlanetsTab(data) {
   const angleRows = ["ascendant", "midheaven", "descendant", "imum_coeli"]
     .map((key) => {
       const a = data.angles[key];
-      return `<tr><td>${planetLabel(key)}</td><td>${signLabel(a.sign)}</td><td>${a.degree}°</td><td>—</td><td>—</td></tr>`;
+      return `<tr><td>${planetLabel(key)}</td><td>${signLabel(a.sign)}</td><td>${a.degree}°</td><td>—</td><td>—</td><td>—</td></tr>`;
     })
     .join("");
 
   document.getElementById("tab-planets").innerHTML = `
     <table>
-      <thead><tr><th>${t("th_body")}</th><th>${t("th_sign")}</th><th>${t("th_degree")}</th><th>${t("house_prefix")}</th><th>${t("th_movement")}</th></tr></thead>
+      <thead><tr><th>${t("th_body")}</th><th>${t("th_sign")}</th><th>${t("th_degree")}</th><th>${t("house_prefix")}</th><th>${t("th_movement")}</th><th>${t("th_degree_notes")}</th></tr></thead>
       <tbody>${rows}${angleRows}</tbody>
     </table>
   `;

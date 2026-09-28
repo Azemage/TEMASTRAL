@@ -104,6 +104,13 @@ def witchy_calendar_events() -> dict:
     return _load("witchy_calendar_events.json")
 
 
+def degree_theory() -> dict:
+    """Systèmes de signification par degré (exaltation, degrés critiques, degré anarétique,
+    théorie des degrés cyclique) — voir app/core/degrees.py pour le calcul déterministe et
+    doc source degree_theory.json pour le statut épistémique de chaque couche."""
+    return _load("degree_theory.json")
+
+
 def world_cities() -> list[dict]:
     """Grandes villes mondiales (Natural Earth 110m populated places, domaine public) —
     capitales et métropoles majeures, utilisées comme bassin de candidats pour la suggestion
