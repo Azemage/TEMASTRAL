@@ -981,6 +981,7 @@ function renderChart(chart) {
   renderAspectsTab(data);
   renderBalanceTab(data);
   renderDispositorsTab(data);
+  renderHouseModalityTab(data);
   renderLotsDataPanel(data);
   renderDraconicTab(data);
   renderDerivedHousesDataPanel(data);
@@ -1028,7 +1029,7 @@ function renderPlanetsTab(data) {
         <td>${planetLabel(p.name)}</td>
         <td>${signLabel(p.sign)}</td>
         <td>${p.degree}°</td>
-        <td>${t("house_prefix")} ${p.house ?? "—"}</td>
+        <td>${t("house_prefix")} ${p.house ?? "—"} ${modalityBadgeHtml(p.name, data)}</td>
         <td>${p.retrograde ? `<span class="retro">${t("retrograde")}</span>` : "—"}</td>
         <td>${degreeBadgesHtml(p.name, data)}</td>
       </tr>`
@@ -1173,6 +1174,72 @@ function renderDispositorsTab(data) {
   document.getElementById("tab-dispositors").innerHTML =
     renderDispositorsSection(data.dispositors_traditional, t("traditional_system")) +
     renderDispositorsSection(data.dispositors_modern, t("modern_system"));
+}
+
+// ---------------------------------------------------------------------
+// Dynamique angulaire/succédente/cadente des maisons (Lilly) — onglet "Dynamique" et
+// badges dans l'onglet Planètes. Voir app/core/house_modality.py.
+// ---------------------------------------------------------------------
+function modalityBadgeHtml(planetName, data) {
+  const entry = (data.house_modality_analysis?.per_planet || []).find((e) => e.planet === planetName);
+  if (!entry) return "";
+  return `<span class="modality-badge modality-badge-${entry.modality}" title="${escapeHtml(houseModalityLabel(entry.modality))}">${houseModalityShortLabel(entry.modality)}</span>`;
+}
+
+function renderQuadrantTable(groups) {
+  const rows = groups
+    .map((g) => `<tr><td>${escapeHtml(quadrantThemeLabel(g.key) || g.theme)}</td><td>${g.houses.map((h) => `${t("house_prefix")} ${h}`).join(", ")}</td></tr>`)
+    .join("");
+  return `<table><thead><tr><th>${t("th_quadrant")}</th><th>${t("th_houses")}</th></tr></thead><tbody>${rows}</tbody></table>`;
+}
+
+function renderHouseModalityTab(data) {
+  const analysis = data.house_modality_analysis;
+  if (!analysis) {
+    document.getElementById("tab-modality").innerHTML = "";
+    return;
+  }
+
+  const countsRows = MODALITY_ORDER.map(
+    (m) => `<tr><td>${houseModalityLabel(m)}</td><td>${analysis.counts_by_modality[m] ?? 0}</td><td>${analysis.weighted_score_by_modality[m] ?? 0}</td></tr>`
+  ).join("");
+
+  const perPlanetRows = analysis.per_planet
+    .map((e) => `<tr><td>${planetLabel(e.planet)}</td><td>${t("house_prefix")} ${e.house}</td><td>${houseModalityLabel(e.modality)}</td><td>${e.lilly_points}</td></tr>`)
+    .join("");
+
+  const dominantNote =
+    analysis.dominant_modality_simple !== analysis.dominant_modality_weighted
+      ? `<p class="reading-section-intro">${tf("house_modality_dominant_mismatch", { simple: houseModalityLabel(analysis.dominant_modality_simple), weighted: houseModalityLabel(analysis.dominant_modality_weighted) })}</p>`
+      : "";
+
+  document.getElementById("tab-modality").innerHTML = `
+    <p class="reading-section-intro" data-i18n="house_modality_section_intro">${t("house_modality_section_intro")}</p>
+    <h3>${t("house_modality_dominant_title")}</h3>
+    <p><strong>${houseModalityLabel(analysis.dominant_modality_weighted)}</strong> — ${houseModalityReading(analysis.dominant_modality_weighted)}</p>
+    ${dominantNote}
+
+    <table>
+      <thead><tr><th>${t("th_modality")}</th><th>${t("th_planet_count")}</th><th>${t("th_lilly_score")}</th></tr></thead>
+      <tbody>${countsRows}</tbody>
+    </table>
+
+    <details>
+      <summary>${t("house_modality_per_planet_detail")}</summary>
+      <table>
+        <thead><tr><th>${t("th_planet_generic")}</th><th>${t("house_prefix")}</th><th>${t("th_modality")}</th><th>${t("th_lilly_score")}</th></tr></thead>
+        <tbody>${perPlanetRows}</tbody>
+      </table>
+    </details>
+
+    <hr class="reading-subsection-divider" />
+    <h3>${t("house_quadrants_standard_title")}</h3>
+    ${renderQuadrantTable(data.house_quadrants_standard || [])}
+
+    <h3>${t("house_quadrants_alt_title")}</h3>
+    <p class="warning-banner">${t("house_quadrants_alt_warning")}</p>
+    ${renderQuadrantTable(data.house_quadrants_angle_centered || [])}
+  `;
 }
 
 // ---------------------------------------------------------------------

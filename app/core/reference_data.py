@@ -119,6 +119,14 @@ def spiritual_gifts() -> dict:
     return _load("spiritual_gifts.json")
 
 
+def house_modality() -> dict:
+    """Classification angulaire/succédente/cadente des maisons, points de dignité
+    accidentelle de Lilly et découpages par quadrant — voir app/core/house_modality.py pour
+    le calcul déterministe (modalité dominante d'une carte, comptage simple vs pondéré) et le
+    statut épistémique de chaque couche dans le fichier de référence lui-même."""
+    return _load("house_modality.json")
+
+
 def ascendant_rectification_traits() -> dict:
     """Questionnaire de traits physiques/tempérament par signe ascendant (première étape du
     questionnaire de rectification) — voir app/core/rectification.py pour le scoring et le

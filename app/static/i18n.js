@@ -159,6 +159,68 @@ function astroLineTypeLabel(lineType) {
   return pick(ASTRO_LINE_TYPE_NAMES[lineType]) || lineType;
 }
 
+// Dynamique angulaire/succédente/cadente des maisons (William Lilly) — voir
+// app/core/house_modality.py. Distinct de la Modalité cardinale/fixe/mutable des signes
+// (onglet "Éléments") : noms volontairement différents pour ne pas les confondre.
+const MODALITY_ORDER = ["angular", "succedent", "cadent"];
+
+const HOUSE_MODALITY_LABELS = {
+  angular: { fr: "Angulaire (Agir)", en: "Angular (Act)", es: "Angular (Actuar)" },
+  succedent: { fr: "Succédente (Maintenir)", en: "Succedent (Maintain)", es: "Sucedente (Mantener)" },
+  cadent: { fr: "Cadente (Préparer)", en: "Cadent (Prepare)", es: "Cadente (Preparar)" },
+};
+
+const HOUSE_MODALITY_SHORT_LABELS = {
+  angular: { fr: "Ang.", en: "Ang.", es: "Ang." },
+  succedent: { fr: "Succ.", en: "Succ.", es: "Suc." },
+  cadent: { fr: "Cad.", en: "Cad.", es: "Cad." },
+};
+
+const HOUSE_MODALITY_READINGS = {
+  angular: {
+    fr: "tend à agir en premier — initie, se rend visible, préfère l'impact immédiat à la planification prolongée.",
+    en: "tends to act first — initiates, makes itself visible, prefers immediate impact over prolonged planning.",
+    es: "tiende a actuar primero — inicia, se hace visible, prefiere el impacto inmediato a la planificación prolongada.",
+  },
+  succedent: {
+    fr: "tend à maintenir — construit, soutient, consolide des ressources et des relations déjà initiées.",
+    en: "tends to maintain — builds, sustains, consolidates resources and relationships already begun.",
+    es: "tiende a mantener — construye, sostiene, consolida recursos y relaciones ya iniciadas.",
+  },
+  cadent: {
+    fr: "tend à préparer — traite, apprend, ajuste, a besoin d'un temps de digestion mentale avant d'agir.",
+    en: "tends to prepare — processes, learns, adjusts, needs mental digestion time before acting.",
+    es: "tiende a preparar — procesa, aprende, ajusta, necesita tiempo de digestión mental antes de actuar.",
+  },
+};
+
+const QUADRANT_THEME_LABELS = {
+  le_moi: { fr: "Le moi (maisons 1-2-3)", en: "The self (houses 1-2-3)", es: "El yo (casas 1-2-3)" },
+  le_foyer: { fr: "Le foyer (maisons 4-5-6)", en: "The home (houses 4-5-6)", es: "El hogar (casas 4-5-6)" },
+  l_autre: { fr: "L'autre (maisons 7-8-9)", en: "The other (houses 7-8-9)", es: "El otro (casas 7-8-9)" },
+  le_collectif: { fr: "Le collectif (maisons 10-11-12)", en: "The collective (houses 10-11-12)", es: "Lo colectivo (casas 10-11-12)" },
+  identite: { fr: "Identité (maisons 12-1-2)", en: "Identity (houses 12-1-2)", es: "Identidad (casas 12-1-2)" },
+  racines: { fr: "Racines (maisons 3-4-5)", en: "Roots (houses 3-4-5)", es: "Raíces (casas 3-4-5)" },
+  relations: { fr: "Relations (maisons 6-7-8)", en: "Relationships (houses 6-7-8)", es: "Relaciones (casas 6-7-8)" },
+  vie_publique: { fr: "Vie publique (maisons 9-10-11)", en: "Public life (houses 9-10-11)", es: "Vida pública (casas 9-10-11)" },
+};
+
+function houseModalityLabel(code) {
+  return pick(HOUSE_MODALITY_LABELS[code]) || code;
+}
+
+function houseModalityShortLabel(code) {
+  return pick(HOUSE_MODALITY_SHORT_LABELS[code]) || code;
+}
+
+function houseModalityReading(code) {
+  return pick(HOUSE_MODALITY_READINGS[code]) || "";
+}
+
+function quadrantThemeLabel(key) {
+  return pick(QUADRANT_THEME_LABELS[key]) || "";
+}
+
 const HOUSE_KEYWORDS = {
   1: { fr: "identité", en: "identity", es: "identidad" },
   2: { fr: "ressources", en: "resources", es: "recursos" },
@@ -636,6 +698,31 @@ const UI_TEXT = {
   tab_balance: { fr: "Éléments", en: "Elements", es: "Elementos" },
   modalities_title: { fr: "Modalités", en: "Modalities", es: "Modalidades" },
   tab_dispositors: { fr: "Dispositeurs", en: "Rulerships", es: "Regencias" },
+  tab_house_modality: { fr: "Dynamique", en: "Dynamics", es: "Dinámica" },
+  house_modality_section_intro: {
+    fr: "Classification traditionnelle des maisons en Angulaires (agir), Succédentes (maintenir) et Cadentes (préparer) — voir William Lilly, Christian Astrology (1647). Distincte de la Modalité cardinale/fixe/mutable des signes (onglet Éléments).",
+    en: "Traditional classification of houses into Angular (act), Succedent (maintain) and Cadent (prepare) — see William Lilly, Christian Astrology (1647). Distinct from the cardinal/fixed/mutable Modality of signs (Elements tab).",
+    es: "Clasificación tradicional de las casas en Angulares (actuar), Sucedentes (mantener) y Cadentes (preparar) — ver William Lilly, Christian Astrology (1647). Distinta de la Modalidad cardinal/fija/mutable de los signos (pestaña Elementos).",
+  },
+  house_modality_dominant_title: { fr: "Modalité dominante", en: "Dominant modality", es: "Modalidad dominante" },
+  house_modality_dominant_mismatch: {
+    fr: "Le simple décompte de planètes pointe plutôt vers {simple}, tandis que le score pondéré (dignité accidentelle de Lilly) pointe vers {weighted} — les deux sont présentés ensemble plutôt que de forcer un seul résultat.",
+    en: "The simple planet count points instead to {simple}, while the weighted score (Lilly's accidental dignity) points to {weighted} — both are shown together rather than forcing a single result.",
+    es: "El simple recuento de planetas apunta más bien a {simple}, mientras que la puntuación ponderada (dignidad accidental de Lilly) apunta a {weighted} — ambos se muestran juntos en vez de forzar un único resultado.",
+  },
+  house_modality_per_planet_detail: { fr: "Détail par planète", en: "Detail by planet", es: "Detalle por planeta" },
+  th_modality: { fr: "Modalité", en: "Modality", es: "Modalidad" },
+  th_planet_count: { fr: "Nb. planètes", en: "Planet count", es: "N.º planetas" },
+  th_lilly_score: { fr: "Score Lilly", en: "Lilly score", es: "Puntuación Lilly" },
+  th_quadrant: { fr: "Bloc", en: "Block", es: "Bloque" },
+  th_houses: { fr: "Maisons", en: "Houses", es: "Casas" },
+  house_quadrants_standard_title: { fr: "Découpage par quadrant (standard)", en: "Quadrant grouping (standard)", es: "Agrupación por cuadrante (estándar)" },
+  house_quadrants_alt_title: { fr: "Découpage alternatif (angle au centre)", en: "Alternative grouping (angle-centered)", es: "Agrupación alternativa (ángulo al centro)" },
+  house_quadrants_alt_warning: {
+    fr: "Variante non vérifiée dans une source classique (probablement un enseignement moderne de vulgarisation) — à considérer comme une piste, pas comme équivalente au découpage standard ci-dessus.",
+    en: "Variant not verified in a classical source (likely modern popularization teaching) — treat as a lead, not as equivalent to the standard grouping above.",
+    es: "Variante no verificada en una fuente clásica (probablemente una enseñanza moderna de divulgación) — considérala una pista, no equivalente a la agrupación estándar de arriba.",
+  },
 
   section3_title: { fr: "3. Lecture interprétée", en: "3. Interpreted reading", es: "3. Lectura interpretada" },
   reading_section_intro: {

@@ -159,6 +159,16 @@ def test_chart_includes_lots_and_derived_houses(client):
     assert lots_by_name["Amis"]["certainty"] is None
 
 
+def test_chart_includes_house_modality_analysis_and_quadrants(client):
+    res = client.post("/api/charts", json=VALID_CHART_PAYLOAD)
+    data = res.json()["computed_chart_data"]
+    analysis = data["house_modality_analysis"]
+    assert sum(analysis["counts_by_modality"].values()) == 10
+    assert analysis["dominant_modality_weighted"] in {"angular", "succedent", "cadent"}
+    assert len(data["house_quadrants_standard"]) == 4
+    assert len(data["house_quadrants_angle_centered"]) == 4
+
+
 def test_timing_endpoint_returns_transits_and_profection(client):
     create_res = client.post("/api/charts", json=VALID_CHART_PAYLOAD)
     chart_id = create_res.json()["id"]

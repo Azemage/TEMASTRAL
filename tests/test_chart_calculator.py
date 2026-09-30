@@ -124,3 +124,16 @@ def test_ascendant_override_produces_whole_sign_houses():
 def test_ascendant_override_absent_uses_normal_house_calculation():
     chart = calculate_natal_chart(**BIRTH_KWARGS)
     assert chart["ascendant_manually_set"] is False
+
+
+# ---------------------------------------------------------------------
+# Modalité angulaire/succédente/cadente des maisons (intégration dans le thème complet)
+# ---------------------------------------------------------------------
+def test_chart_includes_house_modality_analysis_and_quadrants():
+    chart = calculate_natal_chart(**BIRTH_KWARGS)
+    analysis = chart["house_modality_analysis"]
+    assert sum(analysis["counts_by_modality"].values()) == 10  # 10 planètes classiques
+    assert analysis["dominant_modality_simple"] in {"angular", "succedent", "cadent"}
+    assert analysis["dominant_modality_weighted"] in {"angular", "succedent", "cadent"}
+    assert len(chart["house_quadrants_standard"]) == 4
+    assert len(chart["house_quadrants_angle_centered"]) == 4

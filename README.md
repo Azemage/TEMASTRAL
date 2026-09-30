@@ -350,6 +350,19 @@ Implémenté :
   planètes personnelles et sociales). Nœud Nord/Sud, Lilith moyenne et Chiron étant désormais
   sélectionnés par défaut sur tout nouveau thème (voir ci-dessus), ces trois lectures
   disposent de leurs données sans configuration supplémentaire.
+- Dynamique angulaire/succédente/cadente des maisons (`app/core/house_modality.py`) :
+  classification hellénistique des maisons (kentra/epanaphora/apoklima, systématisée par
+  William Lilly) lue comme trois verbes — Angulaire = Agir, Succédente = Maintenir, Cadente =
+  Préparer. Calculée directement dans `calculate_natal_chart` (`computed_chart_data
+  .house_modality_analysis`) : comptage simple ET score pondéré (dignité accidentelle de
+  Lilly par maison) sur les 10 planètes classiques, modalité dominante selon chaque métrique
+  (présentées toutes les deux si elles divergent, jamais l'une forcée sur l'autre — le score
+  pondéré reflète aussi si une maison est traditionnellement "difficile", comme 6/8/12,
+  indépendamment de sa modalité). Onglet dédié "Dynamique" dans Thème natal, badges
+  Ang./Succ./Cad. dans l'onglet Planètes, et règle dédiée dans le prompt de lecture générale.
+  Deux découpages en quatre blocs de trois maisons sont aussi exposés
+  (`house_quadrants_standard` documenté, `house_quadrants_angle_centered` explicitement
+  étiqueté comme variante non vérifiée dans une source classique).
 - Web app simple pour saisir une naissance, visualiser le thème et générer une lecture,
   organisée en "Thème natal" (données calculées) et "Lecture interprétée" (générale + les
   6 lectures spécialisées, chacune affichant d'abord ses données puis un bouton de génération ;

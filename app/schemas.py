@@ -290,6 +290,34 @@ class DegreeAnalysis(BaseModel):
     dissolution_predisposition_note: str | None = None
 
 
+class HouseModalityPlanet(BaseModel):
+    planet: str
+    house: int
+    modality: str  # "angular" | "succedent" | "cadent"
+    lilly_points: int
+
+
+class HouseModalityAnalysis(BaseModel):
+    """Classification angulaire/succédente/cadente des maisons occupées, points de dignité
+    accidentelle de Lilly et modalité dominante — voir app/core/house_modality.py. Le comptage
+    simple et le score pondéré peuvent désigner des modalités différentes (`methodological_note`),
+    à toujours présenter tous deux plutôt que d'en forcer une seule conclusion."""
+
+    per_planet: list[HouseModalityPlanet]
+    counts_by_modality: dict[str, int]
+    weighted_score_by_modality: dict[str, int]
+    dominant_modality_simple: str
+    dominant_modality_weighted: str
+    reading: str
+    methodological_note: str
+
+
+class HouseQuadrantGroup(BaseModel):
+    key: str
+    theme: str
+    houses: list[int]
+
+
 class NatalChartComputed(BaseModel):
     schema_version: int = 1
     time_known: bool = True
@@ -308,6 +336,9 @@ class NatalChartComputed(BaseModel):
     derived_houses: list[DerivedHouseSet] = Field(default_factory=list)
     draconic: DraconicChart | None = None
     degree_analysis: list[DegreeAnalysis] = Field(default_factory=list)
+    house_modality_analysis: HouseModalityAnalysis | None = None
+    house_quadrants_standard: list[HouseQuadrantGroup] = Field(default_factory=list)
+    house_quadrants_angle_centered: list[HouseQuadrantGroup] = Field(default_factory=list)
     unavailable_points: list[str] = Field(default_factory=list)
 
 

@@ -1414,6 +1414,21 @@ simplement plutôt que d'inventer un don de remplissage. Formule TOUJOURS ces ob
 comme des sensibilités ou prédispositions à explorer/cultiver ("vous pourriez avoir une \
 facilité pour...", "une sensibilité qui, développée, peut devenir..."), jamais comme une \
 promesse de pouvoir surnaturel ou une capacité déjà maîtrisée et certaine.
+10. `house_modality_analysis` classe les maisons occupées par les 10 planètes classiques en \
+angulaires (1/4/7/10 — agir, initiative directe et immédiate), succédentes (2/5/8/11 — \
+maintenir, consolider ce qu'un angle a lancé) ou cadentes (3/6/9/12 — préparer, traiter/\
+apprendre avant de pouvoir agir de nouveau). Utilise `dominant_modality_weighted` (points de \
+dignité accidentelle de Lilly, qui reflète aussi si une maison est traditionnellement \
+"difficile" comme 6/8/12, pas seulement sa modalité) comme angle de lecture principal — associe \
+son verbe (`reading` donne la formulation) à un ou deux exemples concrets de comportement \
+quotidien, jamais comme un trait isolé sans illustration. Si `dominant_modality_simple` (simple \
+compte du nombre de planètes) diffère de `dominant_modality_weighted`, mentionne les deux \
+brièvement plutôt que de n'en garder qu'un arbitrairement (voir `methodological_note`) — c'est \
+une nuance intéressante ("beaucoup d'énergie orientée vers l'action, mais concentrée sur des \
+maisons qui pèsent peu en dignité accidentelle"), pas une contradiction à cacher. Ne mentionne \
+`house_quadrants_standard`/`house_quadrants_angle_centered` que si un ou deux quadrants \
+concentrent nettement plus de planètes que les autres — sinon, cette section reste secondaire \
+par rapport à la modalité dominante ci-dessus.
 
 ZONES À COUVRIR DANS CETTE LECTURE :
 {focus_descriptions}
