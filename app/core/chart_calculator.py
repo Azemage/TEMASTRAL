@@ -67,6 +67,7 @@ def calculate_natal_chart(
     aspect_orbs: dict[str, float] | None = None,
     include_minor_aspects: bool = True,
     optional_points: list[str] | None = None,
+    ascendant_override_longitude: float | None = None,
 ) -> dict:
     optional_points = optional_points or []
     aspect_orbs = aspect_orbs or {}
@@ -75,8 +76,19 @@ def calculate_natal_chart(
     jd_ut = ephemeris.local_datetime_to_jd_ut(birth_date, effective_time, timezone)
 
     bodies_result = ephemeris.calc_all_bodies(jd_ut, optional_points)
-    houses_result = ephemeris.calc_houses(jd_ut, latitude, longitude, house_system)
-    cusps = houses_result.cusps
+
+    if ascendant_override_longitude is not None:
+        # Ascendant fixé manuellement (ex. rectification par questionnaire) : la ville/heure
+        # de naissance exactes ne sont alors ni connues ni utilisées pour les maisons, donc
+        # seule une convention indépendante de l'heure a du sens ici — maisons de signes
+        # intégraux (whole sign) à partir du signe ascendant donné. Le Milieu du Ciel n'est
+        # dans ce cas qu'un repère de maison 10 (0° du 10e signe), pas l'angle astronomique
+        # réel, faute d'heure/lieu exacts pour le calculer.
+        house1_start = (ascendant_override_longitude % 360 // 30) * 30
+        cusps = [(house1_start + i * 30) % 360 for i in range(12)]
+    else:
+        houses_result = ephemeris.calc_houses(jd_ut, latitude, longitude, house_system)
+        cusps = houses_result.cusps
 
     planets = []
     planet_signs: dict[str, str] = {}
@@ -91,8 +103,12 @@ def calculate_natal_chart(
         if name in CLASSIC_PLANETS:
             planet_signs[name] = sign
 
-    ascendant = houses_result.ascendant
-    midheaven = houses_result.midheaven
+    if ascendant_override_longitude is not None:
+        ascendant = ascendant_override_longitude % 360
+        midheaven = cusps[9]  # repère de maison 10 (voir remarque ci-dessus), pas l'angle réel
+    else:
+        ascendant = houses_result.ascendant
+        midheaven = houses_result.midheaven
     descendant = (ascendant + 180) % 360
     imum_coeli = (midheaven + 180) % 360
 
@@ -167,6 +183,7 @@ def calculate_natal_chart(
     return {
         "schema_version": 1,
         "time_known": time_known,
+        "ascendant_manually_set": ascendant_override_longitude is not None,
         "is_day_chart": is_day_chart,
         "planets": planets,
         "angles": angles,

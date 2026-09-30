@@ -4,6 +4,7 @@ from zoneinfo import available_timezones
 from fastapi import APIRouter
 
 from app.core.reference_data import (
+    ascendant_rectification_traits,
     astrocartography_significations,
     axes_thematiques_lots,
     config_reference,
@@ -71,3 +72,8 @@ def get_astrocartography_significations():
 @router.get("/timezones")
 def get_timezones():
     return _canonical_timezones()
+
+
+@router.get("/ascendant-rectification-traits")
+def get_ascendant_rectification_traits():
+    return ascendant_rectification_traits()

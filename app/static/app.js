@@ -265,6 +265,29 @@ document.getElementById("time_unknown").addEventListener("change", (e) => {
 });
 
 // ---------------------------------------------------------------------
+// Ascendant fixé manuellement (rectification) : court-circuite ville/lat/long/fuseau,
+// voir app/core/chart_calculator.py (maisons en signes intégraux dans ce cas).
+// ---------------------------------------------------------------------
+(function populateAscendantManualSignSelect() {
+  const select = document.getElementById("ascendant_manual_sign");
+  Object.keys(SIGN_SYMBOLS).forEach((sign) => {
+    const option = document.createElement("option");
+    option.value = sign;
+    option.textContent = signLabel(sign);
+    select.appendChild(option);
+  });
+})();
+
+document.getElementById("ascendant_manual_toggle").addEventListener("change", (e) => {
+  const manual = e.target.checked;
+  document.getElementById("ascendant-manual-row").classList.toggle("hidden", !manual);
+  document.getElementById("location-fields").classList.toggle("hidden", manual);
+  document.getElementById("latitude").required = !manual;
+  document.getElementById("longitude").required = !manual;
+  document.getElementById("timezone").required = !manual;
+});
+
+// ---------------------------------------------------------------------
 // Soumission du formulaire de naissance
 // ---------------------------------------------------------------------
 document.getElementById("birth-form").addEventListener("submit", async (e) => {
@@ -274,6 +297,7 @@ document.getElementById("birth-form").addEventListener("submit", async (e) => {
   errorEl.textContent = "";
 
   const timeUnknown = document.getElementById("time_unknown").checked;
+  const ascendantManual = document.getElementById("ascendant_manual_toggle").checked;
   const optionalPoints = Array.from(document.getElementById("optional_points").selectedOptions).map((o) => o.value);
 
   const payload = {
@@ -281,13 +305,21 @@ document.getElementById("birth-form").addEventListener("submit", async (e) => {
       date: document.getElementById("birth_date").value,
       time: timeUnknown ? null : document.getElementById("birth_time").value,
       time_known: !timeUnknown,
-      timezone: document.getElementById("timezone").value,
-      location: {
-        city: document.getElementById("city_search").value || null,
-        country: null,
-        latitude: parseFloat(document.getElementById("latitude").value),
-        longitude: parseFloat(document.getElementById("longitude").value),
-      },
+      timezone: document.getElementById("timezone").value || "UTC",
+      location: ascendantManual
+        ? null
+        : {
+            city: document.getElementById("city_search").value || null,
+            country: null,
+            latitude: parseFloat(document.getElementById("latitude").value),
+            longitude: parseFloat(document.getElementById("longitude").value),
+          },
+      ascendant_override: ascendantManual
+        ? {
+            sign: document.getElementById("ascendant_manual_sign").value,
+            degree_in_sign: parseFloat(document.getElementById("ascendant_manual_degree").value) || 0,
+          }
+        : null,
     },
     settings: {
       house_system: document.getElementById("house_system").value,
@@ -328,6 +360,261 @@ document.getElementById("birth-form").addEventListener("submit", async (e) => {
     submitBtn.textContent = t("btn_calculate_chart");
   }
 });
+
+// ---------------------------------------------------------------------
+// Questionnaire de rectification (déterminer l'ascendant sans heure exacte) — voir
+// app/core/rectification.py. Étape 1 : traits physiques/tempérament (scoring client-side,
+// purement déclaratif). Étape 2 : recoupement d'événements de vie déjà survenus (appel API,
+// calcul déterministe côté serveur). Réutilise date/lieu déjà saisis dans le formulaire
+// principal ci-dessus plutôt que de les redemander.
+// ---------------------------------------------------------------------
+let rectificationTraitsData = null;
+const rectificationEvents = [];
+
+document.querySelectorAll(".rectification-tab-btn").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll(".rectification-tab-btn").forEach((b) => b.classList.remove("active"));
+    document.querySelectorAll(".rectification-tab-panel").forEach((p) => p.classList.add("hidden"));
+    btn.classList.add("active");
+    document.getElementById(`rectification-tab-${btn.dataset.rectificationTab}`).classList.remove("hidden");
+  });
+});
+
+async function loadRectificationTraitsQuiz() {
+  const container = document.getElementById("rectification-traits-quiz");
+  container.innerHTML = `<p>${t("loading")}</p>`;
+  try {
+    const res = await fetch("/api/reference/ascendant-rectification-traits");
+    if (!res.ok) throw new Error(`${t("error_prefix")} ${res.status}`);
+    rectificationTraitsData = await res.json();
+    container.innerHTML = rectificationTraitsData.categories
+      .map(
+        (cat) => `
+      <fieldset class="rectification-category">
+        <legend>${pick(cat.title)}</legend>
+        ${cat.options
+          .map(
+            (opt) => `
+          <label class="checkbox-label rectification-option">
+            <input type="checkbox" class="rectification-trait-checkbox" data-sign="${opt.sign}" />
+            <span>${pick(opt.label)}</span>
+          </label>`
+          )
+          .join("")}
+      </fieldset>`
+      )
+      .join("");
+  } catch (err) {
+    container.innerHTML = `<p class="error">${err.message}</p>`;
+  }
+}
+
+function renderRectificationCandidateSignCheckboxes(preselected) {
+  const pre = new Set(preselected || []);
+  document.getElementById("rectification-candidate-signs-badges").innerHTML = Object.keys(SIGN_SYMBOLS)
+    .map(
+      (sign) => `
+    <label class="checkbox-label rectification-sign-badge">
+      <input type="checkbox" class="rectification-candidate-sign-checkbox" value="${sign}" ${pre.has(sign) ? "checked" : ""} />
+      <span>${signLabel(sign)}</span>
+    </label>`
+    )
+    .join("");
+}
+
+document.getElementById("rectification-compute-traits-btn").addEventListener("click", () => {
+  const scores = {};
+  document.querySelectorAll(".rectification-trait-checkbox:checked").forEach((cb) => {
+    scores[cb.dataset.sign] = (scores[cb.dataset.sign] || 0) + 1;
+  });
+  const ranked = Object.entries(scores)
+    .map(([sign, score]) => ({ sign, score }))
+    .sort((a, b) => b.score - a.score);
+
+  const resultEl = document.getElementById("rectification-traits-result");
+  if (!ranked.length) {
+    resultEl.innerHTML = `<p>${t("rectification_no_selection")}</p>`;
+    return;
+  }
+  resultEl.innerHTML = `
+    <h3>${t("rectification_traits_result_title")}</h3>
+    <table>
+      <thead><tr><th>${t("th_sign")}</th><th>${t("th_score")}</th></tr></thead>
+      <tbody>${ranked.map((r) => `<tr><td>${signLabel(r.sign)}</td><td>${r.score}</td></tr>`).join("")}</tbody>
+    </table>
+    <p class="reading-section-intro">${t("rectification_traits_result_hint")}</p>
+  `;
+  const maxScore = ranked[0].score;
+  const topSigns = ranked.filter((r) => r.score >= maxScore - 1).map((r) => r.sign);
+  renderRectificationCandidateSignCheckboxes(topSigns);
+});
+
+function renderRectificationEventsList() {
+  const container = document.getElementById("rectification-events-list");
+  if (!rectificationEvents.length) {
+    container.innerHTML = `<p>${t("rectification_no_events_yet")}</p>`;
+    return;
+  }
+  container.innerHTML = `
+    <table>
+      <thead><tr><th>${t("label_rectification_event_label")}</th><th>${t("label_rectification_event_date")}</th><th>${t("label_rectification_event_significance")}</th><th></th></tr></thead>
+      <tbody>${rectificationEvents
+        .map(
+          (e, i) => `
+        <tr>
+          <td>${escapeHtml(e.label)}</td>
+          <td>${e.date}</td>
+          <td>${e.significance === "major" ? t("rectification_significance_major") : t("rectification_significance_moderate")}</td>
+          <td><button type="button" class="rectification-remove-event-btn" data-index="${i}">${t("btn_remove")}</button></td>
+        </tr>`
+        )
+        .join("")}</tbody>
+    </table>`;
+  container.querySelectorAll(".rectification-remove-event-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      rectificationEvents.splice(parseInt(btn.dataset.index, 10), 1);
+      renderRectificationEventsList();
+    });
+  });
+}
+
+document.getElementById("rectification-add-event-btn").addEventListener("click", () => {
+  const labelInput = document.getElementById("rectification-event-label-input");
+  const dateInput = document.getElementById("rectification-event-date-input");
+  const significanceInput = document.getElementById("rectification-event-significance-input");
+  if (!labelInput.value.trim() || !dateInput.value) return;
+  rectificationEvents.push({ label: labelInput.value.trim(), date: dateInput.value, significance: significanceInput.value });
+  labelInput.value = "";
+  dateInput.value = "";
+  renderRectificationEventsList();
+});
+
+function rectificationMethodLabel(method) {
+  if (method === "transit") return t("rectification_method_transit");
+  if (method === "solar_arc") return t("rectification_method_solar_arc");
+  if (method === "progressed_moon") return t("rectification_method_progressed_moon");
+  return method;
+}
+
+function applyRectificationCandidateAsAscendant(sign, degree) {
+  const toggle = document.getElementById("ascendant_manual_toggle");
+  toggle.checked = true;
+  toggle.dispatchEvent(new Event("change"));
+  document.getElementById("ascendant_manual_sign").value = sign;
+  document.getElementById("ascendant_manual_degree").value = degree;
+  document.getElementById("form-section").scrollIntoView({ behavior: "smooth" });
+}
+
+function renderRectificationScanResults(result) {
+  const bySignRows = result.by_sign_summary
+    .map((s) => `<tr><td>${signLabel(s.sign)}</td><td>${s.best_score}</td><td>${s.candidate_count}</td></tr>`)
+    .join("");
+
+  const candidateCards = result.candidates
+    .map(
+      (c, i) => `
+    <div class="rectification-candidate-card">
+      <h4>
+        #${i + 1} — ${c.time} — ${signLabel(c.ascendant_sign)} ${c.ascendant_degree}°
+        (${t("rectification_th_score")}: ${c.total_score})
+      </h4>
+      <button type="button" class="rectification-use-candidate-btn" data-sign="${c.ascendant_sign}" data-degree="${c.ascendant_degree}">${t("btn_use_this_ascendant")}</button>
+      ${
+        c.matches.length
+          ? `<table>
+        <thead><tr><th>${t("label_rectification_event_label")}</th><th>${t("rectification_th_method")}</th><th>${t("th_detail")}</th><th>${t("rectification_th_score")}</th></tr></thead>
+        <tbody>${c.matches
+          .map(
+            (m) => `
+          <tr>
+            <td>${escapeHtml(m.event_label)}</td>
+            <td>${rectificationMethodLabel(m.method)}</td>
+            <td>${planetLabel(m.body)} ${aspectTypeLabel(m.aspect_type)} ${planetLabel(m.angle)} (${t("orb_prefix")} ${m.orb}°)</td>
+            <td>${m.score}</td>
+          </tr>`
+          )
+          .join("")}</tbody>
+      </table>`
+          : `<p>${t("rectification_no_match")}</p>`
+      }
+    </div>`
+    )
+    .join("");
+
+  document.getElementById("rectification-scan-results").innerHTML = `
+    <p class="warning-banner">${result.warning}</p>
+    <h3>${t("rectification_by_sign_title")}</h3>
+    <table>
+      <thead><tr><th>${t("th_sign")}</th><th>${t("rectification_th_best_score")}</th><th>${t("rectification_th_candidate_count")}</th></tr></thead>
+      <tbody>${bySignRows}</tbody>
+    </table>
+    <h3>${t("rectification_top_candidates_title")}</h3>
+    ${candidateCards}
+  `;
+
+  document.querySelectorAll(".rectification-use-candidate-btn").forEach((btn) => {
+    btn.addEventListener("click", () => applyRectificationCandidateAsAscendant(btn.dataset.sign, btn.dataset.degree));
+  });
+}
+
+document.getElementById("rectification-scan-btn").addEventListener("click", async () => {
+  const errorEl = document.getElementById("rectification-scan-error");
+  const resultsEl = document.getElementById("rectification-scan-results");
+  const btn = document.getElementById("rectification-scan-btn");
+  errorEl.textContent = "";
+
+  const birthDate = document.getElementById("birth_date").value;
+  const timezone = document.getElementById("timezone").value || "UTC";
+  const latitude = parseFloat(document.getElementById("latitude").value);
+  const longitude = parseFloat(document.getElementById("longitude").value);
+
+  if (!birthDate || Number.isNaN(latitude) || Number.isNaN(longitude)) {
+    errorEl.textContent = t("rectification_error_missing_birth_data");
+    return;
+  }
+  if (!rectificationEvents.length) {
+    errorEl.textContent = t("rectification_error_no_events");
+    return;
+  }
+
+  const candidateSigns = Array.from(document.querySelectorAll(".rectification-candidate-sign-checkbox:checked")).map((cb) => cb.value);
+
+  const payload = {
+    birth_date: birthDate,
+    timezone,
+    latitude,
+    longitude,
+    window_start: `${document.getElementById("rectification-window-start").value || "00:00"}:00`,
+    window_end: `${document.getElementById("rectification-window-end").value || "23:59"}:00`,
+    step_minutes: parseInt(document.getElementById("rectification-step-minutes").value, 10) || 4,
+    candidate_signs: candidateSigns.length ? candidateSigns : null,
+    life_events: rectificationEvents.map((e) => ({ label: e.label, date: e.date, significance: e.significance })),
+  };
+
+  resultsEl.innerHTML = `<p>${t("status_computing_rectification")}</p>`;
+  btn.disabled = true;
+  try {
+    const res = await fetch("/api/rectification/scan", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) {
+      const detail = await res.json().catch(() => ({}));
+      throw new Error(detail.detail || `${t("error_prefix")} ${res.status}`);
+    }
+    renderRectificationScanResults(await res.json());
+  } catch (err) {
+    resultsEl.innerHTML = "";
+    errorEl.textContent = err.message;
+  } finally {
+    btn.disabled = false;
+  }
+});
+
+loadRectificationTraitsQuiz();
+renderRectificationCandidateSignCheckboxes([]);
+renderRectificationEventsList();
 
 // Section 3 (Lecture interprétée), 4 (Astrocartographie) et 5 (Calendrier ésotérique) restent
 // repliées par défaut sous la roue natale : chaque bouton révèle/replie sa propre section,
@@ -684,6 +971,7 @@ function renderChart(chart) {
       &nbsp;|&nbsp; ${data.is_day_chart ? t("day_chart_label") : t("night_chart_label")}
     </p>
     ${!data.time_known ? `<p class="error">${t("unknown_birth_time_warning")}</p>` : ""}
+    ${data.ascendant_manually_set ? `<p class="error">${t("ascendant_manually_set_warning")}</p>` : ""}
     ${renderTraitTags(data.character_traits)}
   `;
 

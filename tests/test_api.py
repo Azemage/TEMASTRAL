@@ -52,6 +52,37 @@ def test_list_charts_scoped_to_session(client):
     assert len(list_res.json()) == 1
 
 
+def test_chart_creation_accepts_manual_ascendant_without_location(client):
+    payload = {
+        "birth_data": {
+            "date": "1990-05-15",
+            "time": None,
+            "time_known": False,
+            "timezone": "UTC",
+            "ascendant_override": {"sign": "Scorpio", "degree_in_sign": 12.0},
+        }
+    }
+    res = client.post("/api/charts", json=payload)
+    assert res.status_code == 201
+    data = res.json()["computed_chart_data"]
+    assert data["ascendant_manually_set"] is True
+    assert data["angles"]["ascendant"]["sign"] == "Scorpio"
+    assert data["angles"]["ascendant"]["degree"] == 12.0
+
+
+def test_chart_creation_requires_location_without_ascendant_override(client):
+    payload = {
+        "birth_data": {
+            "date": "1990-05-15",
+            "time": "14:32:00",
+            "time_known": True,
+            "timezone": "Europe/Paris",
+        }
+    }
+    res = client.post("/api/charts", json=payload)
+    assert res.status_code == 422
+
+
 def test_chart_not_accessible_from_another_session(client):
     create_res = client.post("/api/charts", json=VALID_CHART_PAYLOAD)
     chart_id = create_res.json()["id"]

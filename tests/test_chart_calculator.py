@@ -98,3 +98,29 @@ def test_character_traits_derived_from_sun_moon_ascendant():
     }
     assert len(traits["generational_placements"]) == 3
     assert {p["planet"] for p in traits["generational_placements"]} == {"Uranus", "Neptune", "Pluto"}
+
+
+# ---------------------------------------------------------------------
+# Ascendant fixé manuellement (rectification) : maisons en signes intégraux, latitude/
+# longitude ignorées (0.0/0.0 volontairement absurdes ici pour prouver qu'elles sont bien
+# ignorées quand ascendant_override_longitude est fourni).
+# ---------------------------------------------------------------------
+def test_ascendant_override_produces_whole_sign_houses():
+    chart = calculate_natal_chart(
+        birth_date="1990-05-15", birth_time="14:32:00", time_known=True, timezone="Europe/Paris",
+        latitude=0.0, longitude=0.0, ascendant_override_longitude=222.0,  # 12° Scorpion
+    )
+    assert chart["ascendant_manually_set"] is True
+    assert chart["angles"]["ascendant"]["sign"] == "Scorpio"
+    assert chart["angles"]["ascendant"]["degree"] == 12.0
+    # Maisons de signes intégraux : chaque cuspide tombe exactement à 0° d'un signe.
+    assert [h["degree"] for h in chart["houses"]] == [0.0] * 12
+    assert [h["sign"] for h in chart["houses"]] == [
+        "Scorpio", "Sagittarius", "Capricorn", "Aquarius", "Pisces", "Aries",
+        "Taurus", "Gemini", "Cancer", "Leo", "Virgo", "Libra",
+    ]
+
+
+def test_ascendant_override_absent_uses_normal_house_calculation():
+    chart = calculate_natal_chart(**BIRTH_KWARGS)
+    assert chart["ascendant_manually_set"] is False

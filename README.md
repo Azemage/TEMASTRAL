@@ -360,6 +360,32 @@ Implémenté :
 Pas encore implémenté (voir cahier des charges fourni, section V2/V3) : révolution solaire,
 progressions secondaires, mode de compatibilité personne/entreprise, comptes utilisateurs.
 
+### Ascendant manuel & questionnaire de rectification
+
+Pour une naissance sans heure exacte connue :
+
+- **Ascendant fixé manuellement** — `BirthData.ascendant_override` (`{sign, degree_in_sign}`)
+  court-circuite le calcul des maisons à partir de la ville/heure : `calculate_natal_chart`
+  bascule alors sur des maisons de signes intégraux (whole sign) à partir du signe donné,
+  seule convention cohérente sans heure/lieu exacts (le Milieu du Ciel affiché n'est dans ce
+  cas qu'un repère de maison 10, pas l'angle astronomique réel). La ville de naissance devient
+  facultative dans ce mode (`BirthData.location` peut être omis) ; formulaire : case "Je connais
+  déjà mon ascendant → le définir manuellement", qui masque ville/latitude/longitude.
+- **Questionnaire de rectification** (`app/core/rectification.py`), en deux étapes
+  indépendantes, accessible en bas du formulaire de naissance :
+  1. *Traits physiques/tempérament* — questionnaire déclaratif servi tel quel
+     (`GET /api/reference/ascendant-rectification-traits`), scoré côté client (aucun calcul
+     serveur) ; correspondances traditionnelles/populaires, explicitement pas une méthode
+     validée (voir `epistemic_status` du fichier de référence).
+  2. *Recoupement d'événements de vie* (`POST /api/rectification/scan`) — balaie une fenêtre
+     horaire par pas de quelques minutes et score chaque heure candidate contre des événements
+     déjà survenus (mariage, déménagement...) via trois signaux classiques : transits réels aux
+     angles à la date de l'événement, directions par arc solaire des planètes natales
+     (conjonction), Lune progressée (progression secondaire) en conjonction avec un angle.
+     N'utilise que des événements déjà survenus (l'inverse d'une prédiction) ; chaque heure
+     candidate renvoyée peut être appliquée d'un clic comme ascendant manuel ci-dessus.
+     Avertissement méthodologique toujours renvoyé avec le résultat (`warning`).
+
 ## Installation
 
 ```bash

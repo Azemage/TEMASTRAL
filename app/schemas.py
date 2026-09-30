@@ -4,7 +4,7 @@ from datetime import date as date_type
 from datetime import datetime
 from datetime import time as time_type
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 
 # ---------------------------------------------------------------------------
@@ -17,12 +17,30 @@ class Location(BaseModel):
     longitude: float = Field(ge=-180, le=180)
 
 
+class AscendantOverride(BaseModel):
+    """Ascendant fixé manuellement (ex. trouvé via le questionnaire de rectification),
+    court-circuitant le calcul des maisons à partir de la ville/heure de naissance — voir
+    chart_calculator.calculate_natal_chart. Les maisons deviennent des maisons de signes
+    intégraux (whole sign) à partir de ce signe, seule convention cohérente sans heure/lieu
+    exacts."""
+
+    sign: str
+    degree_in_sign: float = Field(ge=0, lt=30, default=0.0)
+
+
 class BirthData(BaseModel):
     date: date_type
     time: str | None = None  # "HH:MM:SS", requis si time_known=True
     time_known: bool = True
-    timezone: str
-    location: Location
+    timezone: str = "UTC"
+    location: Location | None = None  # optionnel seulement si ascendant_override est fourni
+    ascendant_override: AscendantOverride | None = None
+
+    @model_validator(mode="after")
+    def _require_location_unless_ascendant_override(self) -> "BirthData":
+        if self.location is None and self.ascendant_override is None:
+            raise ValueError("location est requis, sauf si ascendant_override est fourni.")
+        return self
 
 
 class AspectOrbs(BaseModel):
@@ -275,6 +293,7 @@ class DegreeAnalysis(BaseModel):
 class NatalChartComputed(BaseModel):
     schema_version: int = 1
     time_known: bool = True
+    ascendant_manually_set: bool = False
     is_day_chart: bool
     planets: list[PlanetPosition]
     angles: Angles
@@ -349,6 +368,64 @@ class TransitForecastResponse(BaseModel):
     start_date: date_type
     end_date: date_type
     events: list[UpcomingTransitEvent]
+
+
+# ---------------------------------------------------------------------------
+# Questionnaire de rectification (déterminer l'ascendant sans heure exacte) — voir
+# app/core/rectification.py. Étape 2 (recoupement d'événements de vie) ; l'étape 1
+# (traits physiques/tempérament) est purement déclarative, servie telle quelle via
+# GET /api/reference/ascendant-rectification-traits, pas de schéma dédié.
+# ---------------------------------------------------------------------------
+class RectificationLifeEvent(BaseModel):
+    label: str
+    date: date_type
+    significance: str = "major"  # "major" ou "moderate"
+
+
+class RectificationScanRequest(BaseModel):
+    birth_date: date_type
+    timezone: str = "UTC"
+    latitude: float = Field(ge=-90, le=90)
+    longitude: float = Field(ge=-180, le=180)
+    window_start: str = "00:00:00"  # "HH:MM:SS"
+    window_end: str = "23:59:00"
+    step_minutes: int = Field(default=4, ge=1, le=60)
+    house_system: str = "placidus"
+    candidate_signs: list[str] | None = None
+    life_events: list[RectificationLifeEvent] = Field(default_factory=list)
+
+
+class RectificationEventMatch(BaseModel):
+    event_label: str
+    event_date: date_type
+    method: str  # "transit" | "solar_arc" | "progressed_moon"
+    body: str
+    angle: str
+    aspect_type: str
+    orb: float
+    score: float
+
+
+class RectificationCandidate(BaseModel):
+    time: str
+    ascendant_sign: str
+    ascendant_degree: float
+    midheaven_sign: str
+    midheaven_degree: float
+    total_score: float
+    matches: list[RectificationEventMatch]
+
+
+class RectificationSignSummary(BaseModel):
+    sign: str
+    best_score: float
+    candidate_count: int
+
+
+class RectificationScanResponse(BaseModel):
+    candidates: list[RectificationCandidate]
+    by_sign_summary: list[RectificationSignSummary]
+    warning: str
 
 
 class ZodiacalReleasingPeriod(BaseModel):

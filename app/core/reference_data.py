@@ -119,6 +119,13 @@ def spiritual_gifts() -> dict:
     return _load("spiritual_gifts.json")
 
 
+def ascendant_rectification_traits() -> dict:
+    """Questionnaire de traits physiques/tempérament par signe ascendant (première étape du
+    questionnaire de rectification) — voir app/core/rectification.py pour le scoring et le
+    statut épistémique (interprétatif/traditionnel, pas une méthode validée)."""
+    return _load("ascendant_rectification_traits.json")
+
+
 def world_cities() -> list[dict]:
     """Grandes villes mondiales (Natural Earth 110m populated places, domaine public) —
     capitales et métropoles majeures, utilisées comme bassin de candidats pour la suggestion
