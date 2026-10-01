@@ -10,8 +10,10 @@ from fastapi.templating import Jinja2Templates
 from app.api import (
     astrocartography,
     charts,
+    day_sky,
     geocode,
     readings,
+    rectification,
     reference,
     synastry,
     timing,
@@ -48,6 +50,7 @@ app.add_middleware(
 )
 
 app.include_router(charts.router)
+app.include_router(day_sky.router)
 app.include_router(readings.router)
 app.include_router(reference.router)
 app.include_router(geocode.router)
@@ -57,6 +60,7 @@ app.include_router(synastry.router)
 app.include_router(astrocartography.router)
 app.include_router(witchy_calendar.router)
 app.include_router(weekly_weather.router)
+app.include_router(rectification.router)
 
 app.mount("/static", StaticFiles(directory=BASE_DIR / "static"), name="static")
 templates = Jinja2Templates(directory=BASE_DIR / "templates")

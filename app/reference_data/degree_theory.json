@@ -1,0 +1,66 @@
+{
+  "description": "Systèmes de signification par degré (0°-29°) dans un signe — quatre couches documentées séparément, à ne jamais fusionner en une seule doctrine : exaltation (un point exact par planète, héritage babylonien/hellénistique/Ptolémée), degrés critiques (motif répété par modalité, systématisé au XXe siècle), degré anarétique (29°, très cité en astrologie moderne), et théorie des degrés (signe superposé cyclique 1-28, issue des Symboles Sabians de Jones/Wheeler 1925, popularisée par Rudhyar 1973 — documentée comme système mais d'origine populaire/XXe siècle, pas classique).",
+  "exaltation_points": [
+    { "planet": "Sun", "sign": "Aries", "degree": 19 },
+    { "planet": "Moon", "sign": "Taurus", "degree": 3 },
+    { "planet": "Mercury", "sign": "Virgo", "degree": 15 },
+    { "planet": "Venus", "sign": "Pisces", "degree": 27 },
+    { "planet": "Mars", "sign": "Capricorn", "degree": 28 },
+    { "planet": "Jupiter", "sign": "Cancer", "degree": 15 },
+    { "planet": "Saturn", "sign": "Libra", "degree": 21 }
+  ],
+  "critical_degrees_by_modality": {
+    "cardinal": [0, 13, 26],
+    "fixed": [8, 9, 21, 22],
+    "mutable": [4, 17]
+  },
+  "critical_degree_meanings": {
+    "cardinal_0": "Amorce pure, sans filtre : puissance maximale d'initiation.",
+    "cardinal_13": "L'élan initial rencontre le besoin de le soutenir : point de détermination concentrée.",
+    "cardinal_26": "Urgence, la fenêtre d'action se resserre : dernière occasion d'initier avant la clôture de la phase.",
+    "fixed_8_9": "L'énergie stabilisatrice rencontre sa première épreuve interne : la valeur et l'authenticité de ce qui est tenu sont questionnées.",
+    "fixed_21_22": "Puissance accumulée, concentration considérable : le thème devient central et incontournable.",
+    "mutable_4": "La fonction adaptative s'active pleinement : curiosité mentale, analyse, recherche de perspective.",
+    "mutable_17": "Capacité de synthèse inhabituelle, avec un risque de dispersion en l'absence de direction claire."
+  },
+  "special_degrees": {
+    "0": "Entrée pure : le signe dans sa forme la plus brute, sans nuance d'un autre signe encore superposée — le point de départ absolu.",
+    "29": "Degré anarétique : urgence maximale, résolution forcée avant le changement de signe — le thème du signe atteint sa limite. Souvent associé à une maîtrise sous pression ou une clôture abrupte."
+  },
+  "degree_theme_cycle": [
+    { "degree": 1, "sign": "Aries", "theme": "Initiation pure, brute, sans filtre" },
+    { "degree": 2, "sign": "Taurus", "theme": "Premier besoin de stabiliser ce qui vient d'être initié" },
+    { "degree": 3, "sign": "Gemini", "theme": "Curiosité, premières questions" },
+    { "degree": 4, "sign": "Cancer", "theme": "Protection de l'élan initial" },
+    { "degree": 5, "sign": "Leo", "theme": "Affirmation, expression visible" },
+    { "degree": 6, "sign": "Virgo", "theme": "Raffinement, premier ajustement technique" },
+    { "degree": 7, "sign": "Libra", "theme": "Recherche d'équilibre, premier contraste avec l'autre" },
+    { "degree": 8, "sign": "Scorpio", "theme": "Intensification, première épreuve réelle" },
+    { "degree": 9, "sign": "Sagittarius", "theme": "Expansion de sens, première quête de signification propre" },
+    { "degree": 10, "sign": "Capricorn", "theme": "Structure, ambition, première construction de long terme" },
+    { "degree": 11, "sign": "Aquarius", "theme": "Différenciation, premier écart avec la convention" },
+    { "degree": 12, "sign": "Pisces", "theme": "Dissolution, premier contact avec le flou — les limites commencent à s'estomper" },
+    { "degree": 13, "sign": "Aries", "theme": "Redémarrage déjà expérimenté : nouvelle initiation, mais plus tout à fait naïve" },
+    { "degree": 14, "sign": "Taurus", "theme": "Consolidation plus profonde du matériel/sensoriel" },
+    { "degree": 15, "sign": "Gemini", "theme": "Synthèse d'une information déjà plus complexe" },
+    { "degree": 16, "sign": "Cancer", "theme": "Lien émotionnel mûr, mémoire active" },
+    { "degree": 17, "sign": "Leo", "theme": "Expression déjà consciente de son propre impact" },
+    { "degree": 18, "sign": "Virgo", "theme": "Perfectionnement, analyse critique raffinée" },
+    { "degree": 19, "sign": "Libra", "theme": "Sensibilité relationnelle et esthétique déjà développée, diplomatie consciente" },
+    { "degree": 20, "sign": "Scorpio", "theme": "Transformation déjà assumée, pas seulement subie" },
+    { "degree": 21, "sign": "Sagittarius", "theme": "Conviction philosophique déjà éprouvée par l'expérience" },
+    { "degree": 22, "sign": "Capricorn", "theme": "Autorité gagnée, pas seulement ambitionnée" },
+    { "degree": 23, "sign": "Aquarius", "theme": "Innovation avec une conscience collective" },
+    { "degree": 24, "sign": "Pisces", "theme": "Dissolution plus marquée — la même énergie diffuse qu'au degré 12, intensifiée" },
+    { "degree": 25, "sign": "Aries", "theme": "Initiation brute entrant dans sa phase finale de concentration" },
+    { "degree": 26, "sign": "Taurus", "theme": "Dernière phase de stabilisation matérielle avant la clôture" },
+    { "degree": 27, "sign": "Gemini", "theme": "Dernière synthèse mentale avant la clôture" },
+    { "degree": 28, "sign": "Cancer", "theme": "Protection finale, clôture émotionnelle du cycle du signe" }
+  ],
+  "dissolution_predisposition_degrees": {
+    "description": "[Synthèse interprétative, PAS un fait astrologique classique établi — s'appuie directement sur une association de signe, elle, bien documentée : Piscis/Neptune est un des signes les plus constamment associés, en astrologie traditionnelle ET moderne, à la dissolution des limites, à l'évasion, à l'idéalisation et — dans son expression la plus basse — à la dépendance ou la perte de contact avec le concret. Les degrés 12 et 24 partagent tous deux le thème de degré Poissons (voir degree_theme_cycle) : cette entrée applique cette association déjà documentée à ce point précis du thème, en deux temps. À présenter TOUJOURS comme une prédisposition ou une sensibilité, jamais comme un diagnostic, une fatalité ou une certitude — et toujours accompagnée de la face constructive du même thème (sensibilité, compassion, spiritualité, imagination).",
+    "12": "Première vague de ce thème : encore plutôt intérieure — une sensibilité à l'évasion mentale, à l'idéalisation, à la rêverie répétitive, pas nécessairement visible de l'extérieur. Prédisposition à surveiller avec bienveillance, pas un problème en soi.",
+    "24": "Seconde vague, plus accumulée et plus extériorisée — la limite peut se relâcher vers un objet, une substance ou un comportement concret (usage, dépendance, fuite). Toujours une prédisposition/sensibilité à nommer avec prudence, jamais une prédiction ni un diagnostic ; à mettre en regard de la face constructive du même thème (créativité, intuition, connexion spirituelle)."
+  },
+  "notes": "Le degré 0 et le degré 29 ne font PAS partie du cycle thématique (voir special_degrees) : le cycle court proprement de 1 à 28 (2 tours complets de 12 signes + 4 degrés supplémentaires). Un planète peut cumuler plusieurs couches en même temps (ex. Mercure à 15° Vierge est à la fois en exaltation exacte ET sur un thème de degré Gémeaux) : présenter chaque couche séparément avec son statut épistémique, ne jamais les fusionner en une seule affirmation."
+}

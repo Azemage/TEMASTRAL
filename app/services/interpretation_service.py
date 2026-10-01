@@ -27,7 +27,8 @@ from app.core.astrocartography import analyze_nearby_lines
 from app.core.astrocartography_personalization import personalize_nearby_lines
 from app.core.derived_houses import resolve_relation
 from app.core.profections import compute_profection
-from app.core.reference_data import astrocartography_significations, houses_meanings, rulerships
+from app.core.reference_data import astrocartography_significations, houses_meanings, rulerships, spiritual_gifts
+from app.core.spiritual_gifts import compute_spiritual_gifts_signals
 from app.core.day_chart import compute_day_chart
 from app.core.witchy_calendar import (
     compute_location_context,
@@ -49,6 +50,17 @@ FOCUS_AREA_GUIDANCE = {
     "love": "vie affective et amoureuse (Vénus, Mars, maison VII, aspects vers ces points)",
     "career": "vocation et carrière (Midciel, maison X, Saturne, dispositeur du Midciel)",
     "family": "famille, foyer, racines (Lune, maison IV, maison X selon la tradition retenue)",
+    "degrees": (
+        "analyse approfondie par DEGRÉ exact (`degree_analysis`), pas seulement par signe/maison : "
+        "pour chaque planète personnelle (et les angles si notable), développe ce que son degré précis "
+        "ajoute (exaltation exacte, degré critique, degré anarétique, thème de degré) plutôt que de ne "
+        "mentionner ces signaux qu'en passant — voir la règle dédiée sur `degree_analysis` ci-dessous"
+    ),
+    "spirituality": (
+        "sensibilités et dons potentiels — perception/intuition, pouvoir de transformation, faculté de "
+        "\"transport\" (projection) — composés à partir des signaux déjà repérés dans `spiritual_gifts_signals` "
+        "(maisons IV/VIII/XII, aspects documentés, eau, astéroïdes) — voir la règle dédiée ci-dessous"
+    ),
 }
 
 READING_TYPE_MAX_TOKENS = {
@@ -59,6 +71,10 @@ READING_TYPE_MAX_TOKENS = {
     "lots": 3000,
     "derived_houses": 2400,
     "compatibility": 4500,
+    "draconic": 3000,
+    "draconic_incarnation": 2600,
+    "draconic_comparison": 3800,
+    "house_modality": 2400,
 }
 
 COMPATIBILITY_MODE_LABELS_FR = {
@@ -580,8 +596,10 @@ appuie-toi exclusivement sur les données fournies."""
 def _weekly_weather_max_tokens(request: schemas.ReadingRequest) -> int:
     """Deux blocs (climat collectif de la semaine + impact personnel, désormais avec la
     notation par domaine de vie) sur une seule semaine : plus court qu'une lecture annuelle mais
-    plus développé qu'un item du calendrier witchy."""
-    return 4600
+    plus développé qu'un item du calendrier witchy. Légèrement relevé pour laisser de la place
+    aux callouts conditionnels par signe (`affected_signs_data`) sur les highlights principaux,
+    sans risquer de tronquer la section personnelle."""
+    return 4800
 
 
 def _weekly_weather_prompt_block(request: schemas.ReadingRequest) -> str:
@@ -612,6 +630,21 @@ domine déjà la semaine) ; et `highlights`, la fusion triée par importance (`s
 calculé, ne le recalcule jamais) de tout ce qui précède — utilise cette liste pour savoir sur \
 quoi insister et dans quel ordre, sans jamais citer le chiffre brut dans le texte (traduis-le en \
 intensité ressentie)."""
+
+    affected_signs_data = """DANS chaque élément de `highlights` : `affected_signs` \
+(`primary`, et `secondary` uniquement pour un ingrès/une station — l'axe opposé, activé en \
+écho) et `emphasis_points` (les points natals à nommer explicitement — planète(s) concernée(s) \
+puis toujours l'Ascendant). Ces deux champs sont calculés par géométrie zodiacale (carré/\
+opposition = même modalité, trigone = même élément, sextile = même polarité), PAS comparés au \
+thème réel du lecteur (ça, c'est `personal_highlights`, uniquement si un thème existe) : sers-\
+t'en pour transformer le climat collectif en callouts CONDITIONNELS qui parlent à chacun sans \
+connaître son thème, sur le modèle "Attention, si vous avez votre Ascendant ou votre Vénus \
+natale en Taureau, Lion, Scorpion ou Verseau, cette dynamique vous touche plus particulièrement \
+cette semaine" — jamais "les Taureau seront impactés" (ça, c'est le signe solaire seul, que ce \
+callout a justement vocation à dépasser). Ne fais pas ce callout pour CHAQUE highlight — \
+seulement pour les 2-3 highlights au score le plus élevé, pour ne pas noyer le lecteur sous les \
+conditions ; les highlights secondaires restent traités simplement comme aujourd'hui. \
+N'invente jamais un signe ou un point non présent dans ces champs."""
 
     combination_lines_data = """DANS `collective.combination_lines` : ~10 lignes de texte déjà \
 rédigées (français, prêtes à l'emploi), le "profil brut de la semaine" — combinaisons \
@@ -685,6 +718,8 @@ N'invente aucune position, aspect ou événement hors des données fournies."""
     return f"""{intro}
 
 {collective_data}
+
+{affected_signs_data}
 
 {combination_lines_data}
 
@@ -782,6 +817,90 @@ niveau de fiabilité pour les lots moins bien attestés (`certainty` moyenne, ou
 en faire un sujet central. Priorise Fortune et Esprit (les deux lots fondamentaux), et les \
 lots dont un aspect a une orbe serrée (< 3°) : ne traite pas les 17 lots avec la même \
 profondeur, ce serait répétitif et diluerait la lecture.""",
+    "draconic": """Cette lecture porte sur le THÈME DRACONIQUE, une technique qui fait pivoter \
+l'ensemble du thème natal pour que le Nœud Nord tombe à 0° Bélier. Elle est traditionnellement \
+lue comme la carte de l'âme AVANT l'incarnation — sa nature profonde, ce qu'elle visait avant \
+de revêtir la personnalité concrète décrite par le thème natal. Commence par expliquer ce \
+principe en une phrase accessible. Tu reçois `draconic` (planètes/angles/maisons/aspects en \
+draconique) et `identity` (contexte natal minimal, pour mémoire). Point technique important à \
+respecter : les MAISONS occupées par chaque planète et les ASPECTS entre elles sont \
+rigoureusement identiques au thème natal (une rotation globale ne change aucune distance \
+angulaire) — ne les présente donc jamais comme une découverte propre au draconique, seuls les \
+SIGNES ont changé. Structure la lecture autour du Soleil, de la Lune et de l'Ascendant \
+draconiques (l'identité et la posture de l'âme), puis des planètes personnelles et de leurs \
+aspects (déjà connus du thème natal, mais relus ici sous l'angle de l'âme plutôt que de la \
+personnalité). Reste au niveau du ressenti intérieur et du sens, jamais d'une prédiction \
+d'événement.""",
+    "draconic_incarnation": """Cette lecture est CIBLÉE sur l'INCARNATION ET LE BUT DE VIE, à \
+partir du thème draconique croisé avec les points les plus "karmiques" du thème natal — ne \
+traite QUE les éléments ci-dessous, volontairement resserrés, plutôt que de survoler tout le \
+thème (c'est le rôle d'une autre lecture, plus large). Trois axes, dans cet ordre :
+1. `natal_points.north_node`/`south_node` (l'axe du Nœud Nord/Sud natal, la direction de \
+croissance de cette incarnation vs les schémas familiers à dépasser) et \
+`natal_aspects_to_focus_points` filtré aux aspects impliquant ces deux points : quelles \
+planètes sont mobilisées par ce chemin. Si absents (voir `missing_points`), dis-le simplement \
+plutôt que d'improviser.
+2. `natal_angles`/`draconic_angles` (Ascendant/Descendant) : compare comment l'âme voulait se \
+présenter au monde à l'origine (Ascendant draconique) et comment la personnalité de cette vie \
+le donne réellement à voir (Ascendant natal) — une convergence de signe/élément est une \
+continuité fluide, un écart marqué (signes en tension, éléments opposés) signale un décalage \
+à intégrer entre l'intention de l'âme et son expression concrète.
+3. `natal_points.chiron`/`lilith_mean` et `draconic_points.chiron`/`lilith_mean` (avec leurs \
+aspects dans `natal_aspects_to_focus_points`) pour la dimension BLESSURE/BLOCAGE PROFOND : \
+Chiron comme blessure fondamentale dont la guérison fait partie du chemin plutôt qu'un accident \
+à éviter, Lilith comme part instinctive ou rejetée portée depuis "avant" l'incarnation. Si l'un \
+des deux est absent (voir `missing_points` — Chiron n'est pas activé par défaut sur tous les \
+thèmes), dis-le simplement sans en faire un manque.
+Formule toujours ces liens comme un sens ou une direction à explorer ("ce chemin invite à...", \
+"une blessure qui, intégrée, devient..."), jamais comme un événement ou un diagnostic. Termine \
+par une phrase de synthèse qui relie les trois axes en une seule direction de vie cohérente, \
+pas trois paragraphes indépendants.""",
+    "draconic_comparison": """Cette lecture COMPARE largement le thème NATAL et le thème \
+DRACONIQUE de la personne — contrairement à la lecture "Incarnation & but de vie" (ciblée sur \
+Nœuds/Angles/Chiron/Lilith), ici tu couvres l'ensemble des planètes personnelles et sociales \
+(Soleil à Saturne) et les angles, thème par thème (identité, vie affective, communication, \
+action, structure). Tu reçois `natal` et `draconic` (planètes/angles/balances élément-modalité \
+de chaque thème) et `aspects` (identiques entre les deux — un aspect natal EST l'aspect \
+draconique correspondant, une rotation globale ne change aucune distance angulaire : ne les \
+recalcule jamais, contente-toi de les relire sous l'angle qui t'intéresse à chaque section). \
+Pour chaque planète personnelle, compare son signe natal et son signe draconique : même \
+élément/modalité = continuité fluide entre l'âme et la personnalité sur ce registre ; signes en \
+tension (carré/opposition implicite) ou éléments opposés = zone où la personnalité de cette vie \
+prend une direction différente de l'élan initial de l'âme, à nommer comme une tension féconde à \
+intégrer plutôt qu'un problème. Appuie-toi aussi sur `natal.elements_balance`/`modality_balance` \
+vs leurs équivalents draconiques pour une lecture d'ensemble (ex. un thème natal très terre mais \
+draconique très feu : une personnalité qui a appris la prudence sur un élan d'âme plus \
+spontané). Termine par une synthèse de 2-3 tensions ou continuités les plus marquantes, pas une \
+liste exhaustive planète par planète sans hiérarchie.""",
+    "house_modality": """Cette lecture porte spécifiquement sur la DYNAMIQUE AGIR/MAINTENIR/\
+PRÉPARER, une classification traditionnelle des maisons en angulaires (1/4/7/10), succédentes \
+(2/5/8/11) et cadentes (3/6/9/12) — systématisée par William Lilly (Christian Astrology, 1647) \
+— pondérée ici par un poids par planète (Soleil/Lune comptent le plus, Mercure/Vénus/Mars un \
+peu moins, Jupiter/Saturne encore moins, Uranus/Neptune/Pluton le moins : les planètes \
+personnelles pèsent plus que les lentes/générationnelles, voir `planet_weight_note`). Commence \
+par expliquer les trois modes en une phrase accessible chacun, avec leur point de vigilance : \
+Angulaire = AGIT, prend des décisions — attention au surengagement ; Succédente = MAINTIENT, \
+fait croître dans la durée — attention à la difficulté à lâcher prise ; Cadente = PRÉPARE, \
+apprend, se retire, revient — attention à la dispersion. Tu reçois `identity` (contexte natal \
+minimal), `house_modality_analysis` (comptage simple ET score pondéré par modalité, détail par \
+planète dans `per_planet`, `dominant_modality_simple`/`dominant_modality_weighted` et \
+`reading`/`methodological_note`) et `house_quadrants` (quatre blocs de trois maisons centrés \
+sur chaque angle — Identité 12-1-2, Racines 3-4-5, Relations 6-7-8, Vie publique 9-10-11, \
+variante non vérifiée dans une source classique mais celle retenue ici — chacun déjà chargé de \
+ses planètes occupantes dans `planets`/`planet_count`, et `is_most_loaded` marquant directement \
+le ou les blocs les plus chargés : UTILISE ce champ déjà calculé plutôt que de recompter \
+toi-même). Structure la lecture en t'appuyant sur `dominant_modality_weighted` comme fil \
+conducteur principal — illustre-le avec 2-3 planètes concrètes de `per_planet` (lesquelles, \
+dans quelle maison) plutôt qu'une affirmation abstraite. Si `dominant_modality_simple` diffère \
+de `dominant_modality_weighted`, nomme la nuance explicitement (voir `methodological_note`) \
+plutôt que de l'ignorer. Ensuite, commente le(s) bloc(s) marqué(s) `is_most_loaded` dans \
+`house_quadrants` — nomme ses planètes occupantes et relie ce thème (construction identitaire, \
+racines/famille, relations, ou vie publique) à la vie de cette personne ; si `planet_count` est \
+proche entre plusieurs blocs (pas de concentration nette), dis simplement que la répartition est \
+équilibrée plutôt que de forcer un pattern sur un bloc qui ne se distingue pas vraiment. Formule \
+toujours le point de vigilance associé à la modalité dominante comme une tendance à observer \
+avec bienveillance ("vous pourriez avoir tendance à..."), jamais comme un défaut ou une \
+fatalité.""",
 }
 
 
@@ -1072,8 +1191,14 @@ convergence pourrait recouvrir dans la vie de la personne. Exemple de raisonneme
 un lot lié à l'argent en climat tendu EN MÊME TEMPS qu'un lot lié au mariage également tendu \
 peut évoquer une tension financière qui pèse sur le couple, une dépense commune difficile, ou \
 une décision à deux compliquée par l'argent — ose nommer ce genre de scénario concret plutôt \
-que de rester au niveau de l'énergie abstraite. Formule toujours ces hypothèses avec prudence \
-('cela peut se traduire par...', 'un scénario possible est...', 'cela peut annoncer...'), \
+que de rester au niveau de l'énergie abstraite. Quand TROIS domaines ou plus convergent sur la \
+même fenêtre (ex. argent + relation + santé, tous trois en climat tendu en même temps), ne les \
+présente pas comme trois événements séparés qui tombent par hasard au même moment : cherche \
+explicitement UN scénario unificateur plausible qui pourrait expliquer les trois à la fois \
+(ex. un deuil ou une séparation majeure pèse souvent à la fois sur les finances, le couple et \
+la santé/l'énergie) — c'est ce niveau de lecture, la convergence donnant sens à l'ensemble, qui \
+distingue cette synthèse d'une simple lecture lot par lot. Formule toujours ces hypothèses avec \
+prudence ('cela peut se traduire par...', 'un scénario possible est...', 'cela peut annoncer...'), \
 jamais comme une certitude absolue — mais ne les édulcore pas non plus au point de les rendre \
 méconnaissables."""
     else:
@@ -1212,9 +1337,9 @@ jugeais B dans l'absolu. N'invente aucun fait biographique sur B."""
 
 
 def _basic_chart_data(chart_data: dict) -> dict:
-    """Sous-ensemble du thème calculé pour les lectures basiques : pas de lots ni de
-    maisons dérivées, qui ont leurs propres lectures dédiées."""
-    excluded = {"lots", "derived_houses"}
+    """Sous-ensemble du thème calculé pour les lectures basiques : pas de lots, maisons
+    dérivées ou thème draconique, qui ont leurs propres lectures dédiées."""
+    excluded = {"lots", "derived_houses", "draconic"}
     return {key: value for key, value in chart_data.items() if key not in excluded}
 
 
@@ -1266,6 +1391,76 @@ parfait") à une phrase générique ("vous avez un fort besoin de perfection")."
 les données. Si son `level` vaut 'forte' ou 'notable', la majorité des chaînes de \
 dispositeurs du thème se referment sur une même planète (`dominant_dispositor`) : \
 signale explicitement ce pattern comme une planète clé de voûte du thème.
+8. `degree_analysis` affine chaque planète avec le DEGRÉ exact qu'elle occupe dans son signe \
+(0-29), en plus du signe lui-même. Par défaut, mentionne-le UNIQUEMENT quand un champ notable \
+est présent (`is_exact_exaltation`, `is_critical_degree`, `is_anaretic`, `degree_theme_label` \
+ou `dissolution_predisposition_note` non nuls) — n'énumère jamais le degré de chaque planète \
+par défaut, ce serait mécanique et diluerait la lecture. Si la zone `degrees` fait partie des \
+zones demandées (voir plus bas), fais l'inverse pour les planètes personnelles (Soleil à \
+Mars) : développe leur degré en détail même sans signal notable, le degré exact étant alors le \
+sujet central de cette lecture plutôt qu'un aparté. Chaque signal a son propre statut, à ne \
+jamais fusionner ni présenter avec la même autorité : `is_exact_exaltation` est un héritage \
+classique (hellénistique/Ptolémée) — la planète exprime sa forme la plus élevée et harmonieuse ; \
+`is_critical_degree` est un motif largement cité (XXe siècle) — un point de tension ou \
+d'intensité accrue selon la modalité du signe ; `is_anaretic` (degré 29) signale une urgence ou \
+une maturité forcée sur ce thème, le cycle du signe touchant à sa fin ; \
+`degree_theme_sign`/`degree_theme_label` (théorie des degrés) est un système POPULAIRE plus \
+récent (pas une règle classique établie) — présente-le avec plus de réserve que les trois \
+précédents, comme une nuance possible plutôt qu'un fait astrologique assuré. \
+`dissolution_predisposition_note` (degrés 12 et 24, thème Poissons répété) est une synthèse \
+interprétative encore plus prudente : présente-la TOUJOURS comme une simple prédisposition ou \
+sensibilité à surveiller avec bienveillance ("vous pourriez avoir une appétence pour...", \
+"une sensibilité à..."), JAMAIS comme un diagnostic, une fatalité ou une prédiction — et \
+mentionne systématiquement à côté la face constructive du même thème (sensibilité, \
+créativité, intuition, spiritualité), jamais isolée comme un simple risque. Une planète peut \
+cumuler plusieurs de ces signaux à la fois : dans ce cas, mentionne-les ensemble mais garde \
+leurs statuts distincts dans la formulation.
+9. Si la zone `spirituality` fait partie des zones demandées (voir plus bas), tu reçois \
+`spiritual_gifts_signals` (les signaux DÉJÀ REPÉRÉS dans ce thème précis — occupants des \
+maisons IV/VIII/XII, aspects documentés présents, concentration en eau, astéroïdes notables, \
+Nœud Sud) et `reference.spiritual_gifts` (les dictionnaires de composition). Distingue \
+d'abord les TROIS types de don (`gift_types`) : perception/intuition (Lune, Mercure, Neptune, \
+signes d'eau), pouvoir opératif/magie de transformation (Pluton, Scorpion, maison VIII), et \
+faculté de "transport"/projection (maison XII, Neptune, Uranus). Compose ensuite chaque \
+observation à partir des dictionnaires plutôt que d'une formule figée : pour un aspect \
+documenté, combine `gift_nature_by_body` des deux points + `aspect_activation_mode` de \
+l'aspect + `expression_channel_by_sign` du signe où il se forme (schéma : "[nature A] combiné \
+à [nature B], en [mode d'activation], s'exprime à travers [canal du signe]"). Pour un occupant \
+de maison clé (IV/VIII/XII dans `key_house_occupants`), combine sa `gift_nature_by_body` avec \
+`life_area_by_house`/`key_houses` de cette maison. Si `has_water_stellium` ou \
+`water_grand_trine` est présent, signale-le explicitement comme un amplificateur fort de \
+TOUS les dons déjà repérés, pas comme un signal séparé. Les astéroïdes dans \
+`notable_asteroids` (Lilith = pouvoir non domestiqué, Vesta = dévotion disciplinée à une \
+pratique, Cérès = lien à la terre/aux cycles) sont l'indicateur le plus spécifique de la \
+source documentée : ne les passe pas sous silence s'ils sont présents. N'évoque JAMAIS \
+Hécate ou un autre corps non listé dans `notable_asteroids`/`key_house_occupants` (voir \
+`asteroid_caveats`) — ce point n'est pas calculé dans cette app. Respecte scrupuleusement \
+`methodological_warning` : n'affirme un type de don que si PLUSIEURS signaux du même type \
+convergent (jamais sur la base d'un seul aspect isolé), et rappelle une fois dans la lecture \
+que ce que l'astrologie moderne appelle "don" ou "magie" se lit surtout en termes \
+psychologiques (perception fine, charisme, sens du symbole) plutôt que comme un pouvoir \
+surnaturel littéral. Si aucun signal n'apparaît dans `spiritual_gifts_signals`, dis-le \
+simplement plutôt que d'inventer un don de remplissage. Formule TOUJOURS ces observations \
+comme des sensibilités ou prédispositions à explorer/cultiver ("vous pourriez avoir une \
+facilité pour...", "une sensibilité qui, développée, peut devenir..."), jamais comme une \
+promesse de pouvoir surnaturel ou une capacité déjà maîtrisée et certaine.
+10. `house_modality_analysis` classe les maisons occupées par les 10 planètes classiques en \
+angulaires (1/4/7/10 — AGIT, prend des décisions ; attention au surengagement), succédentes \
+(2/5/8/11 — MAINTIENT, fait croître dans la durée ; attention à la difficulté à lâcher prise) \
+ou cadentes (3/6/9/12 — PRÉPARE, apprend, se retire, revient ; attention à la dispersion). \
+Utilise `dominant_modality_weighted` (poids par planète — Soleil/Lune comptent le plus, \
+Mercure/Vénus/Mars un peu moins, Jupiter/Saturne encore moins, Uranus/Neptune/Pluton le moins : \
+les planètes personnelles pèsent plus que les lentes/générationnelles, voir `planet_weight_note`) \
+comme angle de lecture principal — associe son verbe et son point de vigilance (`reading` donne \
+la formulation) à un ou deux exemples concrets de comportement quotidien, jamais comme un trait \
+isolé sans illustration. Si `dominant_modality_simple` (simple compte du nombre de planètes) \
+diffère de `dominant_modality_weighted`, mentionne les deux brièvement plutôt que de n'en garder \
+qu'un arbitrairement (voir `methodological_note`) — c'est une nuance intéressante ("beaucoup de \
+planètes orientées vers un mode, mais ce sont des planètes lentes/générationnelles peu \
+personnelles, tandis qu'une ou deux planètes personnelles tirent la carte vers un autre mode"), \
+pas une contradiction à cacher. Ne mentionne `house_quadrants` que si un bloc est marqué \
+`is_most_loaded` avec un `planet_count` nettement supérieur aux autres — sinon, cette section \
+reste secondaire par rapport à la modalité dominante ci-dessus.
 
 ZONES À COUVRIR DANS CETTE LECTURE :
 {focus_descriptions}
@@ -1331,9 +1526,67 @@ def _build_user_payload(
             "houses_meanings": houses_meanings()["houses"],
             "rulerships_notes": rulerships()["notes"],
         }
+        if "spirituality" in request.focus_areas:
+            gifts_ref = spiritual_gifts()
+            payload["spiritual_gifts_signals"] = compute_spiritual_gifts_signals(chart_data)
+            payload["reference"]["spiritual_gifts"] = {
+                "gift_types": gifts_ref["gift_types"],
+                "key_houses": gifts_ref["key_houses"],
+                "gift_nature_by_body": gifts_ref["gift_nature_by_body"],
+                "aspect_activation_mode": gifts_ref["aspect_activation_mode"],
+                "expression_channel_by_sign": gifts_ref["expression_channel_by_sign"],
+                "life_area_by_house": gifts_ref["life_area_by_house"],
+                "asteroid_caveats": gifts_ref["asteroid_caveats"],
+                "methodological_warning": gifts_ref["methodological_warning"],
+            }
+    elif request.reading_type == "house_modality":
+        payload["identity"] = _identity_context(chart_data)
+        payload["house_modality_analysis"] = chart_data["house_modality_analysis"]
+        payload["house_quadrants"] = chart_data["house_quadrants"]
     elif request.reading_type == "lots":
         payload["identity"] = _identity_context(chart_data)
         payload["lots"] = chart_data["lots"]
+    elif request.reading_type == "draconic":
+        payload["identity"] = _identity_context(chart_data)
+        payload["draconic"] = chart_data["draconic"]
+    elif request.reading_type == "draconic_incarnation":
+        draconic = chart_data["draconic"]
+        natal_by_name = {p["name"]: p for p in chart_data["planets"]}
+        draconic_by_name = {p["name"]: p for p in draconic["planets"]}
+        focus_names = ["Sun", "Moon", "north_node", "south_node", "chiron", "lilith_mean"]
+        payload["identity"] = _identity_context(chart_data)
+        payload["natal_angles"] = {
+            "ascendant": chart_data["angles"]["ascendant"],
+            "descendant": chart_data["angles"]["descendant"],
+        }
+        payload["draconic_angles"] = {
+            "ascendant": draconic["angles"]["ascendant"],
+            "descendant": draconic["angles"]["descendant"],
+        }
+        payload["natal_points"] = {name: natal_by_name[name] for name in focus_names if name in natal_by_name}
+        payload["draconic_points"] = {
+            name: draconic_by_name[name] for name in focus_names if name in draconic_by_name
+        }
+        payload["natal_aspects_to_focus_points"] = [
+            a for a in chart_data["aspects"] if a["planet1"] in focus_names or a["planet2"] in focus_names
+        ]
+        payload["missing_points"] = [name for name in focus_names[2:] if name not in natal_by_name]
+    elif request.reading_type == "draconic_comparison":
+        draconic = chart_data["draconic"]
+        payload["identity"] = _identity_context(chart_data)
+        payload["natal"] = {
+            "planets": chart_data["planets"],
+            "angles": chart_data["angles"],
+            "elements_balance": chart_data["elements_balance"],
+            "modality_balance": chart_data["modality_balance"],
+        }
+        payload["draconic"] = {
+            "planets": draconic["planets"],
+            "angles": draconic["angles"],
+            "elements_balance": draconic["elements_balance"],
+            "modality_balance": draconic["modality_balance"],
+        }
+        payload["aspects"] = chart_data["aspects"]
     elif request.reading_type == "derived_houses":
         relation = None
         if request.relation_key:

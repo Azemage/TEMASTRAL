@@ -79,6 +79,33 @@ def test_global_reading_payload_excludes_lots_and_derived_houses():
     assert "planets" in payload["chart_data"]  # les données de base restent présentes
 
 
+def test_global_reading_payload_omits_spiritual_gifts_signals_by_default():
+    chart = _make_chart()
+    request = schemas.ReadingRequest(reading_type="global", focus_areas=["general"])
+    payload = interpretation_service._build_user_payload(chart, request)
+
+    assert "spiritual_gifts_signals" not in payload
+    assert "spiritual_gifts" not in payload["reference"]
+
+
+def test_global_reading_payload_includes_spiritual_gifts_signals_when_requested():
+    chart = _make_chart()
+    request = schemas.ReadingRequest(reading_type="global", focus_areas=["general", "spirituality"])
+    payload = interpretation_service._build_user_payload(chart, request)
+
+    assert "spiritual_gifts_signals" in payload
+    assert set(payload["spiritual_gifts_signals"].keys()) == {
+        "key_house_occupants", "documented_aspects_present", "water_sign_classic_planets",
+        "has_water_stellium", "water_grand_trine", "notable_asteroids", "south_node_sign_house",
+    }
+    gifts_ref = payload["reference"]["spiritual_gifts"]
+    assert set(gifts_ref.keys()) == {
+        "gift_types", "key_houses", "gift_nature_by_body", "aspect_activation_mode",
+        "expression_channel_by_sign", "life_area_by_house", "asteroid_caveats", "methodological_warning",
+    }
+    json.dumps(payload)  # doit rester strictement sérialisable (voir test dédié plus bas)
+
+
 def test_lots_reading_payload_contains_only_lots_and_identity():
     chart = _make_chart()
     request = schemas.ReadingRequest(reading_type="lots")
@@ -87,6 +114,90 @@ def test_lots_reading_payload_contains_only_lots_and_identity():
     assert "chart_data" not in payload
     assert len(payload["lots"]) == 17
     assert set(payload["identity"].keys()) == {"sun", "moon", "ascendant", "is_day_chart"}
+
+
+def test_house_modality_reading_payload_contains_analysis_and_quadrant_loads():
+    chart = _make_chart()
+    request = schemas.ReadingRequest(reading_type="house_modality")
+    payload = interpretation_service._build_user_payload(chart, request)
+
+    assert "chart_data" not in payload
+    assert set(payload["identity"].keys()) == {"sun", "moon", "ascendant", "is_day_chart"}
+    analysis = payload["house_modality_analysis"]
+    assert sum(analysis["counts_by_modality"].values()) == 10
+    assert analysis["dominant_modality_weighted"] in {"angular", "succedent", "cadent"}
+    quadrants = payload["house_quadrants"]
+    assert {g["key"] for g in quadrants} == {"identite", "racines", "relations", "vie_publique"}
+    assert sum(g["planet_count"] for g in quadrants) == 10
+    assert any(g["is_most_loaded"] for g in quadrants)
+    json.dumps(payload)  # doit rester strictement sérialisable
+
+
+def test_house_modality_system_prompt_mentions_agir_maintenir_preparer():
+    prompt = interpretation_service._build_system_prompt(schemas.ReadingRequest(reading_type="house_modality"))
+    assert "AGIT" in prompt and "MAINTIENT" in prompt and "PRÉPARE" in prompt
+
+
+def test_draconic_reading_payload_contains_full_draconic_chart():
+    chart = _make_chart()
+    request = schemas.ReadingRequest(reading_type="draconic")
+    payload = interpretation_service._build_user_payload(chart, request)
+
+    assert set(payload["draconic"].keys()) >= {"planets", "angles", "houses", "aspects"}
+    assert set(payload["identity"].keys()) == {"sun", "moon", "ascendant", "is_day_chart"}
+
+
+def test_draconic_incarnation_payload_flags_missing_points_without_optional_selection():
+    # _make_chart() calcule sans points optionnels : Nœuds/Chiron/Lilith doivent être signalés
+    # absents plutôt que silencieusement ignorés (voir missing_points dans _build_user_payload).
+    chart = _make_chart()
+    request = schemas.ReadingRequest(reading_type="draconic_incarnation")
+    payload = interpretation_service._build_user_payload(chart, request)
+
+    assert set(payload["missing_points"]) == {"north_node", "south_node", "chiron", "lilith_mean"}
+    assert set(payload["natal_points"].keys()) == {"Sun", "Moon"}
+    assert set(payload["draconic_points"].keys()) == {"Sun", "Moon"}
+    assert set(payload["natal_angles"].keys()) == {"ascendant", "descendant"}
+    assert set(payload["draconic_angles"].keys()) == {"ascendant", "descendant"}
+
+
+def test_draconic_incarnation_payload_includes_nodes_and_their_aspects_when_selected():
+    data = calculate_natal_chart(
+        birth_date="1990-05-15",
+        birth_time="14:32:00",
+        time_known=True,
+        timezone="Europe/Paris",
+        latitude=45.7640,
+        longitude=4.8357,
+        optional_points=["north_node", "south_node", "chiron", "lilith_mean"],
+    )
+    chart = _FakeChart(data)
+    request = schemas.ReadingRequest(reading_type="draconic_incarnation")
+    payload = interpretation_service._build_user_payload(chart, request)
+
+    assert payload["missing_points"] == []
+    assert set(payload["natal_points"].keys()) == {"Sun", "Moon", "north_node", "south_node", "chiron", "lilith_mean"}
+    # Chaque aspect renvoyé doit bien impliquer au moins un des points ciblés (Nœuds/Chiron/
+    # Lilith/Soleil/Lune), pas un aspect quelconque du thème.
+    focus = {"Sun", "Moon", "north_node", "south_node", "chiron", "lilith_mean"}
+    for aspect in payload["natal_aspects_to_focus_points"]:
+        assert aspect["planet1"] in focus or aspect["planet2"] in focus
+
+
+def test_draconic_comparison_payload_reuses_identical_aspects():
+    chart = _make_chart()
+    request = schemas.ReadingRequest(reading_type="draconic_comparison")
+    payload = interpretation_service._build_user_payload(chart, request)
+
+    assert payload["aspects"] == chart.computed_chart_data["aspects"]
+    assert set(payload["natal"].keys()) == {"planets", "angles", "elements_balance", "modality_balance"}
+    assert set(payload["draconic"].keys()) == {"planets", "angles", "elements_balance", "modality_balance"}
+
+
+def test_draconic_system_prompts_mention_draconic_concept():
+    for reading_type in ("draconic", "draconic_incarnation", "draconic_comparison"):
+        prompt = interpretation_service._build_system_prompt(schemas.ReadingRequest(reading_type=reading_type))
+        assert "draconi" in prompt.lower()
 
 
 def test_derived_houses_reading_payload_uses_requested_reference_house():
@@ -638,6 +749,16 @@ def test_generate_reading_extracts_timing_ratings_and_strips_json_block(monkeypa
     }
 
 
+def test_degrees_and_spirituality_focus_areas_produce_dedicated_guidance():
+    request = schemas.ReadingRequest(reading_type="global", focus_areas=["degrees", "spirituality"])
+    prompt = interpretation_service._build_system_prompt(request)
+    assert "- degrees :" in prompt
+    assert "- spirituality :" in prompt
+    # Les deux règles dédiées (degré approfondi, dons/sensibilités) doivent être présentes.
+    assert "dissolution_predisposition_note" in prompt
+    assert "spiritual_gifts_signals" in prompt
+
+
 def test_basic_reading_types_include_focus_zone_section():
     request = schemas.ReadingRequest(reading_type="love", focus_areas=["love"])
     prompt = interpretation_service._build_system_prompt(request)
@@ -713,7 +834,11 @@ def test_all_reading_type_payloads_are_strictly_json_serializable():
     chart_b = _make_chart_b()
     requests_by_type = [
         (schemas.ReadingRequest(reading_type="global", focus_areas=["general"]), None),
+        (schemas.ReadingRequest(reading_type="global", focus_areas=["general", "spirituality"]), None),
         (schemas.ReadingRequest(reading_type="lots"), None),
+        (schemas.ReadingRequest(reading_type="draconic"), None),
+        (schemas.ReadingRequest(reading_type="draconic_incarnation"), None),
+        (schemas.ReadingRequest(reading_type="draconic_comparison"), None),
         (schemas.ReadingRequest(reading_type="derived_houses"), None),
         (schemas.ReadingRequest(reading_type="timing", as_of_date=date(2026, 1, 1)), None),
         (schemas.ReadingRequest(reading_type="zodiacal_releasing", as_of_date=date(2026, 1, 1)), None),

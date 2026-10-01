@@ -1,0 +1,75 @@
+{
+  "description": "Indicateurs documentés de sensibilité psychique/spirituelle et de dons potentiels (perception intuitive, pouvoir de transformation, capacité de 'transport' de la conscience) — voir app/core/spiritual_gifts.py pour le calcul déterministe des signaux présents dans un thème réel. Système compositionnel à quatre dictionnaires plutôt qu'un catalogue statique de combinaisons : la lecture finale reste toujours une synthèse du modèle, jamais une citation directe d'une source unique. Avertissement méthodologique des sources elles-mêmes (à répercuter dans toute lecture) : aucun indicateur isolé ne 'fait' quelqu'un de psychique ou de doué — la lecture est cumulative (plusieurs indicateurs du même type de don ensemble comptent plus qu'un aspect isolé), et ce que l'astrologie moderne appelle 'magie' se décrit le plus souvent en termes psychologiques (perception aiguë, charisme, capacité à voir des motifs cachés) plutôt que comme un pouvoir surnaturel littéral.",
+  "gift_types": {
+    "perception": "Perception / intuition psychique (clairvoyance, télépathie, sensibilité à ce qui n'est pas dit) — surtout Lune, Mercure, Neptune, signes d'eau.",
+    "operative_power": "Pouvoir opératif / magie de transformation (défaire des schémas, voir ce qui est caché, opérer des changements) — surtout Pluton, Scorpion, Maison VIII.",
+    "transport": "Faculté de 'transport' — projection astrale, contact avec l'inconscient collectif — surtout Maison XII, Neptune, axe Uranus (états altérés soudains)."
+  },
+  "key_houses": {
+    "4": { "natural_sign": "Cancer", "role": "Racine émotionnelle de l'intuition — instinct viscéral, voix intérieure." },
+    "8": { "natural_sign": "Scorpio", "role": "L'occulte au sens littéral (ce qui est caché) — capacité à voir sous la surface, transformer, opérer des changements profonds." },
+    "12": { "natural_sign": "Pisces", "role": "Spiritualité, inconscient collectif, dissolution du moi — la maison la plus directement liée à la projection astrale et à la médiumnité." }
+  },
+  "gift_nature_by_body": {
+    "Sun": "Identité consciente intégrant le don",
+    "Moon": "Intuition, perception émotionnelle directe",
+    "Mercury": "Canal de communication avec l'invisible",
+    "Neptune": "Spiritualité, dissolution des limites, rêve/vision",
+    "Uranus": "État altéré soudain, rupture, non-conventionnel",
+    "Pluto": "Pouvoir de transformation, voir ce qui est caché",
+    "Jupiter": "Amplification de ce qui est déjà présent (n'est pas un indicateur en soi)",
+    "lilith_mean": "Pouvoir non domestiqué, rébellion face aux structures imposées — indicateur individuel le plus fréquent dans l'étude de référence (16/20 thèmes)",
+    "vesta": "Dévotion disciplinée, soutien d'une pratique dans la durée — 'la Prêtresse' (13/20 thèmes)",
+    "ceres": "Lien à la terre, aux cycles, à la transformation nourricière"
+  },
+  "documented_aspect_pairs": [
+    { "planet1": "Moon", "planet2": "Neptune", "gift_type": "perception" },
+    { "planet1": "Moon", "planet2": "Uranus", "gift_type": "transport" },
+    { "planet1": "Moon", "planet2": "Pluto", "gift_type": "operative_power" },
+    { "planet1": "Mercury", "planet2": "Neptune", "gift_type": "perception" },
+    { "planet1": "Mercury", "planet2": "Uranus", "gift_type": "transport" },
+    { "planet1": "Sun", "planet2": "Neptune", "gift_type": "perception" },
+    { "planet1": "Jupiter", "planet2": "Moon", "gift_type": "amplification" },
+    { "planet1": "Jupiter", "planet2": "Neptune", "gift_type": "amplification" }
+  ],
+  "relevant_aspect_types": ["conjunction", "trine", "sextile", "square", "opposition"],
+  "water_signs": ["Cancer", "Scorpio", "Pisces"],
+  "aspect_activation_mode": {
+    "conjunction": "Fusion totale — le don est inné, inséparable de l'identité depuis le début.",
+    "trine": "Coule avec facilité — talent naturel, disponible presque sans effort conscient.",
+    "sextile": "Opportunité — accessible, mais demande une décision active de le développer.",
+    "square": "Tension productive — le don se manifeste à travers une friction ou une crise qui force son développement.",
+    "opposition": "Prise de conscience par contraste — tend à se projeter d'abord sur les autres avant de s'intégrer en soi.",
+    "quincunx": "Ajustement inconfortable — pas naturel, exige une adaptation constante et consciente."
+  },
+  "expression_channel_by_sign": {
+    "Aries": "Action directe, impulsive, initiatrice",
+    "Taurus": "Le corps, le sensoriel, le matériel, une patience soutenue",
+    "Gemini": "La parole, l'information, la dualité, la curiosité",
+    "Cancer": "L'émotion, le foyer, la mémoire, le soin porté à l'autre",
+    "Leo": "L'expression créative et visible, le charisme, la scène",
+    "Virgo": "Le service, le détail technique, la routine, l'analyse",
+    "Libra": "La relation, l'esthétique, l'équilibre, le miroir de l'autre",
+    "Scorpio": "L'intensité, la crise, l'interdit, la transformation",
+    "Sagittarius": "La philosophie, l'expansion, la quête de sens",
+    "Capricorn": "La structure, la discipline, l'autorité, le temps long",
+    "Aquarius": "Le collectif, le peu conventionnel, l'innovation",
+    "Pisces": "La dissolution, le rêve, la compassion, l'indifférencié"
+  },
+  "life_area_by_house": {
+    "1": "Identité, corps, manière de se présenter au monde",
+    "2": "Ressources propres, valeur personnelle, le matériel",
+    "3": "Communication quotidienne, entourage proche, apprentissage",
+    "4": "Foyer, racine émotionnelle, famille",
+    "5": "Créativité, plaisir, expression personnelle",
+    "6": "Routine, travail quotidien, santé, service, discipline",
+    "7": "Relations directes, l'autre comme miroir",
+    "8": "L'occulte, la transformation, les ressources partagées, le pouvoir",
+    "9": "Philosophie, expansion, sens, le lointain",
+    "10": "Vocation publique, autorité, héritage",
+    "11": "Communauté, réseaux, projets collectifs",
+    "12": "Spiritualité, inconscient collectif, dissolution du moi, isolement/retraite"
+  },
+  "asteroid_caveats": "Ceres et Lilith moyenne sont calculés par défaut sur tout thème ; Vesta nécessite le fichier d'éphémérides déjà fourni avec l'app mais reste optionnelle (case à cocher). L'astéroïde Hekate (100 Hekate, 'la Reine des Sorcières' selon son nom même), également cité par la source comme un indicateur récurrent méritant plus d'attention, N'EST PAS actuellement disponible dans le catalogue de points de cette app (fichier d'éphémérides distinct requis) — ne jamais l'évoquer comme calculé.",
+  "methodological_warning": "Aucun indicateur isolé ne 'fait' quelqu'un de psychique ou de mage. La lecture est cumulative : ce sont plusieurs indicateurs du MÊME type de don qui apparaissent ENSEMBLE dans le thème qui comptent, pas un aspect isolé. Ce que l'astrologie moderne appelle 'magie' se décrit le plus souvent en termes psychologiques (perception aiguë, charisme, capacité à repérer des motifs cachés) plutôt que comme un pouvoir surnaturel littéral — présenter cette nuance explicitement plutôt que la laisser sous-entendue."
+}

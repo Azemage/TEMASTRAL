@@ -28,9 +28,10 @@ Implémenté :
 - Thème natal complet (planètes, angles, maisons — Placidus/Koch/Whole Sign/Équal/Regiomontanus,
   aspects majeurs et mineurs avec orbes configurables, applicatif/séparatif, balance éléments/modalités)
 - Points additionnels optionnels (voir `optional_points`, sélecteur dans "Options avancées") :
-  Nœud Nord/Sud et Lilith moyenne (calcul orbital pur, aucun fichier supplémentaire) sont
-  sélectionnés par défaut à la création d'un thème ; Chiron et les 4 principaux astéroïdes
-  (Cérès, Pallas, Junon, Vesta) sont opt-in et nécessitent le fichier Swiss Ephemeris
+  Nœud Nord/Sud, Lilith moyenne (calcul orbital pur, aucun fichier supplémentaire) et Chiron
+  sont sélectionnés par défaut à la création d'un thème (Chiron nécessite le fichier Swiss
+  Ephemeris ci-dessous, mais reste activé par défaut car ce fichier est fourni avec le dépôt) ;
+  seuls les 4 principaux astéroïdes (Cérès, Pallas, Junon, Vesta) restent opt-in et nécessitent
   `seas_18.se1` (fourni dans `app/ephe/`, ~220 Ko, couvre ~1900-2200 pour ces 5 corps) —
   `swe.set_ephe_path()` est repositionné **par thread** (`app/core/ephemeris.py::
   _ensure_ephe_path_for_this_thread`) car cet appel est thread-local dans pyswisseph, ce qui
@@ -335,15 +336,78 @@ Implémenté :
   ni les maisons dérivées), et six lectures spécialisées (Lots, Maisons dérivées, Timing,
   Libération zodiacale, Compatibilité, Astrocartographie) qui ne reçoivent que les données de
   leur propre technique
+- Thème draconique (`app/core/draconic.py`) : rotation de l'ensemble du thème natal pour que
+  le Nœud Nord tombe à 0° Bélier, traditionnellement lue comme la carte de l'âme avant
+  l'incarnation, sous la personnalité exprimée par le thème natal. Calculé directement dans
+  `calculate_natal_chart` (même principe que les maisons dérivées, stocké dans
+  `computed_chart_data.draconic`, pas d'endpoint séparé) : comme tous les points subissent
+  exactement la même rotation, la maison occupée par chaque planète et les aspects entre elles
+  restent rigoureusement identiques au thème natal (seuls les signes changent) — `houses` et
+  `aspects` sont donc réutilisés tels quels, jamais recalculés. Trois lectures dans l'onglet
+  dédié : la lecture draconique seule, une lecture ciblée "Incarnation & but de vie" (Nœud
+  Nord/Sud natal, Ascendant/Descendant draconique vs natal, Chiron/Lilith pour la dimension
+  blessure/blocage profond) et une comparaison natal ↔ draconique plus large (toutes les
+  planètes personnelles et sociales). Nœud Nord/Sud, Lilith moyenne et Chiron étant désormais
+  sélectionnés par défaut sur tout nouveau thème (voir ci-dessus), ces trois lectures
+  disposent de leurs données sans configuration supplémentaire.
+- Dynamique angulaire/succédente/cadente des maisons (`app/core/house_modality.py`) :
+  classification hellénistique des maisons (kentra/epanaphora/apoklima, systématisée par
+  William Lilly) lue comme trois verbes avec leur point de vigilance — Angulaire = Agit
+  (attention au surengagement), Succédente = Maintient (attention à la difficulté à lâcher
+  prise), Cadente = Prépare/apprend/se retire/revient (attention à la dispersion). Calculée
+  directement dans `calculate_natal_chart` (`computed_chart_data.house_modality_analysis`) :
+  comptage simple ET score pondéré sur les 10 planètes classiques, modalité dominante selon
+  chaque métrique (présentées toutes les deux si elles divergent, jamais l'une forcée sur
+  l'autre). Le score pondéré utilise un poids PAR PLANÈTE — préférence personnelle de
+  l'utilisateur, qui remplace le barème historique de dignité accidentelle de Lilly par
+  maison (conservé dans `app/reference_data/house_modality.json` à titre documentaire) :
+  Soleil/Lune = 4, Mercure/Vénus/Mars = 3, Jupiter/Saturne = 2, Uranus/Neptune/Pluton = 1 —
+  les planètes personnelles pèsent plus que les lentes/générationnelles. Onglet dédié
+  "Dynamique" dans Thème natal, badges Ang./Succ./Cad. dans l'onglet Planètes, règle dédiée
+  dans le prompt de lecture générale, et une lecture spécialisée "Agir / Maintenir /
+  Préparer" (reading_type `house_modality`) structurée autour du découpage en quatre blocs
+  centré sur chaque angle (Identité 12-1-2, Racines 3-4-5, Relations 6-7-8, Vie publique
+  9-10-11 — `house_quadrants`, explicitement non vérifié dans une source classique ; le
+  découpage standard documenté qui commence à chaque angle plutôt que de le centrer n'est
+  volontairement pas retenu). Chaque bloc est chargé des planètes classiques qui l'occupent
+  (`planets`/`planet_count`), avec le ou les blocs les plus chargés marqués
+  `is_most_loaded` (égalité possible, jamais forcée sur un seul bloc) — utilisé aussi bien
+  par la lecture spécialisée que, ponctuellement, par la lecture générale.
 - Web app simple pour saisir une naissance, visualiser le thème et générer une lecture,
   organisée en "Thème natal" (données calculées) et "Lecture interprétée" (générale + les
-  5 lectures spécialisées, chacune affichant d'abord ses données puis un bouton de génération ;
+  6 lectures spécialisées, chacune affichant d'abord ses données puis un bouton de génération ;
   la lecture des phases de Libération zodiacale est un second bouton dans l'onglet Lots ;
   l'onglet Compatibilité permet de sélectionner une carte existante ou d'en créer une nouvelle
   pour la deuxième personne, directement depuis cet onglet)
 
 Pas encore implémenté (voir cahier des charges fourni, section V2/V3) : révolution solaire,
 progressions secondaires, mode de compatibilité personne/entreprise, comptes utilisateurs.
+
+### Ascendant manuel & questionnaire de rectification
+
+Pour une naissance sans heure exacte connue :
+
+- **Ascendant fixé manuellement** — `BirthData.ascendant_override` (`{sign, degree_in_sign}`)
+  court-circuite le calcul des maisons à partir de la ville/heure : `calculate_natal_chart`
+  bascule alors sur des maisons de signes intégraux (whole sign) à partir du signe donné,
+  seule convention cohérente sans heure/lieu exacts (le Milieu du Ciel affiché n'est dans ce
+  cas qu'un repère de maison 10, pas l'angle astronomique réel). La ville de naissance devient
+  facultative dans ce mode (`BirthData.location` peut être omis) ; formulaire : case "Je connais
+  déjà mon ascendant → le définir manuellement", qui masque ville/latitude/longitude.
+- **Questionnaire de rectification** (`app/core/rectification.py`), en deux étapes
+  indépendantes, accessible en bas du formulaire de naissance :
+  1. *Traits physiques/tempérament* — questionnaire déclaratif servi tel quel
+     (`GET /api/reference/ascendant-rectification-traits`), scoré côté client (aucun calcul
+     serveur) ; correspondances traditionnelles/populaires, explicitement pas une méthode
+     validée (voir `epistemic_status` du fichier de référence).
+  2. *Recoupement d'événements de vie* (`POST /api/rectification/scan`) — balaie une fenêtre
+     horaire par pas de quelques minutes et score chaque heure candidate contre des événements
+     déjà survenus (mariage, déménagement...) via trois signaux classiques : transits réels aux
+     angles à la date de l'événement, directions par arc solaire des planètes natales
+     (conjonction), Lune progressée (progression secondaire) en conjonction avec un angle.
+     N'utilise que des événements déjà survenus (l'inverse d'une prédiction) ; chaque heure
+     candidate renvoyée peut être appliquée d'un clic comme ascendant manuel ci-dessus.
+     Avertissement méthodologique toujours renvoyé avec le résultat (`warning`).
 
 ## Installation
 

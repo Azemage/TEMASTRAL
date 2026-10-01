@@ -47,6 +47,11 @@ class NatalChart(Base):
     birth_latitude: Mapped[float] = mapped_column(nullable=False)
     birth_longitude: Mapped[float] = mapped_column(nullable=False)
 
+    # Ascendant fixé manuellement (ex. rectification par questionnaire), court-circuitant le
+    # calcul des maisons à partir de ville/heure — voir chart_calculator.calculate_natal_chart.
+    # None = calcul normal à partir de birth_latitude/birth_longitude/birth_time.
+    ascendant_override_longitude: Mapped[float | None] = mapped_column(nullable=True)
+
     house_system: Mapped[str] = mapped_column(String(30), default="placidus")
     zodiac_type: Mapped[str] = mapped_column(String(20), default="tropical")
     rulership_system: Mapped[str] = mapped_column(String(20), default="both")

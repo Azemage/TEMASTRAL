@@ -159,6 +159,68 @@ function astroLineTypeLabel(lineType) {
   return pick(ASTRO_LINE_TYPE_NAMES[lineType]) || lineType;
 }
 
+// Dynamique angulaire/succédente/cadente des maisons (William Lilly) — voir
+// app/core/house_modality.py. Distinct de la Modalité cardinale/fixe/mutable des signes
+// (onglet "Éléments") : noms volontairement différents pour ne pas les confondre.
+const MODALITY_ORDER = ["angular", "succedent", "cadent"];
+
+const HOUSE_MODALITY_LABELS = {
+  angular: { fr: "Angulaire (Agir)", en: "Angular (Act)", es: "Angular (Actuar)" },
+  succedent: { fr: "Succédente (Maintenir)", en: "Succedent (Maintain)", es: "Sucedente (Mantener)" },
+  cadent: { fr: "Cadente (Préparer)", en: "Cadent (Prepare)", es: "Cadente (Preparar)" },
+};
+
+const HOUSE_MODALITY_SHORT_LABELS = {
+  angular: { fr: "Ang.", en: "Ang.", es: "Ang." },
+  succedent: { fr: "Succ.", en: "Succ.", es: "Suc." },
+  cadent: { fr: "Cad.", en: "Cad.", es: "Cad." },
+};
+
+const HOUSE_MODALITY_READINGS = {
+  angular: {
+    fr: "agit, prend des décisions — attention au surengagement.",
+    en: "acts, makes decisions — watch out for overcommitment.",
+    es: "actúa, toma decisiones — cuidado con el exceso de compromiso.",
+  },
+  succedent: {
+    fr: "maintient, fait croître dans la durée — attention à la difficulté à lâcher prise.",
+    en: "maintains, grows things over time — watch out for difficulty letting go.",
+    es: "mantiene, hace crecer con el tiempo — cuidado con la dificultad para soltar.",
+  },
+  cadent: {
+    fr: "prépare, apprend, se retire, revient — attention à la dispersion.",
+    en: "prepares, learns, withdraws, returns — watch out for scattering.",
+    es: "prepara, aprende, se retira, regresa — cuidado con la dispersión.",
+  },
+};
+
+const QUADRANT_THEME_LABELS = {
+  le_moi: { fr: "Le moi (maisons 1-2-3)", en: "The self (houses 1-2-3)", es: "El yo (casas 1-2-3)" },
+  le_foyer: { fr: "Le foyer (maisons 4-5-6)", en: "The home (houses 4-5-6)", es: "El hogar (casas 4-5-6)" },
+  l_autre: { fr: "L'autre (maisons 7-8-9)", en: "The other (houses 7-8-9)", es: "El otro (casas 7-8-9)" },
+  le_collectif: { fr: "Le collectif (maisons 10-11-12)", en: "The collective (houses 10-11-12)", es: "Lo colectivo (casas 10-11-12)" },
+  identite: { fr: "Identité (maisons 12-1-2)", en: "Identity (houses 12-1-2)", es: "Identidad (casas 12-1-2)" },
+  racines: { fr: "Racines (maisons 3-4-5)", en: "Roots (houses 3-4-5)", es: "Raíces (casas 3-4-5)" },
+  relations: { fr: "Relations (maisons 6-7-8)", en: "Relationships (houses 6-7-8)", es: "Relaciones (casas 6-7-8)" },
+  vie_publique: { fr: "Vie publique (maisons 9-10-11)", en: "Public life (houses 9-10-11)", es: "Vida pública (casas 9-10-11)" },
+};
+
+function houseModalityLabel(code) {
+  return pick(HOUSE_MODALITY_LABELS[code]) || code;
+}
+
+function houseModalityShortLabel(code) {
+  return pick(HOUSE_MODALITY_SHORT_LABELS[code]) || code;
+}
+
+function houseModalityReading(code) {
+  return pick(HOUSE_MODALITY_READINGS[code]) || "";
+}
+
+function quadrantThemeLabel(key) {
+  return pick(QUADRANT_THEME_LABELS[key]) || "";
+}
+
 const HOUSE_KEYWORDS = {
   1: { fr: "identité", en: "identity", es: "identidad" },
   2: { fr: "ressources", en: "resources", es: "recursos" },
@@ -489,6 +551,13 @@ const UI_TEXT = {
     es: "Cálculos deterministas (Swiss Ephemeris) — la interpretación es generada por un modelo de lenguaje y debe leerse como una perspectiva, no una predicción absoluta.",
   },
 
+  day_sky_title: { fr: "Le ciel aujourd'hui", en: "The sky today", es: "El cielo hoy" },
+  day_sky_error: {
+    fr: "Ciel du jour indisponible pour le moment.",
+    en: "Today's sky is unavailable right now.",
+    es: "El cielo de hoy no está disponible por ahora.",
+  },
+
   section1_title: { fr: "1. Données de naissance", en: "1. Birth data", es: "1. Datos de nacimiento" },
   label_name: { fr: "Nom (optionnel)", en: "Name (optional)", es: "Nombre (opcional)" },
   placeholder_name: { fr: "Ex. Benoît", en: "E.g. John", es: "Ej. Juan" },
@@ -499,6 +568,92 @@ const UI_TEXT = {
     en: "Unknown time (approximate houses/angles)",
     es: "Hora desconocida (casas/ángulos aproximados)",
   },
+  label_ascendant_manual_toggle: {
+    fr: "Je connais déjà mon ascendant (ex. via le questionnaire de rectification) → le définir manuellement",
+    en: "I already know my ascendant (e.g. from the rectification questionnaire) → set it manually",
+    es: "Ya conozco mi ascendente (por ejemplo, mediante el cuestionario de rectificación) → definirlo manualmente",
+  },
+  label_ascendant_manual_sign: { fr: "Signe ascendant", en: "Ascendant sign", es: "Signo ascendente" },
+  label_ascendant_manual_degree: { fr: "Degré dans le signe (optionnel)", en: "Degree within the sign (optional)", es: "Grado dentro del signo (opcional)" },
+  ascendant_manual_hint: {
+    fr: "La ville de naissance devient facultative : les maisons seront calculées en signes intégraux à partir de ce signe.",
+    en: "Birth city becomes optional: houses will be computed as whole-sign from this sign.",
+    es: "La ciudad de nacimiento pasa a ser opcional: las casas se calcularán en signos enteros a partir de este signo.",
+  },
+
+  rectification_section_title: {
+    fr: "Vous ne connaissez pas votre heure ? Déterminer l'ascendant (questionnaire)",
+    en: "Don't know your birth time? Determine your ascendant (questionnaire)",
+    es: "¿No conoces tu hora de nacimiento? Determinar el ascendente (cuestionario)",
+  },
+  rectification_section_intro: {
+    fr: "Deux étapes indépendantes : un questionnaire de traits physiques/tempérament (rapide, purement indicatif) pour repérer un ou deux signes candidats, puis un recoupement avec des événements de vie déjà survenus (mariage, déménagement, changement de carrière...) pour resserrer une heure probable. Utilise la date de naissance et le lieu déjà renseignés ci-dessus. Aucune des deux étapes n'est une preuve — voir les avertissements.",
+    en: "Two independent steps: a physical-traits/temperament questionnaire (quick, purely indicative) to spot one or two candidate signs, then cross-referencing with life events that already happened (marriage, moving, career change...) to narrow down a likely time. Uses the birth date and place already entered above. Neither step is proof — see the warnings.",
+    es: "Dos pasos independientes: un cuestionario de rasgos físicos/temperamento (rápido, puramente indicativo) para detectar uno o dos signos candidatos, y luego un cruce con eventos de vida ya ocurridos (matrimonio, mudanza, cambio de carrera...) para acotar una hora probable. Usa la fecha de nacimiento y el lugar ya indicados arriba. Ninguno de los dos pasos es una prueba — ver las advertencias.",
+  },
+  rectification_tab_traits: { fr: "1. Traits physiques/tempérament", en: "1. Physical traits/temperament", es: "1. Rasgos físicos/temperamento" },
+  rectification_tab_events: { fr: "2. Événements de vie", en: "2. Life events", es: "2. Eventos de vida" },
+  rectification_traits_warning: {
+    fr: "Correspondances issues d'une tradition descriptive populaire, pas d'une méthode validée : servent d'heuristique de départ, jamais de preuve.",
+    en: "Correspondences from a popular descriptive tradition, not a validated method: a starting heuristic, never proof.",
+    es: "Correspondencias de una tradición descriptiva popular, no un método validado: sirven como heurística de partida, nunca como prueba.",
+  },
+  btn_rectification_compute_traits: { fr: "Voir les signes candidats", en: "See candidate signs", es: "Ver signos candidatos" },
+  rectification_no_selection: { fr: "Cochez au moins un trait ci-dessus.", en: "Check at least one trait above.", es: "Marca al menos un rasgo arriba." },
+  rectification_traits_result_title: { fr: "Signes candidats (par score décroissant)", en: "Candidate signs (descending score)", es: "Signos candidatos (por puntuación descendente)" },
+  rectification_traits_result_hint: {
+    fr: "Les signes les mieux notés sont pré-cochés dans l'étape 2, ci-dessous — modifiable librement.",
+    en: "The top-scoring signs are pre-checked in step 2 below — freely editable.",
+    es: "Los signos mejor puntuados se marcan por defecto en el paso 2 abajo — editable libremente.",
+  },
+  th_score: { fr: "Score", en: "Score", es: "Puntuación" },
+  rectification_events_warning: {
+    fr: "Technique de recoupement indicative (transits et directions vers les angles), pas une méthode garantie : un score élevé ne prouve rien à lui seul.",
+    en: "Indicative cross-referencing technique (transits and directions to the angles), not a guaranteed method: a high score alone proves nothing.",
+    es: "Técnica de cruce indicativa (tránsitos y direcciones hacia los ángulos), no un método garantizado: una puntuación alta por sí sola no prueba nada.",
+  },
+  label_rectification_candidate_signs: {
+    fr: "Signes candidats à tester (laisser vide = les 12 signes)",
+    en: "Candidate signs to test (leave empty = all 12 signs)",
+    es: "Signos candidatos a probar (dejar vacío = los 12 signos)",
+  },
+  label_rectification_window_start: { fr: "Début de la fenêtre horaire", en: "Time window start", es: "Inicio de la ventana horaria" },
+  label_rectification_window_end: { fr: "Fin de la fenêtre horaire", en: "Time window end", es: "Fin de la ventana horaria" },
+  label_rectification_step: { fr: "Précision (minutes)", en: "Precision (minutes)", es: "Precisión (minutos)" },
+  rectification_events_list_title: { fr: "Événements de vie marquants", en: "Significant life events", es: "Eventos de vida marcantes" },
+  rectification_no_events_yet: {
+    fr: "Aucun événement ajouté pour l'instant.",
+    en: "No event added yet.",
+    es: "Aún no se ha añadido ningún evento.",
+  },
+  label_rectification_event_label: { fr: "Description", en: "Description", es: "Descripción" },
+  placeholder_rectification_event_label: { fr: "Ex. Mariage", en: "E.g. Wedding", es: "Ej. Boda" },
+  label_rectification_event_date: { fr: "Date", en: "Date", es: "Fecha" },
+  label_rectification_event_significance: { fr: "Importance", en: "Significance", es: "Importancia" },
+  rectification_significance_major: { fr: "Majeure", en: "Major", es: "Mayor" },
+  rectification_significance_moderate: { fr: "Modérée", en: "Moderate", es: "Moderada" },
+  btn_rectification_add_event: { fr: "+ Ajouter l'événement", en: "+ Add event", es: "+ Añadir evento" },
+  btn_remove: { fr: "Retirer", en: "Remove", es: "Quitar" },
+  btn_rectification_scan: { fr: "Lancer le recoupement", en: "Run the cross-reference", es: "Ejecutar el cruce" },
+  status_computing_rectification: { fr: "Calcul en cours (balayage de la fenêtre horaire)...", en: "Computing (scanning the time window)...", es: "Calculando (recorriendo la ventana horaria)..." },
+  rectification_error_missing_birth_data: {
+    fr: "Renseignez d'abord la date de naissance et le lieu (latitude/longitude) dans le formulaire ci-dessus.",
+    en: "First fill in the birth date and place (latitude/longitude) in the form above.",
+    es: "Primero completa la fecha de nacimiento y el lugar (latitud/longitud) en el formulario de arriba.",
+  },
+  rectification_error_no_events: { fr: "Ajoutez au moins un événement de vie.", en: "Add at least one life event.", es: "Añade al menos un evento de vida." },
+  rectification_by_sign_title: { fr: "Résumé par signe ascendant", en: "Summary by ascendant sign", es: "Resumen por signo ascendente" },
+  rectification_th_best_score: { fr: "Meilleur score", en: "Best score", es: "Mejor puntuación" },
+  rectification_th_candidate_count: { fr: "Heures testées", en: "Times tested", es: "Horas probadas" },
+  rectification_top_candidates_title: { fr: "Meilleures heures candidates", en: "Top candidate times", es: "Mejores horas candidatas" },
+  rectification_th_score: { fr: "Score total", en: "Total score", es: "Puntuación total" },
+  rectification_th_method: { fr: "Méthode", en: "Method", es: "Método" },
+  rectification_method_transit: { fr: "Transit réel", en: "Real transit", es: "Tránsito real" },
+  rectification_method_solar_arc: { fr: "Arc solaire", en: "Solar arc", es: "Arco solar" },
+  rectification_method_progressed_moon: { fr: "Lune progressée", en: "Progressed Moon", es: "Luna progresada" },
+  rectification_no_match: { fr: "Aucune correspondance trouvée pour cette heure.", en: "No match found for this time.", es: "No se encontró coincidencia para esta hora." },
+  btn_use_this_ascendant: { fr: "Utiliser cet ascendant →", en: "Use this ascendant →", es: "Usar este ascendente →" },
+
   label_birth_city: { fr: "Ville de naissance", en: "Birth city", es: "Ciudad de nacimiento" },
   placeholder_city: { fr: "Ex. Lyon, France", en: "E.g. London, UK", es: "Ej. Madrid, España" },
   btn_search: { fr: "Rechercher", en: "Search", es: "Buscar" },
@@ -543,6 +698,31 @@ const UI_TEXT = {
   tab_balance: { fr: "Éléments", en: "Elements", es: "Elementos" },
   modalities_title: { fr: "Modalités", en: "Modalities", es: "Modalidades" },
   tab_dispositors: { fr: "Dispositeurs", en: "Rulerships", es: "Regencias" },
+  tab_house_modality: { fr: "Dynamique", en: "Dynamics", es: "Dinámica" },
+  house_modality_section_intro: {
+    fr: "Classification traditionnelle des maisons en Angulaires (agir), Succédentes (maintenir) et Cadentes (préparer) — voir William Lilly, Christian Astrology (1647). Le score pondéré utilise un poids par planète (choix personnel, voir ci-dessous), pas le barème de dignité accidentelle de Lilly. Distincte de la Modalité cardinale/fixe/mutable des signes (onglet Éléments).",
+    en: "Traditional classification of houses into Angular (act), Succedent (maintain) and Cadent (prepare) — see William Lilly, Christian Astrology (1647). The weighted score uses a per-planet weight (personal choice, see below), not Lilly's accidental dignity table. Distinct from the cardinal/fixed/mutable Modality of signs (Elements tab).",
+    es: "Clasificación tradicional de las casas en Angulares (actuar), Sucedentes (mantener) y Cadentes (preparar) — ver William Lilly, Christian Astrology (1647). La puntuación ponderada usa un peso por planeta (elección personal, ver abajo), no la tabla de dignidad accidental de Lilly. Distinta de la Modalidad cardinal/fija/mutable de los signos (pestaña Elementos).",
+  },
+  house_modality_dominant_title: { fr: "Modalité dominante", en: "Dominant modality", es: "Modalidad dominante" },
+  house_modality_dominant_mismatch: {
+    fr: "Le simple décompte de planètes pointe plutôt vers {simple}, tandis que le score pondéré (poids par planète) pointe vers {weighted} — les deux sont présentés ensemble plutôt que de forcer un seul résultat.",
+    en: "The simple planet count points instead to {simple}, while the weighted score (per-planet weight) points to {weighted} — both are shown together rather than forcing a single result.",
+    es: "El simple recuento de planetas apunta más bien a {simple}, mientras que la puntuación ponderada (peso por planeta) apunta a {weighted} — ambos se muestran juntos en vez de forzar un único resultado.",
+  },
+  house_modality_per_planet_detail: { fr: "Détail par planète", en: "Detail by planet", es: "Detalle por planeta" },
+  th_modality: { fr: "Modalité", en: "Modality", es: "Modalidad" },
+  th_planet_count: { fr: "Nb. planètes", en: "Planet count", es: "N.º planetas" },
+  th_lilly_score: { fr: "Score pondéré", en: "Weighted score", es: "Puntuación ponderada" },
+  th_quadrant: { fr: "Bloc", en: "Block", es: "Bloque" },
+  th_houses: { fr: "Maisons", en: "Houses", es: "Casas" },
+  house_quadrants_title: { fr: "Découpage en quadrants (angle au centre)", en: "Quadrant grouping (angle-centered)", es: "Agrupación por cuadrantes (ángulo al centro)" },
+  house_quadrants_warning: {
+    fr: "Variante non vérifiée dans une source classique (probablement un enseignement moderne de vulgarisation) — à considérer comme une piste, pas comme un fait établi. Chaque bloc est chargé des planètes classiques qui l'occupent ; le ou les blocs les plus chargés sont signalés.",
+    en: "Variant not verified in a classical source (likely modern popularization teaching) — treat as a lead, not as an established fact. Each block is loaded with the classical planets occupying it; the most loaded block(s) are flagged.",
+    es: "Variante no verificada en una fuente clásica (probablemente una enseñanza moderna de divulgación) — considérala una pista, no un hecho establecido. Cada bloque se carga con los planetas clásicos que lo ocupan; se señalan el o los bloques más cargados.",
+  },
+  badge_most_loaded: { fr: "Le plus chargé", en: "Most loaded", es: "El más cargado" },
 
   section3_title: { fr: "3. Lecture interprétée", en: "3. Interpreted reading", es: "3. Lectura interpretada" },
   reading_section_intro: {
@@ -552,7 +732,9 @@ const UI_TEXT = {
   },
   reading_tab_global: { fr: "Générale", en: "General", es: "General" },
   reading_tab_lots: { fr: "Lots", en: "Lots", es: "Suertes" },
+  reading_tab_draconic: { fr: "Thème draconique", en: "Draconic chart", es: "Carta dracónica" },
   reading_tab_derived: { fr: "Maisons dérivées", en: "Derived houses", es: "Casas derivadas" },
+  reading_tab_house_modality: { fr: "Agir / Maintenir / Préparer", en: "Act / Maintain / Prepare", es: "Actuar / Mantener / Preparar" },
   reading_tab_timing: { fr: "Pronostic", en: "Forecast", es: "Pronóstico" },
   reading_tab_compatibility: { fr: "Compatibilité", en: "Compatibility", es: "Compatibilidad" },
 
@@ -561,12 +743,36 @@ const UI_TEXT = {
   focus_love: { fr: "Amour", en: "Love", es: "Amor" },
   focus_career: { fr: "Carrière", en: "Career", es: "Carrera" },
   focus_family: { fr: "Famille", en: "Family", es: "Familia" },
+  focus_spirituality: { fr: "Spiritualité & dons", en: "Spirituality & gifts", es: "Espiritualidad y dones" },
+  focus_degrees: { fr: "Degrés", en: "Degrees", es: "Grados" },
   btn_generate_reading: { fr: "Générer la lecture", en: "Generate reading", es: "Generar lectura" },
   status_generating: { fr: "Génération en cours...", en: "Generating...", es: "Generando..." },
   error_calculate_chart_first: { fr: "Calculez d'abord un thème natal.", en: "Calculate a natal chart first.", es: "Primero calcula una carta natal." },
   error_select_focus_area: { fr: "Sélectionnez au moins une zone.", en: "Select at least one area.", es: "Selecciona al menos un área." },
 
   btn_generate_lots_reading: { fr: "Générer la lecture des lots", en: "Generate lots reading", es: "Generar lectura de suertes" },
+
+  draconic_section_intro: {
+    fr: "Le thème draconique fait pivoter l'ensemble du thème natal pour que le Nœud Nord tombe à 0° Bélier — traditionnellement lu comme la carte de l'âme avant l'incarnation, sous la personnalité que le thème natal exprime concrètement. Les maisons occupées par chaque planète et les aspects entre elles restent strictement identiques au thème natal (une rotation globale ne change aucune distance angulaire) : seuls les signes changent.",
+    en: "The draconic chart rotates the entire natal chart so the North Node falls at 0° Aries — traditionally read as the soul's chart before incarnation, beneath the personality the natal chart expresses concretely. The houses each planet occupies and the aspects between them stay strictly identical to the natal chart (a global rotation changes no angular distance): only the signs change.",
+    es: "La carta dracónica hace girar toda la carta natal para que el Nodo Norte caiga en 0° Aries — tradicionalmente leída como la carta del alma antes de la encarnación, bajo la personalidad que la carta natal expresa concretamente. Las casas ocupadas por cada planeta y los aspectos entre ellos siguen siendo estrictamente idénticos a la carta natal (una rotación global no cambia ninguna distancia angular): solo cambian los signos.",
+  },
+  btn_generate_draconic_reading: { fr: "Lecture draconique", en: "Draconic reading", es: "Lectura dracónica" },
+  draconic_incarnation_title: { fr: "Incarnation & but de vie", en: "Incarnation & life purpose", es: "Encarnación y propósito de vida" },
+  draconic_incarnation_intro: {
+    fr: "Lecture ciblée : Nœud Nord/Sud natal (chemin de vie), Ascendant/Descendant draconique vs natal (posture de l'âme vs personnalité), et Chiron/Lilith (blessure et blocages profonds) — pas un survol complet du thème.",
+    en: "Focused reading: natal North/South Node (life path), draconic vs natal Ascendant/Descendant (soul's posture vs personality), and Chiron/Lilith (deep wound and blockages) — not a full overview of the chart.",
+    es: "Lectura enfocada: Nodo Norte/Sur natal (camino de vida), Ascendente/Descendente dracónico vs natal (postura del alma vs personalidad), y Quirón/Lilith (herida y bloqueos profundos) — no un repaso completo de la carta.",
+  },
+  btn_generate_draconic_incarnation: { fr: "Incarnation & but de vie", en: "Incarnation & life purpose", es: "Encarnación y propósito de vida" },
+  draconic_comparison_title: { fr: "Comparaison natal ↔ draconique", en: "Natal ↔ draconic comparison", es: "Comparación natal ↔ dracónica" },
+  draconic_comparison_intro: {
+    fr: "Vue d'ensemble plus large : toutes les planètes personnelles et sociales, où l'âme (draconique) et la personnalité (natal) se rejoignent ou créent une tension à intégrer.",
+    en: "A wider overview: all personal and social planets, where the soul (draconic) and the personality (natal) align or create a tension to integrate.",
+    es: "Una vista más amplia: todos los planetas personales y sociales, donde el alma (dracónica) y la personalidad (natal) coinciden o crean una tensión por integrar.",
+  },
+  btn_generate_draconic_comparison: { fr: "Comparaison natal ↔ draconique", en: "Natal ↔ draconic comparison", es: "Comparación natal ↔ dracónica" },
+
   zr_section_title: { fr: "Phases de vie (Libération zodiacale)", en: "Life phases (Zodiacal Releasing)", es: "Fases de vida (Liberación zodiacal)" },
   zr_section_intro: {
     fr: "Technique de timing hellénistique distincte des lots ci-dessus : elle découpe la vie en grandes périodes (L1) et sous-périodes (L2), calculées ici pour chacun des 17 lots. Formellement définie pour le lot Fortune et le lot Esprit ; son application aux autres lots est une extension exploratoire du même algorithme à un domaine de vie plus précis.",
@@ -576,6 +782,17 @@ const UI_TEXT = {
   zr_mode_current: { fr: "Vue actuelle", en: "Current view", es: "Vista actual" },
   zr_mode_predictive: { fr: "Prévisionnelle (10 ans)", en: "Forecast (10 years)", es: "Previsional (10 años)" },
   btn_generate_zr_reading: { fr: "Générer la lecture des phases", en: "Generate phases reading", es: "Generar lectura de fases" },
+  btn_read_this_lot: { fr: "Lire ce lot", en: "Read this lot", es: "Leer este lote" },
+  zr_synthesis_hint: {
+    fr: "Lisez au moins deux lots individuellement ci-dessus (bouton \"Lire ce lot\") pour débloquer une synthèse qui croise leurs périodes dans le temps.",
+    en: "Read at least two lots individually above (the \"Read this lot\" button) to unlock a synthesis that cross-references their periods over time.",
+    es: "Lea al menos dos lotes individualmente arriba (botón \"Leer este lote\") para desbloquear una síntesis que cruza sus períodos en el tiempo.",
+  },
+  btn_generate_zr_synthesis: {
+    fr: "Voir la synthèse ({count} lots)",
+    en: "See the synthesis ({count} lots)",
+    es: "Ver la síntesis ({count} lotes)",
+  },
   zr_axis_intro: { fr: "Axes thématiques (raccourcis de sélection, projection 10 ans) :", en: "Thematic axes (selection shortcuts, 10-year projection):", es: "Ejes temáticos (atajos de selección, proyección a 10 años):" },
   zr_relations_group_direct: { fr: "Relations directes", en: "Direct relations", es: "Relaciones directas" },
   zr_hint_check_lots: {
@@ -607,6 +824,12 @@ const UI_TEXT = {
   error_loading_phases: { fr: "Impossible de charger les phases :", en: "Could not load phases:", es: "No se pudieron cargar las fases:" },
 
   btn_generate_derived_reading: { fr: "Générer la lecture des maisons dérivées", en: "Generate derived houses reading", es: "Generar lectura de casas derivadas" },
+  house_modality_reading_intro: {
+    fr: "Lecture ciblée sur la dynamique Angulaire (Agir) / Succédente (Maintenir) / Cadente (Préparer) des maisons occupées — voir l'onglet \"Dynamique\" du Thème natal pour le détail chiffré complet.",
+    en: "Focused reading on the Angular (Act) / Succedent (Maintain) / Cadent (Prepare) dynamic of occupied houses — see the \"Dynamics\" tab of the natal chart for the full numeric detail.",
+    es: "Lectura centrada en la dinámica Angular (Actuar) / Sucedente (Mantener) / Cadente (Preparar) de las casas ocupadas — ver la pestaña \"Dinámica\" de la carta natal para el detalle numérico completo.",
+  },
+  btn_generate_house_modality_reading: { fr: "Générer la lecture Agir/Maintenir/Préparer", en: "Generate Act/Maintain/Prepare reading", es: "Generar lectura Actuar/Mantener/Preparar" },
   label_relation_to_analyze: { fr: "Relation à analyser", en: "Relation to analyze", es: "Relación a analizar" },
   zr_relations_group_second_order: { fr: "Relations de second ordre", en: "Second-order relations", es: "Relaciones de segundo orden" },
   option_custom_relation: { fr: "Autre (avancé : composer une relation)…", en: "Other (advanced: build a relation)…", es: "Otra (avanzado: componer una relación)…" },
@@ -707,6 +930,27 @@ const UI_TEXT = {
 
   th_body: { fr: "Corps", en: "Body", es: "Cuerpo" },
   th_degree: { fr: "Degré", en: "Degree", es: "Grado" },
+  th_degree_notes: { fr: "Degré notable", en: "Notable degree", es: "Grado notable" },
+  degree_exaltation_badge: { fr: "Exaltation exacte", en: "Exact exaltation", es: "Exaltación exacta" },
+  degree_exaltation_tooltip: {
+    fr: "Cette planète est exactement sur son degré d'exaltation (héritage hellénistique/Ptolémée) — sa forme la plus élevée et harmonieuse.",
+    en: "This planet sits exactly on its exaltation degree (Hellenistic/Ptolemaic heritage) — its most elevated, harmonious form.",
+    es: "Este planeta está exactamente en su grado de exaltación (herencia helenística/ptolemaica) — su forma más elevada y armoniosa.",
+  },
+  degree_critical_badge: { fr: "Degré critique", en: "Critical degree", es: "Grado crítico" },
+  degree_critical_tooltip: {
+    fr: "Degré critique (motif répété selon la modalité du signe, XXe siècle) : un point de tension ou d'intensité accrue.",
+    en: "Critical degree (a pattern repeated by the sign's modality, 20th century): a point of heightened tension or intensity.",
+    es: "Grado crítico (patrón repetido según la modalidad del signo, siglo XX): un punto de tensión o intensidad acrecentada.",
+  },
+  degree_anaretic_badge: { fr: "Degré anarétique (29°)", en: "Anaretic degree (29°)", es: "Grado anarético (29°)" },
+  degree_anaretic_tooltip: {
+    fr: "29° : urgence, maturité forcée — le thème du signe touche à sa fin.",
+    en: "29°: urgency, forced maturity — the sign's theme is reaching its end.",
+    es: "29°: urgencia, madurez forzada — el tema del signo llega a su fin.",
+  },
+  degree_theme_badge: { fr: "Thème de degré : {sign}", en: "Degree theme: {sign}", es: "Tema de grado: {sign}" },
+  degree_dissolution_badge: { fr: "Prédisposition (Poissons)", en: "Predisposition (Pisces)", es: "Predisposición (Piscis)" },
   th_direction: { fr: "Direction", en: "Direction", es: "Dirección" },
   th_lot: { fr: "Lot", en: "Lot", es: "Suerte" },
   th_natal_aspects: { fr: "Aspects natals", en: "Natal aspects", es: "Aspectos natales" },
@@ -767,6 +1011,11 @@ const UI_TEXT = {
     fr: "Heure de naissance inconnue : maisons et angles sont approximatifs (calculés à midi).",
     en: "Unknown birth time: houses and angles are approximate (computed at noon).",
     es: "Hora de nacimiento desconocida: las casas y los ángulos son aproximados (calculados al mediodía).",
+  },
+  ascendant_manually_set_warning: {
+    fr: "Ascendant fixé manuellement : les maisons sont en signes intégraux (whole sign) à partir de ce signe. Le Milieu du Ciel affiché n'est qu'un repère de maison 10, pas l'angle astronomique réel (heure/lieu exacts inconnus).",
+    en: "Ascendant manually set: houses use whole-sign from this sign. The displayed Midheaven is only a house-10 marker, not the real astronomical angle (exact time/place unknown).",
+    es: "Ascendente fijado manualmente: las casas usan signos enteros a partir de este signo. El Medio Cielo mostrado es solo un marcador de la casa 10, no el ángulo astronómico real (hora/lugar exactos desconocidos).",
   },
   chart_default_name: { fr: "Thème", en: "Chart", es: "Carta" },
 
@@ -960,6 +1209,12 @@ const UI_TEXT = {
   weekly_weather_th_start: { fr: "Début de semaine", en: "Start of week", es: "Inicio de semana" },
   weekly_weather_th_end: { fr: "Fin de semaine", en: "End of week", es: "Fin de semana" },
   weekly_weather_th_movement: { fr: "Mouvement", en: "Movement", es: "Movimiento" },
+  weekly_weather_th_affected_signs: { fr: "Signes concernés", en: "Signs affected", es: "Signos afectados" },
+  weekly_weather_affected_signs_tooltip: {
+    fr: "Surtout si vous avez {points} dans ce signe",
+    en: "Especially if you have {points} in this sign",
+    es: "Sobre todo si tienes {points} en este signo",
+  },
   weekly_weather_ingress_note: { fr: "entre en {sign} le {date}", en: "enters {sign} on {date}", es: "entra en {sign} el {date}" },
   weekly_weather_aspects_title: {
     fr: "Aspects entre planètes rapides cette semaine",

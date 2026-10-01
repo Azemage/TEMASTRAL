@@ -52,6 +52,37 @@ def test_list_charts_scoped_to_session(client):
     assert len(list_res.json()) == 1
 
 
+def test_chart_creation_accepts_manual_ascendant_without_location(client):
+    payload = {
+        "birth_data": {
+            "date": "1990-05-15",
+            "time": None,
+            "time_known": False,
+            "timezone": "UTC",
+            "ascendant_override": {"sign": "Scorpio", "degree_in_sign": 12.0},
+        }
+    }
+    res = client.post("/api/charts", json=payload)
+    assert res.status_code == 201
+    data = res.json()["computed_chart_data"]
+    assert data["ascendant_manually_set"] is True
+    assert data["angles"]["ascendant"]["sign"] == "Scorpio"
+    assert data["angles"]["ascendant"]["degree"] == 12.0
+
+
+def test_chart_creation_requires_location_without_ascendant_override(client):
+    payload = {
+        "birth_data": {
+            "date": "1990-05-15",
+            "time": "14:32:00",
+            "time_known": True,
+            "timezone": "Europe/Paris",
+        }
+    }
+    res = client.post("/api/charts", json=payload)
+    assert res.status_code == 422
+
+
 def test_chart_not_accessible_from_another_session(client):
     create_res = client.post("/api/charts", json=VALID_CHART_PAYLOAD)
     chart_id = create_res.json()["id"]
@@ -126,6 +157,18 @@ def test_chart_includes_lots_and_derived_houses(client):
     assert lots_by_name["Fortune"]["construction_logic"] is None
     assert lots_by_name["Amis"]["construction_logic"]
     assert lots_by_name["Amis"]["certainty"] is None
+
+
+def test_chart_includes_house_modality_analysis_and_quadrants(client):
+    res = client.post("/api/charts", json=VALID_CHART_PAYLOAD)
+    data = res.json()["computed_chart_data"]
+    analysis = data["house_modality_analysis"]
+    assert sum(analysis["counts_by_modality"].values()) == 10
+    assert analysis["dominant_modality_weighted"] in {"angular", "succedent", "cadent"}
+    quadrants = data["house_quadrants"]
+    assert len(quadrants) == 4
+    assert sum(g["planet_count"] for g in quadrants) == 10
+    assert any(g["is_most_loaded"] for g in quadrants)
 
 
 def test_timing_endpoint_returns_transits_and_profection(client):
@@ -215,7 +258,7 @@ def test_compatibility_endpoint_returns_synastry_data(client):
     assert body["chart_a_id"] == chart_a_id
     assert body["chart_b_id"] == chart_b_id
     assert len(body["inter_aspects"]) > 0
-    assert len(body["house_overlay"]["a_planets_in_b_houses"]) == 12  # 10 classiques + nœuds N/S par défaut
+    assert len(body["house_overlay"]["a_planets_in_b_houses"]) == 14  # 10 classiques + nœuds N/S + Chiron + Lilith par défaut
     assert "Sun" in body["composite_chart"]["points"]
 
 

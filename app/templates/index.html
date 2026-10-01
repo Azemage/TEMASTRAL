@@ -23,6 +23,12 @@
   </header>
 
   <main>
+    <section id="day-sky-section" class="card day-sky-section">
+      <h2 data-i18n="day_sky_title">Le ciel aujourd'hui</h2>
+      <div id="day-sky-wheel" class="wheel-wrapper day-sky-wheel"></div>
+      <p id="day-sky-error" class="error"></p>
+    </section>
+
     <section id="form-section" class="card">
       <h2 data-i18n="section1_title">1. Données de naissance</h2>
       <form id="birth-form">
@@ -46,28 +52,54 @@
         </div>
 
         <div class="form-row">
-          <label for="city_search" data-i18n="label_birth_city">Ville de naissance</label>
-          <div class="search-row">
-            <input type="text" id="city_search" data-i18n-placeholder="placeholder_city" placeholder="Ex. Lyon, France" />
-            <button type="button" id="search-city-btn" data-i18n="btn_search">Rechercher</button>
-          </div>
-          <div id="city-results" class="city-results"></div>
+          <label class="checkbox-label">
+            <input type="checkbox" id="ascendant_manual_toggle" />
+            <span data-i18n="label_ascendant_manual_toggle">Je connais déjà mon ascendant (ex. via le questionnaire de rectification) → le définir manuellement</span>
+          </label>
         </div>
 
-        <div class="form-row triple">
+        <div id="ascendant-manual-row" class="form-row triple hidden">
           <div>
-            <label for="latitude" data-i18n="label_latitude">Latitude</label>
-            <input type="number" step="0.0001" id="latitude" required />
+            <label for="ascendant_manual_sign" data-i18n="label_ascendant_manual_sign">Signe ascendant</label>
+            <select id="ascendant_manual_sign"></select>
           </div>
           <div>
-            <label for="longitude" data-i18n="label_longitude">Longitude</label>
-            <input type="number" step="0.0001" id="longitude" required />
+            <label for="ascendant_manual_degree" data-i18n="label_ascendant_manual_degree">Degré dans le signe (optionnel)</label>
+            <input type="number" id="ascendant_manual_degree" min="0" max="29.99" step="0.01" value="0" />
           </div>
           <div>
-            <label for="timezone" data-i18n="label_timezone">Fuseau horaire</label>
-            <select id="timezone" required>
-              <option value="" data-i18n="loading">Chargement...</option>
-            </select>
+            <p class="reading-section-intro" data-i18n="ascendant_manual_hint">
+              La ville de naissance devient facultative : les maisons seront calculées en signes
+              intégraux à partir de ce signe.
+            </p>
+          </div>
+        </div>
+
+        <div id="location-fields">
+          <div class="form-row">
+            <label for="city_search" data-i18n="label_birth_city">Ville de naissance</label>
+            <div class="search-row">
+              <input type="text" id="city_search" data-i18n-placeholder="placeholder_city" placeholder="Ex. Lyon, France" />
+              <button type="button" id="search-city-btn" data-i18n="btn_search">Rechercher</button>
+            </div>
+            <div id="city-results" class="city-results"></div>
+          </div>
+
+          <div class="form-row triple">
+            <div>
+              <label for="latitude" data-i18n="label_latitude">Latitude</label>
+              <input type="number" step="0.0001" id="latitude" required />
+            </div>
+            <div>
+              <label for="longitude" data-i18n="label_longitude">Longitude</label>
+              <input type="number" step="0.0001" id="longitude" required />
+            </div>
+            <div>
+              <label for="timezone" data-i18n="label_timezone">Fuseau horaire</label>
+              <select id="timezone" required>
+                <option value="" data-i18n="loading">Chargement...</option>
+              </select>
+            </div>
           </div>
         </div>
 
@@ -97,8 +129,8 @@
               <select id="optional_points" multiple size="8">
                 <option value="north_node" selected data-i18n="point_north_node">Nœud Nord</option>
                 <option value="south_node" selected data-i18n="point_south_node">Nœud Sud</option>
-                <option value="chiron" data-i18n="point_chiron">Chiron</option>
-                <option value="lilith_mean" data-i18n="point_lilith">Lilith moyenne</option>
+                <option value="chiron" selected data-i18n="point_chiron">Chiron</option>
+                <option value="lilith_mean" selected data-i18n="point_lilith">Lilith moyenne</option>
                 <option value="ceres" data-i18n="point_ceres">Cérès</option>
                 <option value="pallas" data-i18n="point_pallas">Pallas</option>
                 <option value="juno" data-i18n="point_juno">Junon</option>
@@ -113,6 +145,88 @@
       <p id="form-error" class="error"></p>
     </section>
 
+    <section id="rectification-section" class="card">
+      <details>
+        <summary><h2 style="display:inline" data-i18n="rectification_section_title">Vous ne connaissez pas votre heure ? Déterminer l'ascendant (questionnaire)</h2></summary>
+        <p class="reading-section-intro" data-i18n="rectification_section_intro">
+          Deux étapes indépendantes : un questionnaire de traits physiques/tempérament (rapide,
+          purement indicatif) pour repérer un ou deux signes candidats, puis un recoupement avec
+          des événements de vie déjà survenus (mariage, déménagement, changement de carrière...)
+          pour resserrer une heure probable. Utilise la date de naissance et le lieu déjà
+          renseignés ci-dessus. Aucune des deux étapes n'est une preuve — voir les avertissements.
+        </p>
+
+        <div class="tabs rectification-tabs">
+          <button type="button" class="rectification-tab-btn active" data-rectification-tab="traits" data-i18n="rectification_tab_traits">1. Traits physiques/tempérament</button>
+          <button type="button" class="rectification-tab-btn" data-rectification-tab="events" data-i18n="rectification_tab_events">2. Événements de vie</button>
+        </div>
+
+        <div id="rectification-tab-traits" class="rectification-tab-panel">
+          <p class="warning-banner" data-i18n="rectification_traits_warning">
+            Correspondances issues d'une tradition descriptive populaire, pas d'une méthode
+            validée : servent d'heuristique de départ, jamais de preuve.
+          </p>
+          <div id="rectification-traits-quiz"></div>
+          <button type="button" id="rectification-compute-traits-btn" data-i18n="btn_rectification_compute_traits">Voir les signes candidats</button>
+          <div id="rectification-traits-result"></div>
+        </div>
+
+        <div id="rectification-tab-events" class="rectification-tab-panel hidden">
+          <p class="warning-banner" data-i18n="rectification_events_warning">
+            Technique de recoupement indicative (transits et directions vers les angles), pas une
+            méthode garantie : un score élevé ne prouve rien à lui seul.
+          </p>
+
+          <div class="form-row">
+            <label data-i18n="label_rectification_candidate_signs">Signes candidats à tester (laisser vide = les 12 signes)</label>
+            <div id="rectification-candidate-signs-badges" class="rectification-sign-badges"></div>
+          </div>
+
+          <div class="form-row triple">
+            <div>
+              <label for="rectification-window-start" data-i18n="label_rectification_window_start">Début de la fenêtre horaire</label>
+              <input type="time" id="rectification-window-start" value="00:00" step="60" />
+            </div>
+            <div>
+              <label for="rectification-window-end" data-i18n="label_rectification_window_end">Fin de la fenêtre horaire</label>
+              <input type="time" id="rectification-window-end" value="23:59" step="60" />
+            </div>
+            <div>
+              <label for="rectification-step-minutes" data-i18n="label_rectification_step">Précision (minutes)</label>
+              <input type="number" id="rectification-step-minutes" value="4" min="1" max="60" />
+            </div>
+          </div>
+
+          <h3 data-i18n="rectification_events_list_title">Événements de vie marquants</h3>
+          <div id="rectification-events-list"></div>
+          <div class="form-row triple">
+            <div>
+              <label for="rectification-event-label-input" data-i18n="label_rectification_event_label">Description</label>
+              <input type="text" id="rectification-event-label-input" data-i18n-placeholder="placeholder_rectification_event_label" placeholder="Ex. Mariage" />
+            </div>
+            <div>
+              <label for="rectification-event-date-input" data-i18n="label_rectification_event_date">Date</label>
+              <input type="date" id="rectification-event-date-input" />
+            </div>
+            <div>
+              <label for="rectification-event-significance-input" data-i18n="label_rectification_event_significance">Importance</label>
+              <select id="rectification-event-significance-input">
+                <option value="major" data-i18n="rectification_significance_major">Majeure</option>
+                <option value="moderate" data-i18n="rectification_significance_moderate">Modérée</option>
+              </select>
+            </div>
+          </div>
+          <button type="button" id="rectification-add-event-btn" data-i18n="btn_rectification_add_event">+ Ajouter l'événement</button>
+
+          <div class="form-row">
+            <button type="button" id="rectification-scan-btn" data-i18n="btn_rectification_scan">Lancer le recoupement</button>
+          </div>
+          <p id="rectification-scan-error" class="error"></p>
+          <div id="rectification-scan-results"></div>
+        </div>
+      </details>
+    </section>
+
     <section id="results-section" class="card hidden">
       <h2 data-i18n="section2_title">2. Thème natal</h2>
       <div id="chart-summary"></div>
@@ -124,6 +238,7 @@
         <button class="tab-btn" data-tab="aspects" data-i18n="tab_aspects">Aspects</button>
         <button class="tab-btn" data-tab="balance" data-i18n="tab_balance">Éléments</button>
         <button class="tab-btn" data-tab="dispositors" data-i18n="tab_dispositors">Dispositeurs</button>
+        <button class="tab-btn" data-tab="modality" data-i18n="tab_house_modality">Dynamique</button>
       </div>
 
       <div id="tab-wheel" class="tab-panel"></div>
@@ -132,6 +247,7 @@
       <div id="tab-aspects" class="tab-panel hidden"></div>
       <div id="tab-balance" class="tab-panel hidden"></div>
       <div id="tab-dispositors" class="tab-panel hidden"></div>
+      <div id="tab-modality" class="tab-panel hidden"></div>
     </section>
 
     <div id="section-toggle-row" class="section-toggle-row hidden">
@@ -152,7 +268,9 @@
       <div class="tabs reading-type-tabs">
         <button class="reading-tab-btn active" data-reading-tab="global" data-i18n="reading_tab_global">Générale</button>
         <button class="reading-tab-btn" data-reading-tab="lots" data-i18n="reading_tab_lots">Lots</button>
+        <button class="reading-tab-btn" data-reading-tab="draconic" data-i18n="reading_tab_draconic">Thème draconique</button>
         <button class="reading-tab-btn" data-reading-tab="derived" data-i18n="reading_tab_derived">Maisons dérivées</button>
+        <button class="reading-tab-btn" data-reading-tab="house_modality" data-i18n="reading_tab_house_modality">Agir / Maintenir / Préparer</button>
         <button class="reading-tab-btn" data-reading-tab="timing" data-i18n="reading_tab_timing">Pronostic</button>
         <button class="reading-tab-btn" data-reading-tab="compatibility" data-i18n="reading_tab_compatibility">Compatibilité</button>
       </div>
@@ -165,6 +283,8 @@
             <label><input type="checkbox" name="focus" value="love" /> <span data-i18n="focus_love">Amour</span></label>
             <label><input type="checkbox" name="focus" value="career" /> <span data-i18n="focus_career">Carrière</span></label>
             <label><input type="checkbox" name="focus" value="family" /> <span data-i18n="focus_family">Famille</span></label>
+            <label><input type="checkbox" name="focus" value="spirituality" /> <span data-i18n="focus_spirituality">Spiritualité &amp; dons</span></label>
+            <label><input type="checkbox" name="focus" value="degrees" /> <span data-i18n="focus_degrees">Degrés</span></label>
           </div>
         </div>
         <button id="generate-reading-btn" data-i18n="btn_generate_reading">Générer la lecture</button>
@@ -196,6 +316,55 @@
         <button id="generate-zr-reading-btn" data-i18n="btn_generate_zr_reading">Générer la lecture des phases</button>
         <p id="zr-reading-error" class="error"></p>
         <div id="zr-reading-output" class="reading-output"></div>
+
+        <hr class="reading-subsection-divider" />
+        <div id="zr-synthesis-panel">
+          <p id="zr-synthesis-hint" class="reading-section-intro" data-i18n="zr_synthesis_hint">
+            Lisez au moins deux lots individuellement ci-dessus (bouton "Lire ce lot") pour
+            débloquer une synthèse qui croise leurs périodes dans le temps.
+          </p>
+          <button id="generate-zr-synthesis-btn" class="hidden" disabled></button>
+          <p id="zr-synthesis-error" class="error"></p>
+          <div id="zr-synthesis-output" class="reading-output"></div>
+        </div>
+      </div>
+
+      <div id="reading-tab-draconic" class="reading-tab-panel hidden">
+        <p class="reading-section-intro" data-i18n="draconic_section_intro">
+          Le thème draconique fait pivoter l'ensemble du thème natal pour que le Nœud Nord
+          tombe à 0° Bélier — traditionnellement lu comme la carte de l'âme avant
+          l'incarnation, sous la personnalité que le thème natal exprime concrètement. Les
+          maisons occupées par chaque planète et les aspects entre elles restent strictement
+          identiques au thème natal (une rotation globale ne change aucune distance
+          angulaire) : seuls les signes changent.
+        </p>
+        <div id="draconic-wheel" class="wheel-wrapper"></div>
+
+        <button id="generate-draconic-reading-btn" data-i18n="btn_generate_draconic_reading">Lecture draconique</button>
+        <p id="draconic-reading-error" class="error"></p>
+        <div id="draconic-reading-output" class="reading-output"></div>
+
+        <hr class="reading-subsection-divider" />
+        <h3 data-i18n="draconic_incarnation_title">Incarnation &amp; but de vie</h3>
+        <p class="reading-section-intro" data-i18n="draconic_incarnation_intro">
+          Lecture ciblée : Nœud Nord/Sud natal (chemin de vie), Ascendant/Descendant draconique
+          vs natal (posture de l'âme vs personnalité), et Chiron/Lilith (blessure et blocages
+          profonds) — pas un survol complet du thème.
+        </p>
+        <button id="generate-draconic-incarnation-btn" data-i18n="btn_generate_draconic_incarnation">Incarnation &amp; but de vie</button>
+        <p id="draconic-incarnation-error" class="error"></p>
+        <div id="draconic-incarnation-output" class="reading-output"></div>
+
+        <hr class="reading-subsection-divider" />
+        <h3 data-i18n="draconic_comparison_title">Comparaison natal ↔ draconique</h3>
+        <p class="reading-section-intro" data-i18n="draconic_comparison_intro">
+          Vue d'ensemble plus large : toutes les planètes personnelles et sociales, où l'âme
+          (draconique) et la personnalité (natal) se rejoignent ou créent une tension à
+          intégrer.
+        </p>
+        <button id="generate-draconic-comparison-btn" data-i18n="btn_generate_draconic_comparison">Comparaison natal ↔ draconique</button>
+        <p id="draconic-comparison-error" class="error"></p>
+        <div id="draconic-comparison-output" class="reading-output"></div>
       </div>
 
       <div id="reading-tab-derived" class="reading-tab-panel hidden">
@@ -203,6 +372,18 @@
         <button id="generate-derived-reading-btn" data-i18n="btn_generate_derived_reading">Générer la lecture des maisons dérivées</button>
         <p id="derived-reading-error" class="error"></p>
         <div id="derived-reading-output" class="reading-output"></div>
+      </div>
+
+      <div id="reading-tab-house_modality" class="reading-tab-panel hidden">
+        <p class="reading-section-intro" data-i18n="house_modality_reading_intro">
+          Lecture ciblée sur la dynamique Angulaire (Agir) / Succédente (Maintenir) / Cadente
+          (Préparer) des maisons occupées — voir l'onglet "Dynamique" du Thème natal pour le
+          détail chiffré complet.
+        </p>
+        <div id="house-modality-reading-data-panel"></div>
+        <button id="generate-house-modality-reading-btn" data-i18n="btn_generate_house_modality_reading">Générer la lecture Agir/Maintenir/Préparer</button>
+        <p id="house-modality-reading-error" class="error"></p>
+        <div id="house-modality-reading-output" class="reading-output"></div>
       </div>
 
       <div id="reading-tab-timing" class="reading-tab-panel hidden">

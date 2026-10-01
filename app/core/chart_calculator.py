@@ -5,7 +5,10 @@ from __future__ import annotations
 from app.core import ephemeris
 from app.core.aspects import BodyForAspect, compute_aspects
 from app.core.derived_houses import compute_derived_houses
+from app.core.degrees import analyze_degree
 from app.core.dispositors import CLASSIC_PLANETS, compute_dispositors
+from app.core.draconic import compute_draconic_chart
+from app.core.house_modality import compute_house_modality_analysis, compute_quadrant_loads
 from app.core.lots import compute_lots
 from app.core.traits import compute_character_traits
 from app.core.zodiac import ELEMENTS, MODALITIES, sign_and_degree
@@ -65,6 +68,7 @@ def calculate_natal_chart(
     aspect_orbs: dict[str, float] | None = None,
     include_minor_aspects: bool = True,
     optional_points: list[str] | None = None,
+    ascendant_override_longitude: float | None = None,
 ) -> dict:
     optional_points = optional_points or []
     aspect_orbs = aspect_orbs or {}
@@ -73,22 +77,39 @@ def calculate_natal_chart(
     jd_ut = ephemeris.local_datetime_to_jd_ut(birth_date, effective_time, timezone)
 
     bodies_result = ephemeris.calc_all_bodies(jd_ut, optional_points)
-    houses_result = ephemeris.calc_houses(jd_ut, latitude, longitude, house_system)
-    cusps = houses_result.cusps
+
+    if ascendant_override_longitude is not None:
+        # Ascendant fixé manuellement (ex. rectification par questionnaire) : la ville/heure
+        # de naissance exactes ne sont alors ni connues ni utilisées pour les maisons, donc
+        # seule une convention indépendante de l'heure a du sens ici — maisons de signes
+        # intégraux (whole sign) à partir du signe ascendant donné. Le Milieu du Ciel n'est
+        # dans ce cas qu'un repère de maison 10 (0° du 10e signe), pas l'angle astronomique
+        # réel, faute d'heure/lieu exacts pour le calculer.
+        house1_start = (ascendant_override_longitude % 360 // 30) * 30
+        cusps = [(house1_start + i * 30) % 360 for i in range(12)]
+    else:
+        houses_result = ephemeris.calc_houses(jd_ut, latitude, longitude, house_system)
+        cusps = houses_result.cusps
 
     planets = []
     planet_signs: dict[str, str] = {}
+    degree_analysis = []
     aspect_bodies: list[BodyForAspect] = []
     for name, raw in bodies_result.bodies.items():
         house = find_house(raw.longitude, cusps)
         planets.append(_position_dict(name, raw.longitude, house, raw.retrograde))
         aspect_bodies.append(BodyForAspect(name=name, longitude=raw.longitude, speed_longitude=raw.speed_longitude))
+        sign, degree = sign_and_degree(raw.longitude)
+        degree_analysis.append({**analyze_degree(name, sign, degree), "house": house})
         if name in CLASSIC_PLANETS:
-            sign, _ = sign_and_degree(raw.longitude)
             planet_signs[name] = sign
 
-    ascendant = houses_result.ascendant
-    midheaven = houses_result.midheaven
+    if ascendant_override_longitude is not None:
+        ascendant = ascendant_override_longitude % 360
+        midheaven = cusps[9]  # repère de maison 10 (voir remarque ci-dessus), pas l'angle réel
+    else:
+        ascendant = houses_result.ascendant
+        midheaven = houses_result.midheaven
     descendant = (ascendant + 180) % 360
     imum_coeli = (midheaven + 180) % 360
 
@@ -150,9 +171,23 @@ def calculate_natal_chart(
 
     derived_houses = compute_derived_houses(planets)
 
+    house_modality_analysis = compute_house_modality_analysis(planets)
+    house_quadrants = compute_quadrant_loads(planets)
+
+    north_node_raw = bodies_result.bodies.get("north_node")
+    draconic = compute_draconic_chart(
+        planets,
+        angles,
+        houses,
+        aspects,
+        jd_ut,
+        north_node_raw.longitude if north_node_raw else None,
+    )
+
     return {
         "schema_version": 1,
         "time_known": time_known,
+        "ascendant_manually_set": ascendant_override_longitude is not None,
         "is_day_chart": is_day_chart,
         "planets": planets,
         "angles": angles,
@@ -165,5 +200,9 @@ def calculate_natal_chart(
         "character_traits": character_traits,
         "lots": lots,
         "derived_houses": derived_houses,
+        "draconic": draconic,
+        "degree_analysis": degree_analysis,
+        "house_modality_analysis": house_modality_analysis,
+        "house_quadrants": house_quadrants,
         "unavailable_points": bodies_result.unavailable_points,
     }

@@ -104,6 +104,36 @@ def witchy_calendar_events() -> dict:
     return _load("witchy_calendar_events.json")
 
 
+def degree_theory() -> dict:
+    """Systèmes de signification par degré (exaltation, degrés critiques, degré anarétique,
+    théorie des degrés cyclique) — voir app/core/degrees.py pour le calcul déterministe et
+    doc source degree_theory.json pour le statut épistémique de chaque couche."""
+    return _load("degree_theory.json")
+
+
+def spiritual_gifts() -> dict:
+    """Indicateurs documentés de sensibilité psychique/spirituelle (maisons IV/VIII/XII,
+    planètes, aspects, astéroïdes) — voir app/core/spiritual_gifts.py pour le calcul
+    déterministe des signaux présents dans un thème réel et doc source spiritual_gifts.json
+    pour l'avertissement méthodologique à répercuter dans toute lecture."""
+    return _load("spiritual_gifts.json")
+
+
+def house_modality() -> dict:
+    """Classification angulaire/succédente/cadente des maisons, points de dignité
+    accidentelle de Lilly et découpages par quadrant — voir app/core/house_modality.py pour
+    le calcul déterministe (modalité dominante d'une carte, comptage simple vs pondéré) et le
+    statut épistémique de chaque couche dans le fichier de référence lui-même."""
+    return _load("house_modality.json")
+
+
+def ascendant_rectification_traits() -> dict:
+    """Questionnaire de traits physiques/tempérament par signe ascendant (première étape du
+    questionnaire de rectification) — voir app/core/rectification.py pour le scoring et le
+    statut épistémique (interprétatif/traditionnel, pas une méthode validée)."""
+    return _load("ascendant_rectification_traits.json")
+
+
 def world_cities() -> list[dict]:
     """Grandes villes mondiales (Natural Earth 110m populated places, domaine public) —
     capitales et métropoles majeures, utilisées comme bassin de candidats pour la suggestion

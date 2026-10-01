@@ -4,7 +4,7 @@ from datetime import date as date_type
 from datetime import datetime
 from datetime import time as time_type
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 
 # ---------------------------------------------------------------------------
@@ -17,12 +17,30 @@ class Location(BaseModel):
     longitude: float = Field(ge=-180, le=180)
 
 
+class AscendantOverride(BaseModel):
+    """Ascendant fixé manuellement (ex. trouvé via le questionnaire de rectification),
+    court-circuitant le calcul des maisons à partir de la ville/heure de naissance — voir
+    chart_calculator.calculate_natal_chart. Les maisons deviennent des maisons de signes
+    intégraux (whole sign) à partir de ce signe, seule convention cohérente sans heure/lieu
+    exacts."""
+
+    sign: str
+    degree_in_sign: float = Field(ge=0, lt=30, default=0.0)
+
+
 class BirthData(BaseModel):
     date: date_type
     time: str | None = None  # "HH:MM:SS", requis si time_known=True
     time_known: bool = True
-    timezone: str
-    location: Location
+    timezone: str = "UTC"
+    location: Location | None = None  # optionnel seulement si ascendant_override est fourni
+    ascendant_override: AscendantOverride | None = None
+
+    @model_validator(mode="after")
+    def _require_location_unless_ascendant_override(self) -> "BirthData":
+        if self.location is None and self.ascendant_override is None:
+            raise ValueError("location est requis, sauf si ascendant_override est fourni.")
+        return self
 
 
 class AspectOrbs(BaseModel):
@@ -44,7 +62,7 @@ class ChartSettings(BaseModel):
     rulership_system: str = "both"
     aspect_orbs: AspectOrbs = Field(default_factory=AspectOrbs)
     include_minor_aspects: bool = True
-    optional_points: list[str] = Field(default_factory=lambda: ["north_node", "south_node"])
+    optional_points: list[str] = Field(default_factory=lambda: ["north_node", "south_node", "chiron", "lilith_mean"])
 
 
 class ChartCreateRequest(BaseModel):
@@ -97,6 +115,34 @@ class Aspect(BaseModel):
     angle: float
     orb: float
     applying: bool
+
+
+# ---------------------------------------------------------------------------
+# Ciel du jour (page d'accueil, avant création d'un thème)
+# ---------------------------------------------------------------------------
+class DaySkyPlanetPosition(BaseModel):
+    name: str
+    sign: str
+    sign_fr: str
+    degree: float
+    absolute_longitude: float
+    retrograde: bool
+
+
+class AffectedSigns(BaseModel):
+    """Signes natals les plus sensibles à un évènement donné, déduits par géométrie zodiacale
+    (élément/modalité), PAS par comparaison à un thème réel — voir app/core/affected_signs.py.
+    `secondary` (axe opposé) n'est renseigné que pour un évènement ponctuel (ingrès/station),
+    jamais pour un aspect."""
+
+    primary: list[str] = Field(default_factory=list)
+    secondary: list[str] = Field(default_factory=list)
+
+
+class DaySkyResponse(BaseModel):
+    datetime_utc: str
+    planets: list[DaySkyPlanetPosition]
+    aspects: list[Aspect]
 
 
 class ElementsBalance(BaseModel):
@@ -206,9 +252,85 @@ class DerivedHouseSet(BaseModel):
     mapping: list[DerivedHouseMappingEntry]
 
 
+class DraconicChart(BaseModel):
+    """Thème draconique — voir app/core/draconic.py. `houses` (numéro de maison par planète)
+    et `aspects` sont volontairement identiques au thème natal (une rotation globale ne change
+    ni les distances planète<->cuspide ni les distances planète<->planète) : seul le signe de
+    chaque point diffère."""
+
+    schema_version: int = 1
+    planets: list[PlanetPosition]
+    angles: Angles
+    houses: list[HouseCusp]
+    aspects: list[Aspect]
+    elements_balance: ElementsBalance
+    modality_balance: ModalityBalance
+
+
+class DegreeAnalysis(BaseModel):
+    """Analyse déterministe du degré (0-29) occupé par un point dans son signe — voir
+    app/core/degrees.py. `degree_theme_*` (théorie des degrés cyclique) est un système
+    documenté mais d'origine populaire/XXe siècle, à ne jamais présenter comme une règle
+    classique établie — contrairement à `is_exact_exaltation` (héritage babylonien/
+    hellénistique/Ptolémée) et `is_critical_degree` (systématisé au XXe siècle mais très
+    largement cité)."""
+
+    planet: str
+    sign: str
+    sign_fr: str
+    house: int
+    degree_value: int
+    is_pure_entry: bool
+    is_anaretic: bool
+    is_critical_degree: bool
+    degree_theme_sign: str | None = None
+    degree_theme_sign_fr: str | None = None
+    degree_theme_label: str | None = None
+    is_exact_exaltation: bool
+    dissolution_predisposition_note: str | None = None
+
+
+class HouseModalityPlanet(BaseModel):
+    planet: str
+    house: int
+    modality: str  # "angular" | "succedent" | "cadent"
+    points: int  # poids de la planète (Soleil/Lune=4, Mercure/Vénus/Mars=3, Jupiter/Saturne=2, Uranus/Neptune/Pluton=1)
+
+
+class HouseModalityAnalysis(BaseModel):
+    """Classification angulaire/succédente/cadente des maisons occupées, pondérée par un poids
+    par planète (préférence personnelle, voir app/core/house_modality.py), et modalité
+    dominante. Le comptage simple et le score pondéré peuvent désigner des modalités
+    différentes (`methodological_note`), à toujours présenter tous deux plutôt que d'en forcer
+    une seule conclusion."""
+
+    per_planet: list[HouseModalityPlanet]
+    counts_by_modality: dict[str, int]
+    weighted_score_by_modality: dict[str, int]
+    dominant_modality_simple: str
+    dominant_modality_weighted: str
+    reading: str
+    methodological_note: str
+
+
+class HouseQuadrantGroup(BaseModel):
+    """Bloc de trois maisons centré sur un angle (non vérifié dans une source classique, voir
+    app/core/house_modality.py::compute_quadrant_loads), chargé des planètes classiques qui
+    l'occupent. `is_most_loaded` marque le ou les blocs à `planet_count` maximal (égalité
+    possible, jamais forcée sur un seul bloc)."""
+
+    key: str
+    theme: str
+    houses: list[int]
+    planets: list[str]
+    planet_count: int
+    is_most_loaded: bool
+
+
 class NatalChartComputed(BaseModel):
     schema_version: int = 1
     time_known: bool = True
+    ascendant_manually_set: bool = False
     is_day_chart: bool
     planets: list[PlanetPosition]
     angles: Angles
@@ -221,6 +343,10 @@ class NatalChartComputed(BaseModel):
     character_traits: CharacterTraits
     lots: list[Lot] = Field(default_factory=list)
     derived_houses: list[DerivedHouseSet] = Field(default_factory=list)
+    draconic: DraconicChart | None = None
+    degree_analysis: list[DegreeAnalysis] = Field(default_factory=list)
+    house_modality_analysis: HouseModalityAnalysis | None = None
+    house_quadrants: list[HouseQuadrantGroup] = Field(default_factory=list)
     unavailable_points: list[str] = Field(default_factory=list)
 
 
@@ -281,6 +407,64 @@ class TransitForecastResponse(BaseModel):
     start_date: date_type
     end_date: date_type
     events: list[UpcomingTransitEvent]
+
+
+# ---------------------------------------------------------------------------
+# Questionnaire de rectification (déterminer l'ascendant sans heure exacte) — voir
+# app/core/rectification.py. Étape 2 (recoupement d'événements de vie) ; l'étape 1
+# (traits physiques/tempérament) est purement déclarative, servie telle quelle via
+# GET /api/reference/ascendant-rectification-traits, pas de schéma dédié.
+# ---------------------------------------------------------------------------
+class RectificationLifeEvent(BaseModel):
+    label: str
+    date: date_type
+    significance: str = "major"  # "major" ou "moderate"
+
+
+class RectificationScanRequest(BaseModel):
+    birth_date: date_type
+    timezone: str = "UTC"
+    latitude: float = Field(ge=-90, le=90)
+    longitude: float = Field(ge=-180, le=180)
+    window_start: str = "00:00:00"  # "HH:MM:SS"
+    window_end: str = "23:59:00"
+    step_minutes: int = Field(default=4, ge=1, le=60)
+    house_system: str = "placidus"
+    candidate_signs: list[str] | None = None
+    life_events: list[RectificationLifeEvent] = Field(default_factory=list)
+
+
+class RectificationEventMatch(BaseModel):
+    event_label: str
+    event_date: date_type
+    method: str  # "transit" | "solar_arc" | "progressed_moon"
+    body: str
+    angle: str
+    aspect_type: str
+    orb: float
+    score: float
+
+
+class RectificationCandidate(BaseModel):
+    time: str
+    ascendant_sign: str
+    ascendant_degree: float
+    midheaven_sign: str
+    midheaven_degree: float
+    total_score: float
+    matches: list[RectificationEventMatch]
+
+
+class RectificationSignSummary(BaseModel):
+    sign: str
+    best_score: float
+    candidate_count: int
+
+
+class RectificationScanResponse(BaseModel):
+    candidates: list[RectificationCandidate]
+    by_sign_summary: list[RectificationSignSummary]
+    warning: str
 
 
 class ZodiacalReleasingPeriod(BaseModel):
@@ -389,7 +573,7 @@ class NatalChartResponse(BaseModel):
 # Interprétation LLM (cf. cahier des charges, section 4.7)
 # ---------------------------------------------------------------------------
 class ReadingRequest(BaseModel):
-    reading_type: str = "global"  # 'global' | 'love' | 'career' | 'family' | 'lots' | 'derived_houses' | 'timing' | 'zodiacal_releasing' | 'compatibility' | 'astrocartography' | 'astrocartography_forecast' | 'witchy_calendar' | 'witchy_day_detail' | 'weekly_weather' | 'weekly_weather_by_sign'
+    reading_type: str = "global"  # 'global' | 'love' | 'career' | 'family' | 'lots' | 'derived_houses' | 'timing' | 'zodiacal_releasing' | 'compatibility' | 'astrocartography' | 'astrocartography_forecast' | 'witchy_calendar' | 'witchy_day_detail' | 'weekly_weather' | 'weekly_weather_by_sign' | 'draconic' | 'draconic_incarnation' | 'draconic_comparison' | 'house_modality'
     focus_areas: list[str] = Field(default_factory=lambda: ["general"])
     level: str = "débutant"
     tone: str = "accessible et bienveillant"
@@ -598,6 +782,8 @@ class WeeklyWeatherHighlight(BaseModel):
     direction: str | None = None
     meaning_template: str | None = None
     score: int
+    affected_signs: AffectedSigns = Field(default_factory=AffectedSigns)
+    emphasis_points: list[str] = Field(default_factory=list)
 
 
 class WeeklyWeatherMainEvent(BaseModel):

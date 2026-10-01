@@ -1,0 +1,77 @@
+{
+  "epistemic_status": "[Interprétatif / traditionnel populaire] Les correspondances apparence physique / tempérament par signe ascendant appartiennent à une tradition descriptive répandue en astrologie de vulgarisation, pas à un corpus classique unifié ni à une méthode validée : deux auteurs donnent parfois des portraits différents pour un même signe. Ce questionnaire sert d'heuristique de départ (quelques signes candidats à vérifier ensuite), jamais de preuve.",
+  "categories": [
+    {
+      "key": "silhouette_generale",
+      "title": { "fr": "Silhouette et carrure générale", "en": "General build and silhouette", "es": "Constitución y silueta general" },
+      "options": [
+        { "sign": "Aries", "label": { "fr": "Silhouette nerveuse, toujours en mouvement, sourcils marqués", "en": "Wiry build, always in motion, strong eyebrows", "es": "Complexión nerviosa, siempre en movimiento, cejas marcadas" } },
+        { "sign": "Taurus", "label": { "fr": "Charpente solide, cou fort, présence posée et stable", "en": "Solid frame, strong neck, steady grounded presence", "es": "Complexión sólida, cuello fuerte, presencia estable" } },
+        { "sign": "Gemini", "label": { "fr": "Silhouette longiligne, gestes vifs, mains expressives", "en": "Slender build, quick gestures, expressive hands", "es": "Silueta alargada, gestos rápidos, manos expresivas" } },
+        { "sign": "Cancer", "label": { "fr": "Silhouette qui varie selon les périodes, visage rond et doux", "en": "Build that varies over time, round soft face", "es": "Silueta que varía según la época, rostro redondo y suave" } },
+        { "sign": "Leo", "label": { "fr": "Carrure large, port de tête fier, chevelure marquante", "en": "Broad build, proud carriage, notable hair", "es": "Complexión ancha, porte orgulloso, cabello llamativo" } },
+        { "sign": "Virgo", "label": { "fr": "Silhouette fine et nette, gestes précis et économes", "en": "Neat, trim build, precise economical gestures", "es": "Silueta fina y pulcra, gestos precisos y económicos" } },
+        { "sign": "Libra", "label": { "fr": "Traits harmonieux et symétriques, allure soignée", "en": "Harmonious symmetric features, well put-together look", "es": "Rasgos armoniosos y simétricos, aspecto cuidado" } },
+        { "sign": "Scorpio", "label": { "fr": "Regard intense, silhouette compacte et musclée", "en": "Intense gaze, compact muscular build", "es": "Mirada intensa, silueta compacta y musculosa" } },
+        { "sign": "Sagittarius", "label": { "fr": "Grande taille, carrure sportive, démarche énergique", "en": "Tall, athletic build, energetic stride", "es": "Estatura alta, complexión deportiva, andar enérgico" } },
+        { "sign": "Capricorn", "label": { "fr": "Ossature marquée, allure sérieuse, traits qui s'affinent avec l'âge", "en": "Prominent bone structure, serious look, features refine with age", "es": "Huesos marcados, aspecto serio, rasgos que se afinan con la edad" } },
+        { "sign": "Aquarius", "label": { "fr": "Traits atypiques ou distinctifs, allure décontractée", "en": "Unusual or distinctive features, relaxed look", "es": "Rasgos atípicos o distintivos, aspecto relajado" } },
+        { "sign": "Pisces", "label": { "fr": "Traits doux et flous, regard rêveur", "en": "Soft, blurred features, dreamy gaze", "es": "Rasgos suaves y difusos, mirada soñadora" } }
+      ]
+    },
+    {
+      "key": "regard_visage",
+      "title": { "fr": "Le regard — ce qu'on remarque en premier", "en": "The gaze — what people notice first", "es": "La mirada — lo primero que se nota" },
+      "options": [
+        { "sign": "Aries", "label": { "fr": "Regard direct, presque frontal, sourcils froncés en réflexion", "en": "Direct, almost head-on gaze, furrowed brow when thinking", "es": "Mirada directa, casi frontal, cejas fruncidas al pensar" } },
+        { "sign": "Taurus", "label": { "fr": "Regard calme, patient, un peu fixe", "en": "Calm, patient, somewhat fixed gaze", "es": "Mirada calmada, paciente, algo fija" } },
+        { "sign": "Gemini", "label": { "fr": "Regard mobile, curieux, qui capte tout autour", "en": "Mobile, curious gaze, taking in everything around", "es": "Mirada móvil, curiosa, que capta todo alrededor" } },
+        { "sign": "Cancer", "label": { "fr": "Regard changeant selon l'humeur, très expressif", "en": "Gaze that shifts with mood, very expressive", "es": "Mirada cambiante según el humor, muy expresiva" } },
+        { "sign": "Leo", "label": { "fr": "Regard rayonnant, qui attire l'attention naturellement", "en": "Radiant gaze that naturally draws attention", "es": "Mirada radiante, que atrae la atención de forma natural" } },
+        { "sign": "Virgo", "label": { "fr": "Regard observateur, attentif aux détails", "en": "Observant gaze, attentive to detail", "es": "Mirada observadora, atenta a los detalles" } },
+        { "sign": "Libra", "label": { "fr": "Regard doux, qui cherche le contact et l'harmonie", "en": "Soft gaze, seeking connection and harmony", "es": "Mirada suave, que busca el contacto y la armonía" } },
+        { "sign": "Scorpio", "label": { "fr": "Regard perçant, difficile à soutenir, qui semble tout voir", "en": "Piercing gaze, hard to hold, seems to see everything", "es": "Mirada penetrante, difícil de sostener, que parece verlo todo" } },
+        { "sign": "Sagittarius", "label": { "fr": "Regard franc et enthousiaste, souvent en train de sourire", "en": "Frank, enthusiastic gaze, often smiling", "es": "Mirada franca y entusiasta, a menudo sonriendo" } },
+        { "sign": "Capricorn", "label": { "fr": "Regard sérieux, réservé, qui évalue avant de s'ouvrir", "en": "Serious, reserved gaze, weighing things up before opening up", "es": "Mirada seria, reservada, que evalúa antes de abrirse" } },
+        { "sign": "Aquarius", "label": { "fr": "Regard un peu absent ou ailleurs, original", "en": "Somewhat distant or elsewhere, unusual gaze", "es": "Mirada algo ausente o distante, original" } },
+        { "sign": "Pisces", "label": { "fr": "Regard flou ou rêveur, comme absorbé ailleurs", "en": "Blurred or dreamy gaze, as if absorbed elsewhere", "es": "Mirada difusa o soñadora, como absorta en otro lugar" } }
+      ]
+    },
+    {
+      "key": "energie_rythme",
+      "title": { "fr": "Énergie et rythme (façon de bouger, de parler)", "en": "Energy and pace (how you move, how you speak)", "es": "Energía y ritmo (forma de moverse, de hablar)" },
+      "options": [
+        { "sign": "Aries", "label": { "fr": "Rythme rapide, impulsif, on fonce avant de réfléchir", "en": "Fast, impulsive pace, acting before thinking", "es": "Ritmo rápido, impulsivo, se actúa antes de pensar" } },
+        { "sign": "Taurus", "label": { "fr": "Rythme lent et régulier, difficile à presser", "en": "Slow, steady pace, hard to rush", "es": "Ritmo lento y regular, difícil de apurar" } },
+        { "sign": "Gemini", "label": { "fr": "Parle vite, change souvent de sujet, très agité mentalement", "en": "Talks fast, jumps topics often, mentally very active", "es": "Habla rápido, cambia de tema a menudo, mentalmente muy inquieto/a" } },
+        { "sign": "Cancer", "label": { "fr": "Rythme qui suit l'humeur, alterne élan et repli", "en": "Pace that follows mood, alternating drive and withdrawal", "es": "Ritmo que sigue el humor, alterna impulso y repliegue" } },
+        { "sign": "Leo", "label": { "fr": "Rythme théâtral, prend sa place, aime être vu(e)", "en": "Theatrical pace, takes up space, enjoys being seen", "es": "Ritmo teatral, ocupa su lugar, le gusta ser visto/a" } },
+        { "sign": "Virgo", "label": { "fr": "Rythme méthodique, organisé, n'aime pas l'improvisation", "en": "Methodical, organized pace, dislikes improvising", "es": "Ritmo metódico, organizado, no le gusta improvisar" } },
+        { "sign": "Libra", "label": { "fr": "Rythme mesuré, cherche l'équilibre, évite les extrêmes", "en": "Measured pace, seeks balance, avoids extremes", "es": "Ritmo mesurado, busca el equilibrio, evita los extremos" } },
+        { "sign": "Scorpio", "label": { "fr": "Rythme intense mais contrôlé, économise son énergie", "en": "Intense but controlled pace, conserves energy", "es": "Ritmo intenso pero controlado, ahorra energía" } },
+        { "sign": "Sagittarius", "label": { "fr": "Rythme enthousiaste, bouillonnant, a besoin d'espace", "en": "Enthusiastic, bubbling pace, needs room to move", "es": "Ritmo entusiasta, efervescente, necesita espacio" } },
+        { "sign": "Capricorn", "label": { "fr": "Rythme lent au départ, tenace, monte en puissance avec le temps", "en": "Slow start, tenacious, builds momentum over time", "es": "Ritmo lento al inicio, tenaz, gana fuerza con el tiempo" } },
+        { "sign": "Aquarius", "label": { "fr": "Rythme imprévisible, alterne détachement et éclats d'enthousiasme", "en": "Unpredictable pace, alternating detachment and bursts of enthusiasm", "es": "Ritmo imprevisible, alterna desapego y arranques de entusiasmo" } },
+        { "sign": "Pisces", "label": { "fr": "Rythme flottant, difficile à cadrer, suit son inspiration", "en": "Floaty pace, hard to pin down, follows inspiration", "es": "Ritmo flotante, difícil de encasillar, sigue su inspiración" } }
+      ]
+    },
+    {
+      "key": "premiere_impression",
+      "title": { "fr": "Première impression donnée aux inconnus", "en": "First impression made on strangers", "es": "Primera impresión que causas a desconocidos" },
+      "options": [
+        { "sign": "Aries", "label": { "fr": "Direct(e), un peu impatient(e), on sent l'énergie tout de suite", "en": "Direct, a bit impatient, the energy is felt right away", "es": "Directo/a, algo impaciente, se nota la energía enseguida" } },
+        { "sign": "Taurus", "label": { "fr": "Rassurant(e), posé(e), inspire confiance immédiatement", "en": "Reassuring, grounded, inspires trust immediately", "es": "Tranquilizador/a, sereno/a, inspira confianza de inmediato" } },
+        { "sign": "Gemini", "label": { "fr": "Vif(ve) d'esprit, bavard(e), on croit vous connaître très vite", "en": "Quick-witted, chatty, people feel they know you fast", "es": "Ágil de mente, hablador/a, la gente cree conocerte rápido" } },
+        { "sign": "Cancer", "label": { "fr": "Accueillant(e) mais un peu réservé(e) au premier contact", "en": "Welcoming but somewhat guarded on first contact", "es": "Acogedor/a pero algo reservado/a en el primer contacto" } },
+        { "sign": "Leo", "label": { "fr": "Charismatique, prend naturellement de la place dans un groupe", "en": "Charismatic, naturally takes up space in a group", "es": "Carismático/a, ocupa naturalmente su lugar en el grupo" } },
+        { "sign": "Virgo", "label": { "fr": "Discret(e), poli(e), un peu réservé(e) et observateur/observatrice", "en": "Discreet, polite, somewhat reserved and observant", "es": "Discreto/a, educado/a, algo reservado/a y observador/a" } },
+        { "sign": "Libra", "label": { "fr": "Charmant(e), sociable, cherche à plaire et à mettre à l'aise", "en": "Charming, sociable, seeks to please and put others at ease", "es": "Encantador/a, sociable, busca agradar y poner a gusto" } },
+        { "sign": "Scorpio", "label": { "fr": "Mystérieux/mystérieuse, intense, difficile à cerner d'emblée", "en": "Mysterious, intense, hard to read at first", "es": "Misterioso/a, intenso/a, difícil de descifrar de entrada" } },
+        { "sign": "Sagittarius", "label": { "fr": "Enjoué(e), direct(e), donne envie de partir à l'aventure", "en": "Playful, direct, makes you want to go on an adventure", "es": "Alegre, directo/a, da ganas de salir a la aventura" } },
+        { "sign": "Capricorn", "label": { "fr": "Sérieux/sérieuse, un peu distant(e), inspire le respect", "en": "Serious, somewhat distant, commands respect", "es": "Serio/a, algo distante, inspira respeto" } },
+        { "sign": "Aquarius", "label": { "fr": "Original(e), indépendant(e), un peu décalé(e)", "en": "Original, independent, a bit offbeat", "es": "Original, independiente, algo peculiar" } },
+        { "sign": "Pisces", "label": { "fr": "Doux/douce, un peu ailleurs, difficile à cerner", "en": "Gentle, a bit elsewhere, hard to pin down", "es": "Dulce, algo ausente, difícil de definir" } }
+      ]
+    }
+  ]
+}

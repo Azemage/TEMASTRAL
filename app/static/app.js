@@ -100,6 +100,131 @@ async function loadTimezonesInto(selectId, fallbackDefault = "Europe/Paris") {
 loadTimezonesInto("timezone");
 
 // ---------------------------------------------------------------------
+// Ciel du jour (page d'accueil, avant la recherche/création d'un thème) : roue compacte des
+// planètes classiques positionnées maintenant, sans maisons ni Ascendant puisqu'aucun lieu de
+// naissance n'entre en jeu ici — le zodiaque est fixe, Bélier 0° à 9h (ascendant=0 dans
+// longitudeToWheelAngle), même convention visuelle que la roue natale.
+function buildDaySkyWheelSVG(planets, aspects) {
+  const cx = 300;
+  const cy = 300;
+  const rOuter = 290;
+  const rZodiacInner = 250;
+  const rPlanetBase = 195;
+  const rPlanetLaneStep = 18;
+  const rAspectCircle = 135;
+  const ascendant = 0;
+
+  let zodiacSvg = "";
+  ZODIAC_SIGNS_ORDER.forEach((sign, i) => {
+    const signStartLon = i * 30;
+    const startAngle = longitudeToWheelAngle(signStartLon, ascendant);
+    const outer = arcPoints(cx, cy, rOuter, startAngle, 30);
+    const inner = arcPoints(cx, cy, rZodiacInner, startAngle + 30, -30);
+    const path = pointsToPath([...outer, ...inner]) + " Z";
+    const color = ELEMENT_WHEEL_COLORS[SIGN_ELEMENTS[sign]];
+    zodiacSvg += `<path d="${path}" fill="${color}" stroke="#b7a273" stroke-width="1" />`;
+
+    const midAngle = startAngle + 15;
+    const labelPos = polarToXY(cx, cy, (rOuter + rZodiacInner) / 2, midAngle);
+    zodiacSvg += `<text x="${labelPos.x.toFixed(2)}" y="${labelPos.y.toFixed(2)}" class="wheel-sign-symbol" text-anchor="middle" dominant-baseline="middle">${SIGN_SYMBOLS[sign]}</text>`;
+  });
+
+  const aspectCircleSvg = `<circle cx="${cx}" cy="${cy}" r="${rAspectCircle}" fill="none" stroke="#b7a273" stroke-width="1" />`;
+
+  const sortedPlanets = [...planets].sort(
+    (a, b) => longitudeToWheelAngle(a.absolute_longitude, ascendant) - longitudeToWheelAngle(b.absolute_longitude, ascendant)
+  );
+
+  const aspectsByPlanet = {};
+  aspects.forEach((aspect) => {
+    if (!MAJOR_ASPECTS.has(aspect.type)) return;
+    const describe = (otherPlanet) => ({
+      orb: aspect.orb,
+      text: `${aspectTypeLabel(aspect.type)} ${planetLabel(otherPlanet)} (${t("orb_prefix")} ${aspect.orb}°)`,
+    });
+    (aspectsByPlanet[aspect.planet1] ||= []).push(describe(aspect.planet2));
+    (aspectsByPlanet[aspect.planet2] ||= []).push(describe(aspect.planet1));
+  });
+
+  let lastAngle = null;
+  let lane = 0;
+  let planetsSvg = "";
+  const planetPoints = {};
+  sortedPlanets.forEach((planet) => {
+    const trueAngle = longitudeToWheelAngle(planet.absolute_longitude, ascendant);
+    if (lastAngle !== null && forwardOffset(0, trueAngle - lastAngle) < 6) {
+      lane = (lane + 1) % 3;
+    } else {
+      lane = 0;
+    }
+    lastAngle = trueAngle;
+
+    const displayRadius = rPlanetBase + lane * rPlanetLaneStep;
+    const glyphPos = polarToXY(cx, cy, displayRadius, trueAngle);
+    const tickInner = polarToXY(cx, cy, rAspectCircle, trueAngle);
+    const tickOuter = polarToXY(cx, cy, rZodiacInner, trueAngle);
+    planetPoints[planet.name] = polarToXY(cx, cy, rAspectCircle, trueAngle);
+
+    const planetAspects = (aspectsByPlanet[planet.name] || []).sort((a, b) => a.orb - b.orb);
+    const aspectsLines = planetAspects.length ? "\n" + planetAspects.map((a) => a.text).join("\n") : "";
+    const planetTooltip = escapeHtml(
+      `${planetLabel(planet.name)} — ${signLabel(planet.sign)} ${planet.degree}°${planet.retrograde ? " · " + t("retrograde") : ""}` +
+        aspectsLines
+    );
+
+    planetsSvg += `<line x1="${tickInner.x.toFixed(2)}" y1="${tickInner.y.toFixed(2)}" x2="${tickOuter.x.toFixed(2)}" y2="${tickOuter.y.toFixed(2)}" stroke="#8a7c5c" stroke-width="0.75" stroke-dasharray="2,2" />`;
+    planetsSvg += `<g class="wheel-hoverable wheel-planet-glyph${planet.retrograde ? " is-retrograde" : ""}" data-tooltip="${planetTooltip}">`;
+    planetsSvg += `<circle cx="${glyphPos.x.toFixed(2)}" cy="${glyphPos.y.toFixed(2)}" r="16" fill="transparent" pointer-events="all" />`;
+    planetsSvg += `<circle cx="${glyphPos.x.toFixed(2)}" cy="${glyphPos.y.toFixed(2)}" r="11" fill="#f2e9d6" stroke="${planet.retrograde ? "#a13d3d" : "#2d3a6b"}" stroke-width="1.5" />`;
+    planetsSvg += `<text x="${glyphPos.x.toFixed(2)}" y="${glyphPos.y.toFixed(2)}" class="wheel-planet-symbol" text-anchor="middle" dominant-baseline="middle">${PLANET_SYMBOLS[planet.name] || "•"}</text>`;
+    planetsSvg += `</g>`;
+  });
+
+  let aspectsSvg = "";
+  aspects.forEach((aspect) => {
+    if (!MAJOR_ASPECTS.has(aspect.type)) return;
+    const p1 = planetPoints[aspect.planet1];
+    const p2 = planetPoints[aspect.planet2];
+    if (!p1 || !p2) return;
+    const color = ASPECT_COLORS[aspect.type] || "#888";
+    const aspectTooltip = escapeHtml(
+      `${planetLabel(aspect.planet1)} ${aspectTypeLabel(aspect.type)} ${planetLabel(aspect.planet2)} — ${t("orb_prefix")} ${aspect.orb}° (${aspect.applying ? t("applying") : t("separating")})`
+    );
+    aspectsSvg += `<g class="wheel-hoverable" data-tooltip="${aspectTooltip}">`;
+    aspectsSvg += `<line x1="${p1.x.toFixed(2)}" y1="${p1.y.toFixed(2)}" x2="${p2.x.toFixed(2)}" y2="${p2.y.toFixed(2)}" stroke="transparent" stroke-width="10" pointer-events="all" />`;
+    aspectsSvg += `<line x1="${p1.x.toFixed(2)}" y1="${p1.y.toFixed(2)}" x2="${p2.x.toFixed(2)}" y2="${p2.y.toFixed(2)}" stroke="${color}" stroke-width="1.4" stroke-opacity="0.75" style="filter:drop-shadow(0 0 3px ${color})" pointer-events="none" />`;
+    aspectsSvg += `</g>`;
+  });
+
+  return `
+    <svg viewBox="0 0 600 600" class="wheel-svg" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="${cx}" cy="${cy}" r="${rOuter}" fill="#ecdfc0" />
+      ${zodiacSvg}
+      <circle cx="${cx}" cy="${cy}" r="${rZodiacInner}" fill="none" stroke="#b7a273" stroke-width="1.5" />
+      ${aspectCircleSvg}
+      ${aspectsSvg}
+      ${planetsSvg}
+    </svg>
+  `;
+}
+
+async function loadDaySky() {
+  const wrapper = document.getElementById("day-sky-wheel");
+  const errorEl = document.getElementById("day-sky-error");
+  if (!wrapper) return;
+  try {
+    const res = await fetch("/api/day-sky");
+    if (!res.ok) throw new Error(`${t("error_prefix")} ${res.status}`);
+    const data = await res.json();
+    wrapper.innerHTML = buildDaySkyWheelSVG(data.planets, data.aspects);
+    attachWheelTooltip(wrapper);
+  } catch (err) {
+    errorEl.textContent = t("day_sky_error");
+  }
+}
+loadDaySky();
+
+// ---------------------------------------------------------------------
 // Recherche de ville (géocodage)
 // ---------------------------------------------------------------------
 document.getElementById("search-city-btn").addEventListener("click", async () => {
@@ -140,6 +265,29 @@ document.getElementById("time_unknown").addEventListener("change", (e) => {
 });
 
 // ---------------------------------------------------------------------
+// Ascendant fixé manuellement (rectification) : court-circuite ville/lat/long/fuseau,
+// voir app/core/chart_calculator.py (maisons en signes intégraux dans ce cas).
+// ---------------------------------------------------------------------
+(function populateAscendantManualSignSelect() {
+  const select = document.getElementById("ascendant_manual_sign");
+  Object.keys(SIGN_SYMBOLS).forEach((sign) => {
+    const option = document.createElement("option");
+    option.value = sign;
+    option.textContent = signLabel(sign);
+    select.appendChild(option);
+  });
+})();
+
+document.getElementById("ascendant_manual_toggle").addEventListener("change", (e) => {
+  const manual = e.target.checked;
+  document.getElementById("ascendant-manual-row").classList.toggle("hidden", !manual);
+  document.getElementById("location-fields").classList.toggle("hidden", manual);
+  document.getElementById("latitude").required = !manual;
+  document.getElementById("longitude").required = !manual;
+  document.getElementById("timezone").required = !manual;
+});
+
+// ---------------------------------------------------------------------
 // Soumission du formulaire de naissance
 // ---------------------------------------------------------------------
 document.getElementById("birth-form").addEventListener("submit", async (e) => {
@@ -149,6 +297,7 @@ document.getElementById("birth-form").addEventListener("submit", async (e) => {
   errorEl.textContent = "";
 
   const timeUnknown = document.getElementById("time_unknown").checked;
+  const ascendantManual = document.getElementById("ascendant_manual_toggle").checked;
   const optionalPoints = Array.from(document.getElementById("optional_points").selectedOptions).map((o) => o.value);
 
   const payload = {
@@ -156,13 +305,21 @@ document.getElementById("birth-form").addEventListener("submit", async (e) => {
       date: document.getElementById("birth_date").value,
       time: timeUnknown ? null : document.getElementById("birth_time").value,
       time_known: !timeUnknown,
-      timezone: document.getElementById("timezone").value,
-      location: {
-        city: document.getElementById("city_search").value || null,
-        country: null,
-        latitude: parseFloat(document.getElementById("latitude").value),
-        longitude: parseFloat(document.getElementById("longitude").value),
-      },
+      timezone: document.getElementById("timezone").value || "UTC",
+      location: ascendantManual
+        ? null
+        : {
+            city: document.getElementById("city_search").value || null,
+            country: null,
+            latitude: parseFloat(document.getElementById("latitude").value),
+            longitude: parseFloat(document.getElementById("longitude").value),
+          },
+      ascendant_override: ascendantManual
+        ? {
+            sign: document.getElementById("ascendant_manual_sign").value,
+            degree_in_sign: parseFloat(document.getElementById("ascendant_manual_degree").value) || 0,
+          }
+        : null,
     },
     settings: {
       house_system: document.getElementById("house_system").value,
@@ -203,6 +360,261 @@ document.getElementById("birth-form").addEventListener("submit", async (e) => {
     submitBtn.textContent = t("btn_calculate_chart");
   }
 });
+
+// ---------------------------------------------------------------------
+// Questionnaire de rectification (déterminer l'ascendant sans heure exacte) — voir
+// app/core/rectification.py. Étape 1 : traits physiques/tempérament (scoring client-side,
+// purement déclaratif). Étape 2 : recoupement d'événements de vie déjà survenus (appel API,
+// calcul déterministe côté serveur). Réutilise date/lieu déjà saisis dans le formulaire
+// principal ci-dessus plutôt que de les redemander.
+// ---------------------------------------------------------------------
+let rectificationTraitsData = null;
+const rectificationEvents = [];
+
+document.querySelectorAll(".rectification-tab-btn").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll(".rectification-tab-btn").forEach((b) => b.classList.remove("active"));
+    document.querySelectorAll(".rectification-tab-panel").forEach((p) => p.classList.add("hidden"));
+    btn.classList.add("active");
+    document.getElementById(`rectification-tab-${btn.dataset.rectificationTab}`).classList.remove("hidden");
+  });
+});
+
+async function loadRectificationTraitsQuiz() {
+  const container = document.getElementById("rectification-traits-quiz");
+  container.innerHTML = `<p>${t("loading")}</p>`;
+  try {
+    const res = await fetch("/api/reference/ascendant-rectification-traits");
+    if (!res.ok) throw new Error(`${t("error_prefix")} ${res.status}`);
+    rectificationTraitsData = await res.json();
+    container.innerHTML = rectificationTraitsData.categories
+      .map(
+        (cat) => `
+      <fieldset class="rectification-category">
+        <legend>${pick(cat.title)}</legend>
+        ${cat.options
+          .map(
+            (opt) => `
+          <label class="checkbox-label rectification-option">
+            <input type="checkbox" class="rectification-trait-checkbox" data-sign="${opt.sign}" />
+            <span>${pick(opt.label)}</span>
+          </label>`
+          )
+          .join("")}
+      </fieldset>`
+      )
+      .join("");
+  } catch (err) {
+    container.innerHTML = `<p class="error">${err.message}</p>`;
+  }
+}
+
+function renderRectificationCandidateSignCheckboxes(preselected) {
+  const pre = new Set(preselected || []);
+  document.getElementById("rectification-candidate-signs-badges").innerHTML = Object.keys(SIGN_SYMBOLS)
+    .map(
+      (sign) => `
+    <label class="checkbox-label rectification-sign-badge">
+      <input type="checkbox" class="rectification-candidate-sign-checkbox" value="${sign}" ${pre.has(sign) ? "checked" : ""} />
+      <span>${signLabel(sign)}</span>
+    </label>`
+    )
+    .join("");
+}
+
+document.getElementById("rectification-compute-traits-btn").addEventListener("click", () => {
+  const scores = {};
+  document.querySelectorAll(".rectification-trait-checkbox:checked").forEach((cb) => {
+    scores[cb.dataset.sign] = (scores[cb.dataset.sign] || 0) + 1;
+  });
+  const ranked = Object.entries(scores)
+    .map(([sign, score]) => ({ sign, score }))
+    .sort((a, b) => b.score - a.score);
+
+  const resultEl = document.getElementById("rectification-traits-result");
+  if (!ranked.length) {
+    resultEl.innerHTML = `<p>${t("rectification_no_selection")}</p>`;
+    return;
+  }
+  resultEl.innerHTML = `
+    <h3>${t("rectification_traits_result_title")}</h3>
+    <table>
+      <thead><tr><th>${t("th_sign")}</th><th>${t("th_score")}</th></tr></thead>
+      <tbody>${ranked.map((r) => `<tr><td>${signLabel(r.sign)}</td><td>${r.score}</td></tr>`).join("")}</tbody>
+    </table>
+    <p class="reading-section-intro">${t("rectification_traits_result_hint")}</p>
+  `;
+  const maxScore = ranked[0].score;
+  const topSigns = ranked.filter((r) => r.score >= maxScore - 1).map((r) => r.sign);
+  renderRectificationCandidateSignCheckboxes(topSigns);
+});
+
+function renderRectificationEventsList() {
+  const container = document.getElementById("rectification-events-list");
+  if (!rectificationEvents.length) {
+    container.innerHTML = `<p>${t("rectification_no_events_yet")}</p>`;
+    return;
+  }
+  container.innerHTML = `
+    <table>
+      <thead><tr><th>${t("label_rectification_event_label")}</th><th>${t("label_rectification_event_date")}</th><th>${t("label_rectification_event_significance")}</th><th></th></tr></thead>
+      <tbody>${rectificationEvents
+        .map(
+          (e, i) => `
+        <tr>
+          <td>${escapeHtml(e.label)}</td>
+          <td>${e.date}</td>
+          <td>${e.significance === "major" ? t("rectification_significance_major") : t("rectification_significance_moderate")}</td>
+          <td><button type="button" class="rectification-remove-event-btn" data-index="${i}">${t("btn_remove")}</button></td>
+        </tr>`
+        )
+        .join("")}</tbody>
+    </table>`;
+  container.querySelectorAll(".rectification-remove-event-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      rectificationEvents.splice(parseInt(btn.dataset.index, 10), 1);
+      renderRectificationEventsList();
+    });
+  });
+}
+
+document.getElementById("rectification-add-event-btn").addEventListener("click", () => {
+  const labelInput = document.getElementById("rectification-event-label-input");
+  const dateInput = document.getElementById("rectification-event-date-input");
+  const significanceInput = document.getElementById("rectification-event-significance-input");
+  if (!labelInput.value.trim() || !dateInput.value) return;
+  rectificationEvents.push({ label: labelInput.value.trim(), date: dateInput.value, significance: significanceInput.value });
+  labelInput.value = "";
+  dateInput.value = "";
+  renderRectificationEventsList();
+});
+
+function rectificationMethodLabel(method) {
+  if (method === "transit") return t("rectification_method_transit");
+  if (method === "solar_arc") return t("rectification_method_solar_arc");
+  if (method === "progressed_moon") return t("rectification_method_progressed_moon");
+  return method;
+}
+
+function applyRectificationCandidateAsAscendant(sign, degree) {
+  const toggle = document.getElementById("ascendant_manual_toggle");
+  toggle.checked = true;
+  toggle.dispatchEvent(new Event("change"));
+  document.getElementById("ascendant_manual_sign").value = sign;
+  document.getElementById("ascendant_manual_degree").value = degree;
+  document.getElementById("form-section").scrollIntoView({ behavior: "smooth" });
+}
+
+function renderRectificationScanResults(result) {
+  const bySignRows = result.by_sign_summary
+    .map((s) => `<tr><td>${signLabel(s.sign)}</td><td>${s.best_score}</td><td>${s.candidate_count}</td></tr>`)
+    .join("");
+
+  const candidateCards = result.candidates
+    .map(
+      (c, i) => `
+    <div class="rectification-candidate-card">
+      <h4>
+        #${i + 1} — ${c.time} — ${signLabel(c.ascendant_sign)} ${c.ascendant_degree}°
+        (${t("rectification_th_score")}: ${c.total_score})
+      </h4>
+      <button type="button" class="rectification-use-candidate-btn" data-sign="${c.ascendant_sign}" data-degree="${c.ascendant_degree}">${t("btn_use_this_ascendant")}</button>
+      ${
+        c.matches.length
+          ? `<table>
+        <thead><tr><th>${t("label_rectification_event_label")}</th><th>${t("rectification_th_method")}</th><th>${t("th_detail")}</th><th>${t("rectification_th_score")}</th></tr></thead>
+        <tbody>${c.matches
+          .map(
+            (m) => `
+          <tr>
+            <td>${escapeHtml(m.event_label)}</td>
+            <td>${rectificationMethodLabel(m.method)}</td>
+            <td>${planetLabel(m.body)} ${aspectTypeLabel(m.aspect_type)} ${planetLabel(m.angle)} (${t("orb_prefix")} ${m.orb}°)</td>
+            <td>${m.score}</td>
+          </tr>`
+          )
+          .join("")}</tbody>
+      </table>`
+          : `<p>${t("rectification_no_match")}</p>`
+      }
+    </div>`
+    )
+    .join("");
+
+  document.getElementById("rectification-scan-results").innerHTML = `
+    <p class="warning-banner">${result.warning}</p>
+    <h3>${t("rectification_by_sign_title")}</h3>
+    <table>
+      <thead><tr><th>${t("th_sign")}</th><th>${t("rectification_th_best_score")}</th><th>${t("rectification_th_candidate_count")}</th></tr></thead>
+      <tbody>${bySignRows}</tbody>
+    </table>
+    <h3>${t("rectification_top_candidates_title")}</h3>
+    ${candidateCards}
+  `;
+
+  document.querySelectorAll(".rectification-use-candidate-btn").forEach((btn) => {
+    btn.addEventListener("click", () => applyRectificationCandidateAsAscendant(btn.dataset.sign, btn.dataset.degree));
+  });
+}
+
+document.getElementById("rectification-scan-btn").addEventListener("click", async () => {
+  const errorEl = document.getElementById("rectification-scan-error");
+  const resultsEl = document.getElementById("rectification-scan-results");
+  const btn = document.getElementById("rectification-scan-btn");
+  errorEl.textContent = "";
+
+  const birthDate = document.getElementById("birth_date").value;
+  const timezone = document.getElementById("timezone").value || "UTC";
+  const latitude = parseFloat(document.getElementById("latitude").value);
+  const longitude = parseFloat(document.getElementById("longitude").value);
+
+  if (!birthDate || Number.isNaN(latitude) || Number.isNaN(longitude)) {
+    errorEl.textContent = t("rectification_error_missing_birth_data");
+    return;
+  }
+  if (!rectificationEvents.length) {
+    errorEl.textContent = t("rectification_error_no_events");
+    return;
+  }
+
+  const candidateSigns = Array.from(document.querySelectorAll(".rectification-candidate-sign-checkbox:checked")).map((cb) => cb.value);
+
+  const payload = {
+    birth_date: birthDate,
+    timezone,
+    latitude,
+    longitude,
+    window_start: `${document.getElementById("rectification-window-start").value || "00:00"}:00`,
+    window_end: `${document.getElementById("rectification-window-end").value || "23:59"}:00`,
+    step_minutes: parseInt(document.getElementById("rectification-step-minutes").value, 10) || 4,
+    candidate_signs: candidateSigns.length ? candidateSigns : null,
+    life_events: rectificationEvents.map((e) => ({ label: e.label, date: e.date, significance: e.significance })),
+  };
+
+  resultsEl.innerHTML = `<p>${t("status_computing_rectification")}</p>`;
+  btn.disabled = true;
+  try {
+    const res = await fetch("/api/rectification/scan", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) {
+      const detail = await res.json().catch(() => ({}));
+      throw new Error(detail.detail || `${t("error_prefix")} ${res.status}`);
+    }
+    renderRectificationScanResults(await res.json());
+  } catch (err) {
+    resultsEl.innerHTML = "";
+    errorEl.textContent = err.message;
+  } finally {
+    btn.disabled = false;
+  }
+});
+
+loadRectificationTraitsQuiz();
+renderRectificationCandidateSignCheckboxes([]);
+renderRectificationEventsList();
 
 // Section 3 (Lecture interprétée), 4 (Astrocartographie) et 5 (Calendrier ésotérique) restent
 // repliées par défaut sous la roue natale : chaque bouton révèle/replie sa propre section,
@@ -559,6 +971,7 @@ function renderChart(chart) {
       &nbsp;|&nbsp; ${data.is_day_chart ? t("day_chart_label") : t("night_chart_label")}
     </p>
     ${!data.time_known ? `<p class="error">${t("unknown_birth_time_warning")}</p>` : ""}
+    ${data.ascendant_manually_set ? `<p class="error">${t("ascendant_manually_set_warning")}</p>` : ""}
     ${renderTraitTags(data.character_traits)}
   `;
 
@@ -568,12 +981,45 @@ function renderChart(chart) {
   renderAspectsTab(data);
   renderBalanceTab(data);
   renderDispositorsTab(data);
+  renderHouseModalityTab(data);
+  renderHouseModalityReadingDataPanel(data);
   renderLotsDataPanel(data);
+  renderDraconicTab(data);
   renderDerivedHousesDataPanel(data);
   timingLoadedForChartId = null; // nouveau thème : re-fetcher le timing au prochain accès
   zrLoadedForChartId = null; // nouveau thème : re-fetcher les phases au prochain accès
   compatChartsLoadedForChartId = null; // nouveau thème : re-fetcher la liste des cartes au prochain accès
   compatChartBId = null;
+}
+
+// Signaux notables du degré exact d'une planète (voir app/core/degrees.py) : affichés en
+// badges directement dans le tableau des planètes, gratuit (pas de lecture LLM nécessaire
+// pour les voir) — cohérent avec le principe de l'app de toujours montrer le calcul
+// déterministe avant/à côté de l'interprétation.
+function degreeBadgesHtml(planetName, data) {
+  const entry = (data.degree_analysis || []).find((d) => d.planet === planetName);
+  if (!entry) return "—";
+  const badges = [];
+  if (entry.is_exact_exaltation) {
+    badges.push(`<span class="degree-badge degree-badge-exaltation" title="${escapeHtml(t("degree_exaltation_tooltip"))}">${t("degree_exaltation_badge")}</span>`);
+  }
+  if (entry.is_critical_degree) {
+    badges.push(`<span class="degree-badge degree-badge-critical" title="${escapeHtml(t("degree_critical_tooltip"))}">${t("degree_critical_badge")}</span>`);
+  }
+  if (entry.is_anaretic) {
+    badges.push(`<span class="degree-badge degree-badge-anaretic" title="${escapeHtml(t("degree_anaretic_tooltip"))}">${t("degree_anaretic_badge")}</span>`);
+  }
+  if (entry.degree_theme_label) {
+    badges.push(
+      `<span class="degree-badge degree-badge-theme" title="${escapeHtml(entry.degree_theme_label)}">${escapeHtml(tf("degree_theme_badge", { sign: signLabel(entry.degree_theme_sign) }))}</span>`
+    );
+  }
+  if (entry.dissolution_predisposition_note) {
+    badges.push(
+      `<span class="degree-badge degree-badge-dissolution" title="${escapeHtml(entry.dissolution_predisposition_note)}">${t("degree_dissolution_badge")}</span>`
+    );
+  }
+  return badges.length ? badges.join(" ") : "—";
 }
 
 function renderPlanetsTab(data) {
@@ -584,8 +1030,9 @@ function renderPlanetsTab(data) {
         <td>${planetLabel(p.name)}</td>
         <td>${signLabel(p.sign)}</td>
         <td>${p.degree}°</td>
-        <td>${t("house_prefix")} ${p.house ?? "—"}</td>
+        <td>${t("house_prefix")} ${p.house ?? "—"} ${modalityBadgeHtml(p.name, data)}</td>
         <td>${p.retrograde ? `<span class="retro">${t("retrograde")}</span>` : "—"}</td>
+        <td>${degreeBadgesHtml(p.name, data)}</td>
       </tr>`
     )
     .join("");
@@ -593,13 +1040,13 @@ function renderPlanetsTab(data) {
   const angleRows = ["ascendant", "midheaven", "descendant", "imum_coeli"]
     .map((key) => {
       const a = data.angles[key];
-      return `<tr><td>${planetLabel(key)}</td><td>${signLabel(a.sign)}</td><td>${a.degree}°</td><td>—</td><td>—</td></tr>`;
+      return `<tr><td>${planetLabel(key)}</td><td>${signLabel(a.sign)}</td><td>${a.degree}°</td><td>—</td><td>—</td><td>—</td></tr>`;
     })
     .join("");
 
   document.getElementById("tab-planets").innerHTML = `
     <table>
-      <thead><tr><th>${t("th_body")}</th><th>${t("th_sign")}</th><th>${t("th_degree")}</th><th>${t("house_prefix")}</th><th>${t("th_movement")}</th></tr></thead>
+      <thead><tr><th>${t("th_body")}</th><th>${t("th_sign")}</th><th>${t("th_degree")}</th><th>${t("house_prefix")}</th><th>${t("th_movement")}</th><th>${t("th_degree_notes")}</th></tr></thead>
       <tbody>${rows}${angleRows}</tbody>
     </table>
   `;
@@ -731,6 +1178,86 @@ function renderDispositorsTab(data) {
 }
 
 // ---------------------------------------------------------------------
+// Dynamique angulaire/succédente/cadente des maisons (Lilly) — onglet "Dynamique" et
+// badges dans l'onglet Planètes. Voir app/core/house_modality.py.
+// ---------------------------------------------------------------------
+function modalityBadgeHtml(planetName, data) {
+  const entry = (data.house_modality_analysis?.per_planet || []).find((e) => e.planet === planetName);
+  if (!entry) return "";
+  return `<span class="modality-badge modality-badge-${entry.modality}" title="${escapeHtml(houseModalityLabel(entry.modality))}">${houseModalityShortLabel(entry.modality)}</span>`;
+}
+
+function renderQuadrantTable(groups) {
+  const rows = groups
+    .map((g) => {
+      const loadBadge = g.is_most_loaded && g.planet_count > 0 ? ` <span class="degree-badge degree-badge-exaltation">${t("badge_most_loaded")}</span>` : "";
+      const planetsText = g.planets.length ? g.planets.map(planetLabel).join(", ") : "—";
+      return `<tr><td>${escapeHtml(quadrantThemeLabel(g.key) || g.theme)}${loadBadge}</td><td>${g.houses.map((h) => `${t("house_prefix")} ${h}`).join(", ")}</td><td>${planetsText}</td><td>${g.planet_count}</td></tr>`;
+    })
+    .join("");
+  return `<table><thead><tr><th>${t("th_quadrant")}</th><th>${t("th_houses")}</th><th>${t("th_planet_generic")}</th><th>${t("th_planet_count")}</th></tr></thead><tbody>${rows}</tbody></table>`;
+}
+
+function renderHouseModalitySummaryHtml(analysis) {
+  const countsRows = MODALITY_ORDER.map(
+    (m) => `<tr><td>${houseModalityLabel(m)}</td><td>${analysis.counts_by_modality[m] ?? 0}</td><td>${analysis.weighted_score_by_modality[m] ?? 0}</td></tr>`
+  ).join("");
+
+  const dominantNote =
+    analysis.dominant_modality_simple !== analysis.dominant_modality_weighted
+      ? `<p class="reading-section-intro">${tf("house_modality_dominant_mismatch", { simple: houseModalityLabel(analysis.dominant_modality_simple), weighted: houseModalityLabel(analysis.dominant_modality_weighted) })}</p>`
+      : "";
+
+  return `
+    <h3>${t("house_modality_dominant_title")}</h3>
+    <p><strong>${houseModalityLabel(analysis.dominant_modality_weighted)}</strong> — ${houseModalityReading(analysis.dominant_modality_weighted)}</p>
+    ${dominantNote}
+
+    <table>
+      <thead><tr><th>${t("th_modality")}</th><th>${t("th_planet_count")}</th><th>${t("th_lilly_score")}</th></tr></thead>
+      <tbody>${countsRows}</tbody>
+    </table>
+  `;
+}
+
+function renderHouseModalityTab(data) {
+  const analysis = data.house_modality_analysis;
+  if (!analysis) {
+    document.getElementById("tab-modality").innerHTML = "";
+    return;
+  }
+
+  const perPlanetRows = analysis.per_planet
+    .map((e) => `<tr><td>${planetLabel(e.planet)}</td><td>${t("house_prefix")} ${e.house}</td><td>${houseModalityLabel(e.modality)}</td><td>${e.points}</td></tr>`)
+    .join("");
+
+  document.getElementById("tab-modality").innerHTML = `
+    <p class="reading-section-intro" data-i18n="house_modality_section_intro">${t("house_modality_section_intro")}</p>
+    ${renderHouseModalitySummaryHtml(analysis)}
+
+    <details>
+      <summary>${t("house_modality_per_planet_detail")}</summary>
+      <table>
+        <thead><tr><th>${t("th_planet_generic")}</th><th>${t("house_prefix")}</th><th>${t("th_modality")}</th><th>${t("th_lilly_score")}</th></tr></thead>
+        <tbody>${perPlanetRows}</tbody>
+      </table>
+    </details>
+
+    <hr class="reading-subsection-divider" />
+    <h3>${t("house_quadrants_title")}</h3>
+    <p class="warning-banner">${t("house_quadrants_warning")}</p>
+    ${renderQuadrantTable(data.house_quadrants || [])}
+  `;
+}
+
+function renderHouseModalityReadingDataPanel(data) {
+  const container = document.getElementById("house-modality-reading-data-panel");
+  const analysis = data.house_modality_analysis;
+  if (!container || !analysis) return;
+  container.innerHTML = renderHouseModalitySummaryHtml(analysis);
+}
+
+// ---------------------------------------------------------------------
 // Lots (parts arabes) — affichés dans "Lecture interprétée > Lots"
 // ---------------------------------------------------------------------
 function renderLotsDataPanel(data) {
@@ -768,6 +1295,18 @@ function renderLotsDataPanel(data) {
       <tbody>${rows}</tbody>
     </table>
   `;
+}
+
+// ---------------------------------------------------------------------
+// Thème draconique — affiché dans "Lecture interprétée > Thème draconique". Déjà calculé et
+// stocké dans computed_chart_data.draconic (voir app/core/draconic.py, appelé depuis
+// calculate_natal_chart comme les maisons dérivées) : aucun appel réseau supplémentaire.
+// ---------------------------------------------------------------------
+function renderDraconicTab(data) {
+  const wrapper = document.getElementById("draconic-wheel");
+  if (!wrapper || !data.draconic) return;
+  wrapper.innerHTML = buildWheelSVG(data.draconic, { showMinorAspects: false });
+  attachWheelTooltip(wrapper);
 }
 
 // ---------------------------------------------------------------------
@@ -1052,6 +1591,14 @@ const ZR_DEFAULT_SELECTED_LOTS = new Set(["Fortune", "Esprit"]);
 let selectedZrAxisKey = null;
 let axesThematiquesLotsConfig = null;
 
+// Lectures individuelles générées via le bouton "Lire ce lot" de chaque carte (voir
+// renderZrLotCard) : mises en cache ici (texte déjà rédigé, jamais régénéré au ré-affichage
+// de la carte) et suivies dans `zrIndividuallyReadLots` pour piloter la visibilité du bouton
+// de synthèse (`updateZrSynthesisButton`) — la synthèse ne prend son sens qu'une fois
+// plusieurs lots lus un par un, voir generateZrSynthesis.
+const zrIndividualReadings = new Map();
+const zrIndividuallyReadLots = new Set();
+
 function renderZrLotCard(lotName, lotResult, checked) {
   const l2Rows = lotResult.current_l1_l2_periods
     .map((p) => {
@@ -1060,6 +1607,8 @@ function renderZrLotCard(lotName, lotResult, checked) {
       return `<tr class="${isCurrent ? "zr-current-row" : ""}"><td>${signLabel(p.sign)}</td><td>${p.start_date} → ${p.end_date}</td><td>${badges || "—"}</td></tr>`;
     })
     .join("");
+
+  const cachedReading = zrIndividualReadings.get(lotName);
 
   return `
     <div class="zr-lot-card">
@@ -1082,7 +1631,49 @@ function renderZrLotCard(lotName, lotResult, checked) {
           </table>
         </details>
       </details>
+      <button type="button" class="zr-read-lot-btn" data-lot="${lotName}">${t("btn_read_this_lot")}</button>
+      <p class="error zr-lot-reading-error" data-lot="${lotName}"></p>
+      <div class="reading-output zr-lot-reading-output" data-lot="${lotName}">${cachedReading ? tinyMarkdownToHtml(cachedReading) : ""}</div>
     </div>`;
+}
+
+async function generateSingleLotReading(lotName, btn) {
+  if (!currentChart) return;
+  const card = btn.closest(".zr-lot-card");
+  const errorEl = card.querySelector(".zr-lot-reading-error");
+  const outputEl = card.querySelector(".zr-lot-reading-output");
+  const defaultLabel = t("btn_read_this_lot");
+  errorEl.textContent = "";
+  btn.disabled = true;
+  btn.textContent = t("status_generating");
+  try {
+    const dateInput = document.getElementById("zr-date");
+    const res = await fetch(`/api/charts/${currentChart.id}/readings`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        reading_type: "zodiacal_releasing",
+        as_of_date: dateInput ? dateInput.value : undefined,
+        zr_selected_lots: [lotName],
+        zr_mode: selectedZrMode,
+        language: getLanguage(),
+      }),
+    });
+    if (!res.ok) {
+      const detail = await res.json().catch(() => ({}));
+      throw new Error(detail.detail || `${t("error_prefix")} ${res.status}`);
+    }
+    const reading = await res.json();
+    zrIndividualReadings.set(lotName, reading.reading_text);
+    zrIndividuallyReadLots.add(lotName);
+    outputEl.innerHTML = tinyMarkdownToHtml(reading.reading_text);
+    updateZrSynthesisButton();
+  } catch (err) {
+    errorEl.textContent = err.message;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = defaultLabel;
+  }
 }
 
 function renderZrDataPanel(zr, previouslyChecked) {
@@ -1114,6 +1705,28 @@ function renderZrDataPanel(zr, previouslyChecked) {
       selectedZrAxisKey = null; // sélection manuelle : la présélection d'axe ne verrouille jamais le choix
     });
   });
+  container.querySelectorAll(".zr-read-lot-btn").forEach((btn) => {
+    btn.addEventListener("click", () => generateSingleLotReading(btn.dataset.lot, btn));
+  });
+}
+
+// Bouton de synthèse (voir zr-synthesis-panel dans index.html) : n'apparaît qu'une fois au
+// moins deux lots lus individuellement (`zrIndividuallyReadLots`) — une synthèse d'un seul
+// lot n'a rien à croiser, elle n'a donc pas d'intérêt propre par rapport à la lecture simple.
+function updateZrSynthesisButton() {
+  const btn = document.getElementById("generate-zr-synthesis-btn");
+  const hint = document.getElementById("zr-synthesis-hint");
+  if (!btn) return;
+  const count = zrIndividuallyReadLots.size;
+  if (count < 2) {
+    btn.classList.add("hidden");
+    hint.classList.remove("hidden");
+    return;
+  }
+  hint.classList.add("hidden");
+  btn.classList.remove("hidden");
+  btn.disabled = false;
+  btn.textContent = tf("btn_generate_zr_synthesis", { count });
 }
 
 async function loadAxesThematiquesLotsConfig() {
@@ -1158,6 +1771,12 @@ async function renderZrAxisPanel() {
 async function loadZrDataPanel(date) {
   if (!currentChart) return;
   renderZrAxisPanel();
+  // Nouvelle date/thème/langue : les lectures individuelles mises en cache ne correspondent
+  // plus forcément aux données affichées (date différente, texte dans une autre langue) —
+  // on repart d'un état propre plutôt que de risquer un mélange incohérent.
+  zrIndividualReadings.clear();
+  zrIndividuallyReadLots.clear();
+  updateZrSynthesisButton();
   const container = document.getElementById("zr-data-panel");
   const previouslyChecked = new Set(
     Array.from(container.querySelectorAll(".zr-lot-checkbox:checked")).map((el) => el.value)
@@ -1686,6 +2305,46 @@ document.getElementById("generate-lots-reading-btn").addEventListener("click", (
   });
 });
 
+document.getElementById("generate-house-modality-reading-btn").addEventListener("click", () => {
+  generateSpecializedReading({
+    btnId: "generate-house-modality-reading-btn",
+    errorId: "house-modality-reading-error",
+    outputId: "house-modality-reading-output",
+    defaultLabel: t("btn_generate_house_modality_reading"),
+    requestBody: { reading_type: "house_modality" },
+  });
+});
+
+document.getElementById("generate-draconic-reading-btn").addEventListener("click", () => {
+  generateSpecializedReading({
+    btnId: "generate-draconic-reading-btn",
+    errorId: "draconic-reading-error",
+    outputId: "draconic-reading-output",
+    defaultLabel: t("btn_generate_draconic_reading"),
+    requestBody: { reading_type: "draconic" },
+  });
+});
+
+document.getElementById("generate-draconic-incarnation-btn").addEventListener("click", () => {
+  generateSpecializedReading({
+    btnId: "generate-draconic-incarnation-btn",
+    errorId: "draconic-incarnation-error",
+    outputId: "draconic-incarnation-output",
+    defaultLabel: t("btn_generate_draconic_incarnation"),
+    requestBody: { reading_type: "draconic_incarnation" },
+  });
+});
+
+document.getElementById("generate-draconic-comparison-btn").addEventListener("click", () => {
+  generateSpecializedReading({
+    btnId: "generate-draconic-comparison-btn",
+    errorId: "draconic-comparison-error",
+    outputId: "draconic-comparison-output",
+    defaultLabel: t("btn_generate_draconic_comparison"),
+    requestBody: { reading_type: "draconic_comparison" },
+  });
+});
+
 let selectedZrMode = "current";
 document.querySelectorAll(".zr-mode-btn").forEach((btn) => {
   btn.addEventListener("click", () => {
@@ -1719,6 +2378,36 @@ document.getElementById("generate-zr-reading-btn").addEventListener("click", () 
       zr_selected_lots: selectedLots,
       zr_mode: selectedZrMode,
       zr_axis_key: selectedZrMode === "predictive" ? selectedZrAxisKey : null,
+    },
+  });
+});
+
+document.getElementById("generate-zr-synthesis-btn").addEventListener("click", () => {
+  // La synthèse croise les périodes des lots déjà lus individuellement : coche exactement ces
+  // lots (cohérence visuelle avec ce qui vient d'être demandé) et force le mode prévisionnel,
+  // seul mode qui couvre assez d'années pour repérer des convergences (voir
+  // _zodiacal_releasing_prompt_block, cross_lot_guidance côté serveur).
+  const selectedLots = Array.from(zrIndividuallyReadLots);
+  document.querySelectorAll(".zr-lot-checkbox").forEach((el) => {
+    el.checked = selectedLots.includes(el.value);
+  });
+  selectedZrMode = "predictive";
+  selectedZrAxisKey = null;
+  document.querySelectorAll(".zr-mode-btn").forEach((b) => b.classList.toggle("active", b.dataset.zrMode === "predictive"));
+  document.querySelectorAll(".zr-axis-btn").forEach((b) => b.classList.remove("active"));
+
+  const dateInput = document.getElementById("zr-date");
+  generateSpecializedReading({
+    btnId: "generate-zr-synthesis-btn",
+    errorId: "zr-synthesis-error",
+    outputId: "zr-synthesis-output",
+    defaultLabel: tf("btn_generate_zr_synthesis", { count: selectedLots.length }),
+    requestBody: {
+      reading_type: "zodiacal_releasing",
+      as_of_date: dateInput ? dateInput.value : undefined,
+      zr_selected_lots: selectedLots,
+      zr_mode: "predictive",
+      zr_axis_key: null,
     },
   });
 });
@@ -2571,6 +3260,22 @@ function weeklyWeatherHighlightLabel(h) {
   return witchyEventLabel({ event_type: h.kind, planet: h.planet, sign: h.sign, planet_b: h.planet_b, aspect_type: h.aspect_type });
 }
 
+// Points natals à surveiller pour un highlight. Le backend envoie "Ascendant" (majuscule,
+// cohérent avec les noms de planètes) mais PLANET_NAMES l'indexe en minuscule (comme les
+// autres angles — ascendant/midheaven/descendant/imum_coeli) : normaliser avant lookup.
+function emphasisPointLabel(point) {
+  return point === "Ascendant" ? planetLabel("ascendant") : planetLabel(point);
+}
+
+function affectedSignsHtml(h) {
+  const affected = h.affected_signs;
+  if (!affected || (affected.primary.length === 0 && affected.secondary.length === 0)) return "—";
+  const points = (h.emphasis_points || []).map(emphasisPointLabel).join(", ");
+  const badge = (sign, secondary) =>
+    `<span class="affected-sign-badge${secondary ? " is-secondary" : ""}" title="${escapeHtml(tf("weekly_weather_affected_signs_tooltip", { points }))}">${signLabel(sign)}</span>`;
+  return `<span class="affected-signs">${affected.primary.map((s) => badge(s, false)).join("")}${affected.secondary.map((s) => badge(s, true)).join("")}</span>`;
+}
+
 function renderWeeklyWeatherHighlights() {
   const container = document.getElementById("weekly-weather-highlights");
   if (!container || !weeklyWeatherData) return;
@@ -2590,6 +3295,7 @@ function renderWeeklyWeatherHighlights() {
             <td>${h.date}</td>
             <td>${escapeHtml(weeklyWeatherHighlightLabel(h))}</td>
             <td>${starRatingHtml(h.score, { max: 5, compact: true, showScore: false })}</td>
+            <td title="${escapeHtml(t("weekly_weather_th_affected_signs"))}">${affectedSignsHtml(h)}</td>
           </tr>`
           )
           .join("")}
