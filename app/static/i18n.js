@@ -716,13 +716,13 @@ const UI_TEXT = {
   th_lilly_score: { fr: "Score pondéré", en: "Weighted score", es: "Puntuación ponderada" },
   th_quadrant: { fr: "Bloc", en: "Block", es: "Bloque" },
   th_houses: { fr: "Maisons", en: "Houses", es: "Casas" },
-  house_quadrants_standard_title: { fr: "Découpage par quadrant (standard)", en: "Quadrant grouping (standard)", es: "Agrupación por cuadrante (estándar)" },
-  house_quadrants_alt_title: { fr: "Découpage alternatif (angle au centre)", en: "Alternative grouping (angle-centered)", es: "Agrupación alternativa (ángulo al centro)" },
-  house_quadrants_alt_warning: {
-    fr: "Variante non vérifiée dans une source classique (probablement un enseignement moderne de vulgarisation) — à considérer comme une piste, pas comme équivalente au découpage standard ci-dessus.",
-    en: "Variant not verified in a classical source (likely modern popularization teaching) — treat as a lead, not as equivalent to the standard grouping above.",
-    es: "Variante no verificada en una fuente clásica (probablemente una enseñanza moderna de divulgación) — considérala una pista, no equivalente a la agrupación estándar de arriba.",
+  house_quadrants_title: { fr: "Découpage en quadrants (angle au centre)", en: "Quadrant grouping (angle-centered)", es: "Agrupación por cuadrantes (ángulo al centro)" },
+  house_quadrants_warning: {
+    fr: "Variante non vérifiée dans une source classique (probablement un enseignement moderne de vulgarisation) — à considérer comme une piste, pas comme un fait établi. Chaque bloc est chargé des planètes classiques qui l'occupent ; le ou les blocs les plus chargés sont signalés.",
+    en: "Variant not verified in a classical source (likely modern popularization teaching) — treat as a lead, not as an established fact. Each block is loaded with the classical planets occupying it; the most loaded block(s) are flagged.",
+    es: "Variante no verificada en una fuente clásica (probablemente una enseñanza moderna de divulgación) — considérala una pista, no un hecho establecido. Cada bloque se carga con los planetas clásicos que lo ocupan; se señalan el o los bloques más cargados.",
   },
+  badge_most_loaded: { fr: "Le plus chargé", en: "Most loaded", es: "El más cargado" },
 
   section3_title: { fr: "3. Lecture interprétée", en: "3. Interpreted reading", es: "3. Lectura interpretada" },
   reading_section_intro: {

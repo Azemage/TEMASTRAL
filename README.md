@@ -367,9 +367,12 @@ Implémenté :
   dans le prompt de lecture générale, et une lecture spécialisée "Agir / Maintenir /
   Préparer" (reading_type `house_modality`) structurée autour du découpage en quatre blocs
   centré sur chaque angle (Identité 12-1-2, Racines 3-4-5, Relations 6-7-8, Vie publique
-  9-10-11 — `house_quadrants_angle_centered`, explicitement non vérifié dans une source
-  classique). Le découpage standard documenté (`house_quadrants_standard`, 1-2-3/4-5-6/
-  7-8-9/10-11-12) reste aussi exposé dans l'onglet Dynamique.
+  9-10-11 — `house_quadrants`, explicitement non vérifié dans une source classique ; le
+  découpage standard documenté qui commence à chaque angle plutôt que de le centrer n'est
+  volontairement pas retenu). Chaque bloc est chargé des planètes classiques qui l'occupent
+  (`planets`/`planet_count`), avec le ou les blocs les plus chargés marqués
+  `is_most_loaded` (égalité possible, jamais forcée sur un seul bloc) — utilisé aussi bien
+  par la lecture spécialisée que, ponctuellement, par la lecture générale.
 - Web app simple pour saisir une naissance, visualiser le thème et générer une lecture,
   organisée en "Thème natal" (données calculées) et "Lecture interprétée" (générale + les
   6 lectures spécialisées, chacune affichant d'abord ses données puis un bouton de génération ;

@@ -1,8 +1,7 @@
 from app.core.house_modality import (
     classify_house,
     compute_house_modality_analysis,
-    group_houses_by_angle_centered_quadrant,
-    group_houses_by_standard_quadrant,
+    compute_quadrant_loads,
     planet_weight_for,
 )
 
@@ -83,18 +82,8 @@ def test_dominant_can_differ_between_simple_and_weighted():
     assert result["dominant_modality_weighted"] == "angular"
 
 
-def test_standard_quadrant_grouping_starts_at_each_angle():
-    groups = group_houses_by_standard_quadrant()
-    assert len(groups) == 4
-    houses_by_group = {g["key"]: g["houses"] for g in groups}
-    assert houses_by_group["le_moi"] == [1, 2, 3]
-    assert houses_by_group["le_foyer"] == [4, 5, 6]
-    assert houses_by_group["l_autre"] == [7, 8, 9]
-    assert houses_by_group["le_collectif"] == [10, 11, 12]
-
-
-def test_angle_centered_quadrant_grouping_centers_each_angle():
-    groups = group_houses_by_angle_centered_quadrant()
+def test_quadrant_loads_centers_each_angle():
+    groups = compute_quadrant_loads([])
     houses_by_group = {g["key"]: g["houses"] for g in groups}
     assert houses_by_group["identite"] == [12, 1, 2]
     assert houses_by_group["racines"] == [3, 4, 5]
@@ -102,7 +91,41 @@ def test_angle_centered_quadrant_grouping_centers_each_angle():
     assert houses_by_group["vie_publique"] == [9, 10, 11]
 
 
-def test_all_twelve_houses_covered_by_both_quadrant_groupings():
-    for grouping_fn in (group_houses_by_standard_quadrant, group_houses_by_angle_centered_quadrant):
-        all_houses = sorted(h for g in grouping_fn() for h in g["houses"])
-        assert all_houses == list(range(1, 13))
+def test_quadrant_loads_cover_all_twelve_houses():
+    all_houses = sorted(h for g in compute_quadrant_loads([]) for h in g["houses"])
+    assert all_houses == list(range(1, 13))
+
+
+def test_quadrant_loads_counts_planets_and_flags_most_loaded():
+    planets = [
+        {"name": "Sun", "house": 1},  # identite (12-1-2)
+        {"name": "Moon", "house": 1},  # identite
+        {"name": "Mercury", "house": 4},  # racines (3-4-5)
+        {"name": "Venus", "house": 7},  # relations (6-7-8)
+        {"name": "Mars", "house": 10},  # vie_publique (9-10-11)
+    ]
+    groups = compute_quadrant_loads(planets, planet_names=["Sun", "Moon", "Mercury", "Venus", "Mars"])
+    by_key = {g["key"]: g for g in groups}
+    assert by_key["identite"]["planet_count"] == 2
+    assert set(by_key["identite"]["planets"]) == {"Sun", "Moon"}
+    assert by_key["racines"]["planet_count"] == 1
+    assert by_key["identite"]["is_most_loaded"] is True
+    assert by_key["racines"]["is_most_loaded"] is False
+    # Trié du plus chargé au moins chargé.
+    assert groups[0]["key"] == "identite"
+
+
+def test_quadrant_loads_ties_flag_all_tied_groups_as_most_loaded():
+    planets = [{"name": "Sun", "house": 1}, {"name": "Moon", "house": 4}]
+    groups = compute_quadrant_loads(planets, planet_names=["Sun", "Moon"])
+    by_key = {g["key"]: g for g in groups}
+    assert by_key["identite"]["is_most_loaded"] is True
+    assert by_key["racines"]["is_most_loaded"] is True
+    assert by_key["relations"]["is_most_loaded"] is False
+    assert by_key["vie_publique"]["is_most_loaded"] is False
+
+
+def test_quadrant_loads_empty_chart_has_no_most_loaded():
+    groups = compute_quadrant_loads([])
+    assert all(g["planet_count"] == 0 for g in groups)
+    assert all(g["is_most_loaded"] is False for g in groups)

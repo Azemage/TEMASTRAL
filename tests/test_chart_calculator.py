@@ -135,5 +135,8 @@ def test_chart_includes_house_modality_analysis_and_quadrants():
     assert sum(analysis["counts_by_modality"].values()) == 10  # 10 planètes classiques
     assert analysis["dominant_modality_simple"] in {"angular", "succedent", "cadent"}
     assert analysis["dominant_modality_weighted"] in {"angular", "succedent", "cadent"}
-    assert len(chart["house_quadrants_standard"]) == 4
-    assert len(chart["house_quadrants_angle_centered"]) == 4
+    quadrants = chart["house_quadrants"]
+    assert len(quadrants) == 4
+    assert {g["key"] for g in quadrants} == {"identite", "racines", "relations", "vie_publique"}
+    assert sum(g["planet_count"] for g in quadrants) == 10
+    assert any(g["is_most_loaded"] for g in quadrants)

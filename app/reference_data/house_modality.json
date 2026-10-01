@@ -1,5 +1,5 @@
 {
-  "description": "Classification des 12 maisons en trois modalités de force (angulaire/succédente/cadente) [Documenté, tradition hellénistique — Dorothée de Sidon, Vettius Valens, systématisée par William Lilly, Christian Astrology 1647]. Le score pondéré par planète ci-dessous (`planet_weight`) est une PRÉFÉRENCE PERSONNELLE de l'utilisateur de cette app, qui remplace le barème historique de dignité accidentelle de Lilly (par maison) utilisé dans une version antérieure — conservé ci-dessous (`lilly_dignity_points_by_house`) à titre documentaire/historique uniquement, plus utilisé dans le calcul actif. Deux découpages en quatre blocs de trois maisons sont proposés : le découpage par quadrant standard (documenté, commence à chaque angle) et un découpage alternatif centrant chaque angle (non vérifié dans une source classique — probablement enseignement moderne/vulgarisation, cohérent en interne mais à présenter comme variante non confirmée, jamais comme la même tradition que le découpage standard).",
+  "description": "Classification des 12 maisons en trois modalités de force (angulaire/succédente/cadente) [Documenté, tradition hellénistique — Dorothée de Sidon, Vettius Valens, systématisée par William Lilly, Christian Astrology 1647]. Le score pondéré par planète ci-dessous (`planet_weight`) est une PRÉFÉRENCE PERSONNELLE de l'utilisateur de cette app, qui remplace le barème historique de dignité accidentelle de Lilly (par maison) utilisé dans une version antérieure — conservé ci-dessous (`lilly_dignity_points_by_house`) à titre documentaire/historique uniquement, plus utilisé dans le calcul actif. Les maisons sont aussi regroupées en quatre blocs de trois maisons centrés sur chaque angle (`quadrant_groups`, non vérifié dans une source classique — variante préférée par l'utilisateur de cette app, voir son statut dans `quadrant_groups.status`), chaque bloc étant ensuite chargé des planètes classiques qui l'occupent pour repérer les zones de concentration de la carte.",
   "modality_by_house": {
     "1": "angular", "4": "angular", "7": "angular", "10": "angular",
     "2": "succedent", "5": "succedent", "8": "succedent", "11": "succedent",
@@ -33,24 +33,13 @@
     "cadent": "Modalité dominante : Cadente (Préparer). Prépare, apprend, se retire, revient — attention à la dispersion."
   },
   "dominant_modality_methodological_note": "[Synthèse raisonnée] Le comptage simple (nombre de planètes par modalité) et le score pondéré (poids par planète, voir planet_weight_note) peuvent désigner des modalités différentes : le score pondéré privilégie les planètes personnelles (luminaires notamment) sur les planètes lentes/générationnelles, même quand ces dernières sont plus nombreuses dans une modalité. En cas de désaccord entre les deux, présenter les deux résultats plutôt que d'en forcer un seul comme conclusion.",
-  "quadrant_groupings": {
-    "standard": {
-      "status": "[Documenté — la version la plus citée dans les manuels d'astrologie, commence à chaque angle]",
-      "groups": {
-        "le_moi": { "houses": [1, 2, 3], "theme": "Le moi — corps, ressources propres, esprit immédiat" },
-        "le_foyer": { "houses": [4, 5, 6], "theme": "Le foyer — racine familiale, expression créative, routine" },
-        "l_autre": { "houses": [7, 8, 9], "theme": "L'autre — relation directe, ressources partagées, sens/expansion" },
-        "le_collectif": { "houses": [10, 11, 12], "theme": "Le collectif — vocation publique, communauté, dissolution" }
-      }
-    },
-    "angle_centered": {
-      "status": "[Non vérifié dans une source classique — variante cohérente en interne mais probablement issue d'un enseignement moderne de vulgarisation, non retracée à un auteur précis ; à présenter comme variante non confirmée, jamais comme équivalente à la version standard documentée. Préférée par l'utilisateur de cette app pour la lecture Agir/Maintenir/Préparer.]",
-      "groups": {
-        "identite": { "houses": [12, 1, 2], "theme": "Identité — le seuil avant le moi (12) + le moi (1, Ascendant) + les ressources propres (2)" },
-        "racines": { "houses": [3, 4, 5], "theme": "Racines — apprentissage proche (3) + le foyer (4, Fond du Ciel) + l'expression créative (5)" },
-        "relations": { "houses": [6, 7, 8], "theme": "Relations — routine de service (6) + l'autre (7, Descendant) + le partagé/transformateur (8)" },
-        "vie_publique": { "houses": [9, 10, 11], "theme": "Vie publique — expansion de sens (9) + la vocation (10, Milieu du Ciel) + la communauté (11)" }
-      }
+  "quadrant_groups": {
+    "status": "[Non vérifié dans une source classique — variante cohérente en interne mais probablement issue d'un enseignement moderne de vulgarisation, non retracée à un auteur précis ; à présenter comme variante non confirmée. Préférée par l'utilisateur de cette app pour la lecture Agir/Maintenir/Préparer, à l'exclusion du découpage par quadrant standard (qui commence à chaque angle plutôt que de le centrer), volontairement non retenu ici.]",
+    "groups": {
+      "identite": { "houses": [12, 1, 2], "theme": "Identité — le seuil avant le moi (12) + le moi (1, Ascendant) + les ressources propres (2)" },
+      "racines": { "houses": [3, 4, 5], "theme": "Racines — apprentissage proche (3) + le foyer (4, Fond du Ciel) + l'expression créative (5)" },
+      "relations": { "houses": [6, 7, 8], "theme": "Relations — routine de service (6) + l'autre (7, Descendant) + le partagé/transformateur (8)" },
+      "vie_publique": { "houses": [9, 10, 11], "theme": "Vie publique — expansion de sens (9) + la vocation (10, Milieu du Ciel) + la communauté (11)" }
     }
   }
 }

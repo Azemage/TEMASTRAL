@@ -884,21 +884,23 @@ fait croître dans la durée — attention à la difficulté à lâcher prise ; 
 apprend, se retire, revient — attention à la dispersion. Tu reçois `identity` (contexte natal \
 minimal), `house_modality_analysis` (comptage simple ET score pondéré par modalité, détail par \
 planète dans `per_planet`, `dominant_modality_simple`/`dominant_modality_weighted` et \
-`reading`/`methodological_note`) et `house_quadrants_identity_centered` (découpage en quatre \
-blocs de trois maisons centrés sur chaque angle : Identité 12-1-2, Racines 3-4-5, Relations \
-6-7-8, Vie publique 9-10-11 — variante non vérifiée dans une source classique mais celle \
-retenue ici, à ne jamais présenter comme LA version documentée du découpage par quadrant). \
-Structure la lecture en t'appuyant sur `dominant_modality_weighted` comme fil conducteur \
-principal — illustre-le avec 2-3 planètes concrètes de `per_planet` (lesquelles, dans quelle \
-maison) plutôt qu'une affirmation abstraite. Si `dominant_modality_simple` diffère de \
-`dominant_modality_weighted`, nomme la nuance explicitement (voir `methodological_note`) plutôt \
-que de l'ignorer. Ensuite, relis rapidement la répartition des planètes à travers les quatre \
-blocs d'`house_quadrants_identity_centered` : lequel concentre le plus de planètes, et qu'est-ce \
-que cela dit de la vie de cette personne (construction identitaire, racines/famille, relations, \
-vie publique) — uniquement si un ou deux blocs se distinguent nettement, sinon dis simplement \
-que la répartition est équilibrée plutôt que de forcer un pattern. Formule toujours le point de \
-vigilance associé à la modalité dominante comme une tendance à observer avec bienveillance \
-("vous pourriez avoir tendance à..."), jamais comme un défaut ou une fatalité.""",
+`reading`/`methodological_note`) et `house_quadrants` (quatre blocs de trois maisons centrés \
+sur chaque angle — Identité 12-1-2, Racines 3-4-5, Relations 6-7-8, Vie publique 9-10-11, \
+variante non vérifiée dans une source classique mais celle retenue ici — chacun déjà chargé de \
+ses planètes occupantes dans `planets`/`planet_count`, et `is_most_loaded` marquant directement \
+le ou les blocs les plus chargés : UTILISE ce champ déjà calculé plutôt que de recompter \
+toi-même). Structure la lecture en t'appuyant sur `dominant_modality_weighted` comme fil \
+conducteur principal — illustre-le avec 2-3 planètes concrètes de `per_planet` (lesquelles, \
+dans quelle maison) plutôt qu'une affirmation abstraite. Si `dominant_modality_simple` diffère \
+de `dominant_modality_weighted`, nomme la nuance explicitement (voir `methodological_note`) \
+plutôt que de l'ignorer. Ensuite, commente le(s) bloc(s) marqué(s) `is_most_loaded` dans \
+`house_quadrants` — nomme ses planètes occupantes et relie ce thème (construction identitaire, \
+racines/famille, relations, ou vie publique) à la vie de cette personne ; si `planet_count` est \
+proche entre plusieurs blocs (pas de concentration nette), dis simplement que la répartition est \
+équilibrée plutôt que de forcer un pattern sur un bloc qui ne se distingue pas vraiment. Formule \
+toujours le point de vigilance associé à la modalité dominante comme une tendance à observer \
+avec bienveillance ("vous pourriez avoir tendance à..."), jamais comme un défaut ou une \
+fatalité.""",
 }
 
 
@@ -1456,10 +1458,9 @@ diffère de `dominant_modality_weighted`, mentionne les deux brièvement plutôt
 qu'un arbitrairement (voir `methodological_note`) — c'est une nuance intéressante ("beaucoup de \
 planètes orientées vers un mode, mais ce sont des planètes lentes/générationnelles peu \
 personnelles, tandis qu'une ou deux planètes personnelles tirent la carte vers un autre mode"), \
-pas une contradiction à cacher. Ne mentionne `house_quadrants_standard`/\
-`house_quadrants_angle_centered` que si un ou deux quadrants concentrent nettement plus de \
-planètes que les autres — sinon, cette section reste secondaire par rapport à la modalité \
-dominante ci-dessus.
+pas une contradiction à cacher. Ne mentionne `house_quadrants` que si un bloc est marqué \
+`is_most_loaded` avec un `planet_count` nettement supérieur aux autres — sinon, cette section \
+reste secondaire par rapport à la modalité dominante ci-dessus.
 
 ZONES À COUVRIR DANS CETTE LECTURE :
 {focus_descriptions}
@@ -1541,7 +1542,7 @@ def _build_user_payload(
     elif request.reading_type == "house_modality":
         payload["identity"] = _identity_context(chart_data)
         payload["house_modality_analysis"] = chart_data["house_modality_analysis"]
-        payload["house_quadrants_identity_centered"] = chart_data["house_quadrants_angle_centered"]
+        payload["house_quadrants"] = chart_data["house_quadrants"]
     elif request.reading_type == "lots":
         payload["identity"] = _identity_context(chart_data)
         payload["lots"] = chart_data["lots"]

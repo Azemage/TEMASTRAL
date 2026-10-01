@@ -8,11 +8,7 @@ from app.core.derived_houses import compute_derived_houses
 from app.core.degrees import analyze_degree
 from app.core.dispositors import CLASSIC_PLANETS, compute_dispositors
 from app.core.draconic import compute_draconic_chart
-from app.core.house_modality import (
-    compute_house_modality_analysis,
-    group_houses_by_angle_centered_quadrant,
-    group_houses_by_standard_quadrant,
-)
+from app.core.house_modality import compute_house_modality_analysis, compute_quadrant_loads
 from app.core.lots import compute_lots
 from app.core.traits import compute_character_traits
 from app.core.zodiac import ELEMENTS, MODALITIES, sign_and_degree
@@ -176,8 +172,7 @@ def calculate_natal_chart(
     derived_houses = compute_derived_houses(planets)
 
     house_modality_analysis = compute_house_modality_analysis(planets)
-    house_quadrants_standard = group_houses_by_standard_quadrant()
-    house_quadrants_angle_centered = group_houses_by_angle_centered_quadrant()
+    house_quadrants = compute_quadrant_loads(planets)
 
     north_node_raw = bodies_result.bodies.get("north_node")
     draconic = compute_draconic_chart(
@@ -208,7 +203,6 @@ def calculate_natal_chart(
         "draconic": draconic,
         "degree_analysis": degree_analysis,
         "house_modality_analysis": house_modality_analysis,
-        "house_quadrants_standard": house_quadrants_standard,
-        "house_quadrants_angle_centered": house_quadrants_angle_centered,
+        "house_quadrants": house_quadrants,
         "unavailable_points": bodies_result.unavailable_points,
     }

@@ -4,7 +4,9 @@ tradition hellénistique systématisée par William Lilly), pondérée par un po
 historique de dignité accidentelle de Lilly par maison, conservé dans la donnée de référence à
 titre documentaire uniquement) pour déterminer la modalité dominante d'une carte — voir
 app/reference_data/house_modality.json pour le statut épistémique détaillé de chaque couche, à
-toujours répercuter dans toute lecture.
+toujours répercuter dans toute lecture. `compute_quadrant_loads` regroupe en plus les maisons en
+quatre blocs centrés sur chaque angle et identifie le(s) bloc(s) le(s) plus chargé(s) en
+planètes, pour enrichir la lecture interprétée.
 
 Ne couvre PAS les modificateurs additionnels documentés par Lilly (mouvement direct/rétrograde,
 vitesse, phase lunaire, combustion/cazimi — section 3.2 de la source) : volontairement hors
@@ -64,17 +66,37 @@ def compute_house_modality_analysis(planets: list[dict], planet_names: list[str]
     }
 
 
-def _group_by_quadrants(groups_ref: dict) -> list[dict]:
-    return [{"key": key, "theme": group["theme"], "houses": group["houses"]} for key, group in groups_ref.items()]
+def compute_quadrant_loads(planets: list[dict], planet_names: list[str] | None = None) -> list[dict]:
+    """Regroupe les maisons en quatre blocs de trois maisons centrés sur chaque angle
+    (Identité 12-1-2, Racines 3-4-5, Relations 6-7-8, Vie publique 9-10-11 — non vérifié dans
+    une source classique, voir le statut épistémique dans la donnée de référence), puis charge
+    chaque bloc des planètes classiques qui l'occupent pour repérer les zones de concentration
+    de la carte. `is_most_loaded` marque le ou les blocs à `planet_count` maximal (égalité
+    possible, jamais forcée sur un seul bloc)."""
+    include = set(planet_names or CLASSIC_PLANETS)
+    groups_ref = house_modality_reference()["quadrant_groups"]["groups"]
 
+    planets_by_house: dict[int, list[str]] = {}
+    for planet in planets:
+        if planet["name"] not in include:
+            continue
+        planets_by_house.setdefault(planet["house"], []).append(planet["name"])
 
-def group_houses_by_standard_quadrant() -> list[dict]:
-    """Découpage documenté, commence à chaque angle (1-2-3, 4-5-6, 7-8-9, 10-11-12)."""
-    return _group_by_quadrants(house_modality_reference()["quadrant_groupings"]["standard"]["groups"])
+    groups = []
+    for key, group in groups_ref.items():
+        planets_in_group = [name for house in group["houses"] for name in planets_by_house.get(house, [])]
+        groups.append(
+            {
+                "key": key,
+                "theme": group["theme"],
+                "houses": group["houses"],
+                "planets": planets_in_group,
+                "planet_count": len(planets_in_group),
+            }
+        )
 
+    max_count = max((g["planet_count"] for g in groups), default=0)
+    for g in groups:
+        g["is_most_loaded"] = max_count > 0 and g["planet_count"] == max_count
 
-def group_houses_by_angle_centered_quadrant() -> list[dict]:
-    """Découpage alternatif, chaque angle au centre de son bloc (12-1-2, 3-4-5, 6-7-8, 9-10-11)
-    — non vérifié dans une source classique, voir le statut épistémique dans la donnée de
-    référence, toujours à présenter comme variante non confirmée."""
-    return _group_by_quadrants(house_modality_reference()["quadrant_groupings"]["angle_centered"]["groups"])
+    return sorted(groups, key=lambda g: -g["planet_count"])

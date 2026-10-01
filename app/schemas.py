@@ -314,9 +314,17 @@ class HouseModalityAnalysis(BaseModel):
 
 
 class HouseQuadrantGroup(BaseModel):
+    """Bloc de trois maisons centré sur un angle (non vérifié dans une source classique, voir
+    app/core/house_modality.py::compute_quadrant_loads), chargé des planètes classiques qui
+    l'occupent. `is_most_loaded` marque le ou les blocs à `planet_count` maximal (égalité
+    possible, jamais forcée sur un seul bloc)."""
+
     key: str
     theme: str
     houses: list[int]
+    planets: list[str]
+    planet_count: int
+    is_most_loaded: bool
 
 
 class NatalChartComputed(BaseModel):
@@ -338,8 +346,7 @@ class NatalChartComputed(BaseModel):
     draconic: DraconicChart | None = None
     degree_analysis: list[DegreeAnalysis] = Field(default_factory=list)
     house_modality_analysis: HouseModalityAnalysis | None = None
-    house_quadrants_standard: list[HouseQuadrantGroup] = Field(default_factory=list)
-    house_quadrants_angle_centered: list[HouseQuadrantGroup] = Field(default_factory=list)
+    house_quadrants: list[HouseQuadrantGroup] = Field(default_factory=list)
     unavailable_points: list[str] = Field(default_factory=list)
 
 

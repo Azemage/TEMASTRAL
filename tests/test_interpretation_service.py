@@ -116,7 +116,7 @@ def test_lots_reading_payload_contains_only_lots_and_identity():
     assert set(payload["identity"].keys()) == {"sun", "moon", "ascendant", "is_day_chart"}
 
 
-def test_house_modality_reading_payload_contains_analysis_and_angle_centered_quadrants():
+def test_house_modality_reading_payload_contains_analysis_and_quadrant_loads():
     chart = _make_chart()
     request = schemas.ReadingRequest(reading_type="house_modality")
     payload = interpretation_service._build_user_payload(chart, request)
@@ -126,8 +126,10 @@ def test_house_modality_reading_payload_contains_analysis_and_angle_centered_qua
     analysis = payload["house_modality_analysis"]
     assert sum(analysis["counts_by_modality"].values()) == 10
     assert analysis["dominant_modality_weighted"] in {"angular", "succedent", "cadent"}
-    quadrants = payload["house_quadrants_identity_centered"]
+    quadrants = payload["house_quadrants"]
     assert {g["key"] for g in quadrants} == {"identite", "racines", "relations", "vie_publique"}
+    assert sum(g["planet_count"] for g in quadrants) == 10
+    assert any(g["is_most_loaded"] for g in quadrants)
     json.dumps(payload)  # doit rester strictement sérialisable
 
 

@@ -1189,9 +1189,13 @@ function modalityBadgeHtml(planetName, data) {
 
 function renderQuadrantTable(groups) {
   const rows = groups
-    .map((g) => `<tr><td>${escapeHtml(quadrantThemeLabel(g.key) || g.theme)}</td><td>${g.houses.map((h) => `${t("house_prefix")} ${h}`).join(", ")}</td></tr>`)
+    .map((g) => {
+      const loadBadge = g.is_most_loaded && g.planet_count > 0 ? ` <span class="degree-badge degree-badge-exaltation">${t("badge_most_loaded")}</span>` : "";
+      const planetsText = g.planets.length ? g.planets.map(planetLabel).join(", ") : "—";
+      return `<tr><td>${escapeHtml(quadrantThemeLabel(g.key) || g.theme)}${loadBadge}</td><td>${g.houses.map((h) => `${t("house_prefix")} ${h}`).join(", ")}</td><td>${planetsText}</td><td>${g.planet_count}</td></tr>`;
+    })
     .join("");
-  return `<table><thead><tr><th>${t("th_quadrant")}</th><th>${t("th_houses")}</th></tr></thead><tbody>${rows}</tbody></table>`;
+  return `<table><thead><tr><th>${t("th_quadrant")}</th><th>${t("th_houses")}</th><th>${t("th_planet_generic")}</th><th>${t("th_planet_count")}</th></tr></thead><tbody>${rows}</tbody></table>`;
 }
 
 function renderHouseModalitySummaryHtml(analysis) {
@@ -1240,12 +1244,9 @@ function renderHouseModalityTab(data) {
     </details>
 
     <hr class="reading-subsection-divider" />
-    <h3>${t("house_quadrants_standard_title")}</h3>
-    ${renderQuadrantTable(data.house_quadrants_standard || [])}
-
-    <h3>${t("house_quadrants_alt_title")}</h3>
-    <p class="warning-banner">${t("house_quadrants_alt_warning")}</p>
-    ${renderQuadrantTable(data.house_quadrants_angle_centered || [])}
+    <h3>${t("house_quadrants_title")}</h3>
+    <p class="warning-banner">${t("house_quadrants_warning")}</p>
+    ${renderQuadrantTable(data.house_quadrants || [])}
   `;
 }
 
