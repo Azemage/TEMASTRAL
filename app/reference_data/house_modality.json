@@ -1,5 +1,5 @@
 {
-  "description": "Classification des 12 maisons en trois modalités de force (angulaire/succédente/cadente) [Documenté, tradition hellénistique — Dorothée de Sidon, Vettius Valens, systématisé par William Lilly, Christian Astrology 1647], système de points de dignité accidentelle de Lilly par maison [Documenté], et synthèse 'modalité dominante de la carte' à partir de ces points [Synthèse raisonnée, extension du matériel documenté — Lilly utilisait ces points planète par planète pour une question horaire ponctuelle, pas pour une lecture de tendance générale de toute la carte]. Deux découpages en quatre blocs de trois maisons sont proposés : le découpage par quadrant standard (documenté, commence à chaque angle) et un découpage alternatif centrant chaque angle (non vérifié dans une source classique — probablement enseignement moderne/vulgarisation, cohérent en interne mais à présenter comme variante non confirmée, jamais comme la même tradition que le découpage standard).",
+  "description": "Classification des 12 maisons en trois modalités de force (angulaire/succédente/cadente) [Documenté, tradition hellénistique — Dorothée de Sidon, Vettius Valens, systématisée par William Lilly, Christian Astrology 1647]. Le score pondéré par planète ci-dessous (`planet_weight`) est une PRÉFÉRENCE PERSONNELLE de l'utilisateur de cette app, qui remplace le barème historique de dignité accidentelle de Lilly (par maison) utilisé dans une version antérieure — conservé ci-dessous (`lilly_dignity_points_by_house`) à titre documentaire/historique uniquement, plus utilisé dans le calcul actif. Deux découpages en quatre blocs de trois maisons sont proposés : le découpage par quadrant standard (documenté, commence à chaque angle) et un découpage alternatif centrant chaque angle (non vérifié dans une source classique — probablement enseignement moderne/vulgarisation, cohérent en interne mais à présenter comme variante non confirmée, jamais comme la même tradition que le découpage standard).",
   "modality_by_house": {
     "1": "angular", "4": "angular", "7": "angular", "10": "angular",
     "2": "succedent", "5": "succedent", "8": "succedent", "11": "succedent",
@@ -11,21 +11,28 @@
     "cadent": "préparer"
   },
   "modality_description": {
-    "angular": "Force maximale — action directe et immédiate. Un point angulaire n'attend pas, il agit et produit un événement visible tout de suite.",
-    "succedent": "Force intermédiaire — soutien, construction. Un point succédent ne lance rien de nouveau mais consolide et fait tenir dans la durée ce qu'un angle a initié.",
-    "cadent": "Force moindre — traitement, transition, préparation mentale. Un point cadent digère et prépare avant de pouvoir agir de nouveau au prochain angle."
+    "angular": "Force maximale — action directe et immédiate : agit, prend des décisions. Point de vigilance : le surengagement.",
+    "succedent": "Force intermédiaire — soutien, construction : maintient, fait croître dans la durée. Point de vigilance : la difficulté à lâcher prise.",
+    "cadent": "Force moindre — traitement, transition : prépare, apprend, se retire, revient. Point de vigilance : la dispersion."
   },
   "lilly_dignity_points_by_house": {
     "1": 5, "10": 5, "4": 4, "7": 4, "11": 4,
     "2": 3, "5": 3, "9": 2, "3": 1, "6": -2, "8": -2, "12": -5
   },
-  "lilly_points_note": "[Documenté, Lilly 1647] Ce barème mélange deux variables distinctes dans une seule table : la force structurelle par modalité (angulaire > succédente > cadente) ET la nature propre de chaque maison (6, 8, 12 sont traditionnellement des 'maisons difficiles' — maladie, mort, enfermement — indépendamment de leur modalité). C'est pourquoi la maison 3 (cadente) obtient +1, un meilleur score que les maisons 6 et 8 (succédentes, -2 chacune) : ce n'est pas une incohérence du système, mais le résultat de deux couches superposées, à toujours présenter comme telles.",
-  "dominant_modality_reading": {
-    "angular": "Modalité dominante : Angulaire (Agir). Tend à agir en premier — initie, se rend visible, préfère l'impact immédiat à la planification prolongée.",
-    "succedent": "Modalité dominante : Succédente (Maintenir). Tend à maintenir — construit, soutient, consolide des ressources et des relations déjà initiées, par d'autres ou par soi-même dans le passé.",
-    "cadent": "Modalité dominante : Cadente (Préparer). Tend à préparer — traite, apprend, ajuste, a besoin d'un temps de digestion mentale avant d'agir ; plus réflexif qu'impulsif."
+  "lilly_points_note": "[Documenté, Lilly 1647 — conservé ici à titre historique, non utilisé dans le calcul actif de cette app, voir planet_weight] Ce barème par maison mélange deux variables distinctes : la force structurelle par modalité ET la nature propre de chaque maison (6, 8, 12 sont traditionnellement des 'maisons difficiles' indépendamment de leur modalité). C'est pourquoi la maison 3 (cadente) y obtient +1, un meilleur score que les maisons 6 et 8 (succédentes, -2 chacune).",
+  "planet_weight": {
+    "Sun": 4, "Moon": 4,
+    "Mercury": 3, "Venus": 3, "Mars": 3,
+    "Jupiter": 2, "Saturn": 2,
+    "Uranus": 1, "Neptune": 1, "Pluto": 1
   },
-  "dominant_modality_methodological_note": "[Synthèse raisonnée sur base documentée] Le comptage simple (nombre de planètes par modalité) et le score pondéré (points de dignité accidentelle de Lilly) peuvent désigner des modalités différentes, car le score pondéré reflète aussi si une maison est 'difficile' (6/8/12), indépendamment de sa modalité. En cas de désaccord entre les deux, présenter les deux résultats plutôt que d'en forcer un seul comme conclusion.",
+  "planet_weight_note": "[Synthèse personnelle de l'utilisateur de cette app, pas une source classique] Poids par PLANÈTE (et non plus par maison comme chez Lilly) : les luminaires (Soleil/Lune) pèsent le plus (4), les planètes personnelles (Mercure/Vénus/Mars) un peu moins (3), les planètes sociales (Jupiter/Saturne) encore moins (2), et les planètes lentes/générationnelles (Uranus/Neptune/Pluton) le moins (1) — cohérent avec le fait que ces dernières, partagées par toute une génération, sont moins personnelles. Le score pondéré d'une modalité est la somme des poids des planètes qui l'occupent, quelle que soit la maison précise parmi les quatre de cette modalité.",
+  "dominant_modality_reading": {
+    "angular": "Modalité dominante : Angulaire (Agir). Agit, prend des décisions — attention au surengagement.",
+    "succedent": "Modalité dominante : Succédente (Maintenir). Maintient, fait croître dans la durée — attention à la difficulté à lâcher prise.",
+    "cadent": "Modalité dominante : Cadente (Préparer). Prépare, apprend, se retire, revient — attention à la dispersion."
+  },
+  "dominant_modality_methodological_note": "[Synthèse raisonnée] Le comptage simple (nombre de planètes par modalité) et le score pondéré (poids par planète, voir planet_weight_note) peuvent désigner des modalités différentes : le score pondéré privilégie les planètes personnelles (luminaires notamment) sur les planètes lentes/générationnelles, même quand ces dernières sont plus nombreuses dans une modalité. En cas de désaccord entre les deux, présenter les deux résultats plutôt que d'en forcer un seul comme conclusion.",
   "quadrant_groupings": {
     "standard": {
       "status": "[Documenté — la version la plus citée dans les manuels d'astrologie, commence à chaque angle]",
@@ -37,7 +44,7 @@
       }
     },
     "angle_centered": {
-      "status": "[Non vérifié dans une source classique — variante cohérente en interne mais probablement issue d'un enseignement moderne de vulgarisation, non retracée à un auteur précis ; à présenter comme variante non confirmée, jamais comme équivalente à la version standard documentée]",
+      "status": "[Non vérifié dans une source classique — variante cohérente en interne mais probablement issue d'un enseignement moderne de vulgarisation, non retracée à un auteur précis ; à présenter comme variante non confirmée, jamais comme équivalente à la version standard documentée. Préférée par l'utilisateur de cette app pour la lecture Agir/Maintenir/Préparer.]",
       "groups": {
         "identite": { "houses": [12, 1, 2], "theme": "Identité — le seuil avant le moi (12) + le moi (1, Ascendant) + les ressources propres (2)" },
         "racines": { "houses": [3, 4, 5], "theme": "Racines — apprentissage proche (3) + le foyer (4, Fond du Ciel) + l'expression créative (5)" },

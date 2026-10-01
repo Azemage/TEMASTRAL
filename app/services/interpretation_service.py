@@ -74,6 +74,7 @@ READING_TYPE_MAX_TOKENS = {
     "draconic": 3000,
     "draconic_incarnation": 2600,
     "draconic_comparison": 3800,
+    "house_modality": 2400,
 }
 
 COMPATIBILITY_MODE_LABELS_FR = {
@@ -871,6 +872,33 @@ vs leurs équivalents draconiques pour une lecture d'ensemble (ex. un thème nat
 draconique très feu : une personnalité qui a appris la prudence sur un élan d'âme plus \
 spontané). Termine par une synthèse de 2-3 tensions ou continuités les plus marquantes, pas une \
 liste exhaustive planète par planète sans hiérarchie.""",
+    "house_modality": """Cette lecture porte spécifiquement sur la DYNAMIQUE AGIR/MAINTENIR/\
+PRÉPARER, une classification traditionnelle des maisons en angulaires (1/4/7/10), succédentes \
+(2/5/8/11) et cadentes (3/6/9/12) — systématisée par William Lilly (Christian Astrology, 1647) \
+— pondérée ici par un poids par planète (Soleil/Lune comptent le plus, Mercure/Vénus/Mars un \
+peu moins, Jupiter/Saturne encore moins, Uranus/Neptune/Pluton le moins : les planètes \
+personnelles pèsent plus que les lentes/générationnelles, voir `planet_weight_note`). Commence \
+par expliquer les trois modes en une phrase accessible chacun, avec leur point de vigilance : \
+Angulaire = AGIT, prend des décisions — attention au surengagement ; Succédente = MAINTIENT, \
+fait croître dans la durée — attention à la difficulté à lâcher prise ; Cadente = PRÉPARE, \
+apprend, se retire, revient — attention à la dispersion. Tu reçois `identity` (contexte natal \
+minimal), `house_modality_analysis` (comptage simple ET score pondéré par modalité, détail par \
+planète dans `per_planet`, `dominant_modality_simple`/`dominant_modality_weighted` et \
+`reading`/`methodological_note`) et `house_quadrants_identity_centered` (découpage en quatre \
+blocs de trois maisons centrés sur chaque angle : Identité 12-1-2, Racines 3-4-5, Relations \
+6-7-8, Vie publique 9-10-11 — variante non vérifiée dans une source classique mais celle \
+retenue ici, à ne jamais présenter comme LA version documentée du découpage par quadrant). \
+Structure la lecture en t'appuyant sur `dominant_modality_weighted` comme fil conducteur \
+principal — illustre-le avec 2-3 planètes concrètes de `per_planet` (lesquelles, dans quelle \
+maison) plutôt qu'une affirmation abstraite. Si `dominant_modality_simple` diffère de \
+`dominant_modality_weighted`, nomme la nuance explicitement (voir `methodological_note`) plutôt \
+que de l'ignorer. Ensuite, relis rapidement la répartition des planètes à travers les quatre \
+blocs d'`house_quadrants_identity_centered` : lequel concentre le plus de planètes, et qu'est-ce \
+que cela dit de la vie de cette personne (construction identitaire, racines/famille, relations, \
+vie publique) — uniquement si un ou deux blocs se distinguent nettement, sinon dis simplement \
+que la répartition est équilibrée plutôt que de forcer un pattern. Formule toujours le point de \
+vigilance associé à la modalité dominante comme une tendance à observer avec bienveillance \
+("vous pourriez avoir tendance à..."), jamais comme un défaut ou une fatalité.""",
 }
 
 
@@ -1415,20 +1443,23 @@ comme des sensibilités ou prédispositions à explorer/cultiver ("vous pourriez
 facilité pour...", "une sensibilité qui, développée, peut devenir..."), jamais comme une \
 promesse de pouvoir surnaturel ou une capacité déjà maîtrisée et certaine.
 10. `house_modality_analysis` classe les maisons occupées par les 10 planètes classiques en \
-angulaires (1/4/7/10 — agir, initiative directe et immédiate), succédentes (2/5/8/11 — \
-maintenir, consolider ce qu'un angle a lancé) ou cadentes (3/6/9/12 — préparer, traiter/\
-apprendre avant de pouvoir agir de nouveau). Utilise `dominant_modality_weighted` (points de \
-dignité accidentelle de Lilly, qui reflète aussi si une maison est traditionnellement \
-"difficile" comme 6/8/12, pas seulement sa modalité) comme angle de lecture principal — associe \
-son verbe (`reading` donne la formulation) à un ou deux exemples concrets de comportement \
-quotidien, jamais comme un trait isolé sans illustration. Si `dominant_modality_simple` (simple \
-compte du nombre de planètes) diffère de `dominant_modality_weighted`, mentionne les deux \
-brièvement plutôt que de n'en garder qu'un arbitrairement (voir `methodological_note`) — c'est \
-une nuance intéressante ("beaucoup d'énergie orientée vers l'action, mais concentrée sur des \
-maisons qui pèsent peu en dignité accidentelle"), pas une contradiction à cacher. Ne mentionne \
-`house_quadrants_standard`/`house_quadrants_angle_centered` que si un ou deux quadrants \
-concentrent nettement plus de planètes que les autres — sinon, cette section reste secondaire \
-par rapport à la modalité dominante ci-dessus.
+angulaires (1/4/7/10 — AGIT, prend des décisions ; attention au surengagement), succédentes \
+(2/5/8/11 — MAINTIENT, fait croître dans la durée ; attention à la difficulté à lâcher prise) \
+ou cadentes (3/6/9/12 — PRÉPARE, apprend, se retire, revient ; attention à la dispersion). \
+Utilise `dominant_modality_weighted` (poids par planète — Soleil/Lune comptent le plus, \
+Mercure/Vénus/Mars un peu moins, Jupiter/Saturne encore moins, Uranus/Neptune/Pluton le moins : \
+les planètes personnelles pèsent plus que les lentes/générationnelles, voir `planet_weight_note`) \
+comme angle de lecture principal — associe son verbe et son point de vigilance (`reading` donne \
+la formulation) à un ou deux exemples concrets de comportement quotidien, jamais comme un trait \
+isolé sans illustration. Si `dominant_modality_simple` (simple compte du nombre de planètes) \
+diffère de `dominant_modality_weighted`, mentionne les deux brièvement plutôt que de n'en garder \
+qu'un arbitrairement (voir `methodological_note`) — c'est une nuance intéressante ("beaucoup de \
+planètes orientées vers un mode, mais ce sont des planètes lentes/générationnelles peu \
+personnelles, tandis qu'une ou deux planètes personnelles tirent la carte vers un autre mode"), \
+pas une contradiction à cacher. Ne mentionne `house_quadrants_standard`/\
+`house_quadrants_angle_centered` que si un ou deux quadrants concentrent nettement plus de \
+planètes que les autres — sinon, cette section reste secondaire par rapport à la modalité \
+dominante ci-dessus.
 
 ZONES À COUVRIR DANS CETTE LECTURE :
 {focus_descriptions}
@@ -1507,6 +1538,10 @@ def _build_user_payload(
                 "asteroid_caveats": gifts_ref["asteroid_caveats"],
                 "methodological_warning": gifts_ref["methodological_warning"],
             }
+    elif request.reading_type == "house_modality":
+        payload["identity"] = _identity_context(chart_data)
+        payload["house_modality_analysis"] = chart_data["house_modality_analysis"]
+        payload["house_quadrants_identity_centered"] = chart_data["house_quadrants_angle_centered"]
     elif request.reading_type == "lots":
         payload["identity"] = _identity_context(chart_data)
         payload["lots"] = chart_data["lots"]

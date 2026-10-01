@@ -294,14 +294,15 @@ class HouseModalityPlanet(BaseModel):
     planet: str
     house: int
     modality: str  # "angular" | "succedent" | "cadent"
-    lilly_points: int
+    points: int  # poids de la planète (Soleil/Lune=4, Mercure/Vénus/Mars=3, Jupiter/Saturne=2, Uranus/Neptune/Pluton=1)
 
 
 class HouseModalityAnalysis(BaseModel):
-    """Classification angulaire/succédente/cadente des maisons occupées, points de dignité
-    accidentelle de Lilly et modalité dominante — voir app/core/house_modality.py. Le comptage
-    simple et le score pondéré peuvent désigner des modalités différentes (`methodological_note`),
-    à toujours présenter tous deux plutôt que d'en forcer une seule conclusion."""
+    """Classification angulaire/succédente/cadente des maisons occupées, pondérée par un poids
+    par planète (préférence personnelle, voir app/core/house_modality.py), et modalité
+    dominante. Le comptage simple et le score pondéré peuvent désigner des modalités
+    différentes (`methodological_note`), à toujours présenter tous deux plutôt que d'en forcer
+    une seule conclusion."""
 
     per_planet: list[HouseModalityPlanet]
     counts_by_modality: dict[str, int]
@@ -565,7 +566,7 @@ class NatalChartResponse(BaseModel):
 # Interprétation LLM (cf. cahier des charges, section 4.7)
 # ---------------------------------------------------------------------------
 class ReadingRequest(BaseModel):
-    reading_type: str = "global"  # 'global' | 'love' | 'career' | 'family' | 'lots' | 'derived_houses' | 'timing' | 'zodiacal_releasing' | 'compatibility' | 'astrocartography' | 'astrocartography_forecast' | 'witchy_calendar' | 'witchy_day_detail' | 'weekly_weather' | 'weekly_weather_by_sign' | 'draconic' | 'draconic_incarnation' | 'draconic_comparison'
+    reading_type: str = "global"  # 'global' | 'love' | 'career' | 'family' | 'lots' | 'derived_houses' | 'timing' | 'zodiacal_releasing' | 'compatibility' | 'astrocartography' | 'astrocartography_forecast' | 'witchy_calendar' | 'witchy_day_detail' | 'weekly_weather' | 'weekly_weather_by_sign' | 'draconic' | 'draconic_incarnation' | 'draconic_comparison' | 'house_modality'
     focus_areas: list[str] = Field(default_factory=lambda: ["general"])
     level: str = "débutant"
     tone: str = "accessible et bienveillant"

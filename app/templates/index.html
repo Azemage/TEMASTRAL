@@ -270,6 +270,7 @@
         <button class="reading-tab-btn" data-reading-tab="lots" data-i18n="reading_tab_lots">Lots</button>
         <button class="reading-tab-btn" data-reading-tab="draconic" data-i18n="reading_tab_draconic">Thème draconique</button>
         <button class="reading-tab-btn" data-reading-tab="derived" data-i18n="reading_tab_derived">Maisons dérivées</button>
+        <button class="reading-tab-btn" data-reading-tab="house_modality" data-i18n="reading_tab_house_modality">Agir / Maintenir / Préparer</button>
         <button class="reading-tab-btn" data-reading-tab="timing" data-i18n="reading_tab_timing">Pronostic</button>
         <button class="reading-tab-btn" data-reading-tab="compatibility" data-i18n="reading_tab_compatibility">Compatibilité</button>
       </div>
@@ -371,6 +372,18 @@
         <button id="generate-derived-reading-btn" data-i18n="btn_generate_derived_reading">Générer la lecture des maisons dérivées</button>
         <p id="derived-reading-error" class="error"></p>
         <div id="derived-reading-output" class="reading-output"></div>
+      </div>
+
+      <div id="reading-tab-house_modality" class="reading-tab-panel hidden">
+        <p class="reading-section-intro" data-i18n="house_modality_reading_intro">
+          Lecture ciblée sur la dynamique Angulaire (Agir) / Succédente (Maintenir) / Cadente
+          (Préparer) des maisons occupées — voir l'onglet "Dynamique" du Thème natal pour le
+          détail chiffré complet.
+        </p>
+        <div id="house-modality-reading-data-panel"></div>
+        <button id="generate-house-modality-reading-btn" data-i18n="btn_generate_house_modality_reading">Générer la lecture Agir/Maintenir/Préparer</button>
+        <p id="house-modality-reading-error" class="error"></p>
+        <div id="house-modality-reading-output" class="reading-output"></div>
       </div>
 
       <div id="reading-tab-timing" class="reading-tab-panel hidden">

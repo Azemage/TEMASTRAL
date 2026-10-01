@@ -178,19 +178,19 @@ const HOUSE_MODALITY_SHORT_LABELS = {
 
 const HOUSE_MODALITY_READINGS = {
   angular: {
-    fr: "tend à agir en premier — initie, se rend visible, préfère l'impact immédiat à la planification prolongée.",
-    en: "tends to act first — initiates, makes itself visible, prefers immediate impact over prolonged planning.",
-    es: "tiende a actuar primero — inicia, se hace visible, prefiere el impacto inmediato a la planificación prolongada.",
+    fr: "agit, prend des décisions — attention au surengagement.",
+    en: "acts, makes decisions — watch out for overcommitment.",
+    es: "actúa, toma decisiones — cuidado con el exceso de compromiso.",
   },
   succedent: {
-    fr: "tend à maintenir — construit, soutient, consolide des ressources et des relations déjà initiées.",
-    en: "tends to maintain — builds, sustains, consolidates resources and relationships already begun.",
-    es: "tiende a mantener — construye, sostiene, consolida recursos y relaciones ya iniciadas.",
+    fr: "maintient, fait croître dans la durée — attention à la difficulté à lâcher prise.",
+    en: "maintains, grows things over time — watch out for difficulty letting go.",
+    es: "mantiene, hace crecer con el tiempo — cuidado con la dificultad para soltar.",
   },
   cadent: {
-    fr: "tend à préparer — traite, apprend, ajuste, a besoin d'un temps de digestion mentale avant d'agir.",
-    en: "tends to prepare — processes, learns, adjusts, needs mental digestion time before acting.",
-    es: "tiende a preparar — procesa, aprende, ajusta, necesita tiempo de digestión mental antes de actuar.",
+    fr: "prépare, apprend, se retire, revient — attention à la dispersion.",
+    en: "prepares, learns, withdraws, returns — watch out for scattering.",
+    es: "prepara, aprende, se retira, regresa — cuidado con la dispersión.",
   },
 };
 
@@ -700,20 +700,20 @@ const UI_TEXT = {
   tab_dispositors: { fr: "Dispositeurs", en: "Rulerships", es: "Regencias" },
   tab_house_modality: { fr: "Dynamique", en: "Dynamics", es: "Dinámica" },
   house_modality_section_intro: {
-    fr: "Classification traditionnelle des maisons en Angulaires (agir), Succédentes (maintenir) et Cadentes (préparer) — voir William Lilly, Christian Astrology (1647). Distincte de la Modalité cardinale/fixe/mutable des signes (onglet Éléments).",
-    en: "Traditional classification of houses into Angular (act), Succedent (maintain) and Cadent (prepare) — see William Lilly, Christian Astrology (1647). Distinct from the cardinal/fixed/mutable Modality of signs (Elements tab).",
-    es: "Clasificación tradicional de las casas en Angulares (actuar), Sucedentes (mantener) y Cadentes (preparar) — ver William Lilly, Christian Astrology (1647). Distinta de la Modalidad cardinal/fija/mutable de los signos (pestaña Elementos).",
+    fr: "Classification traditionnelle des maisons en Angulaires (agir), Succédentes (maintenir) et Cadentes (préparer) — voir William Lilly, Christian Astrology (1647). Le score pondéré utilise un poids par planète (choix personnel, voir ci-dessous), pas le barème de dignité accidentelle de Lilly. Distincte de la Modalité cardinale/fixe/mutable des signes (onglet Éléments).",
+    en: "Traditional classification of houses into Angular (act), Succedent (maintain) and Cadent (prepare) — see William Lilly, Christian Astrology (1647). The weighted score uses a per-planet weight (personal choice, see below), not Lilly's accidental dignity table. Distinct from the cardinal/fixed/mutable Modality of signs (Elements tab).",
+    es: "Clasificación tradicional de las casas en Angulares (actuar), Sucedentes (mantener) y Cadentes (preparar) — ver William Lilly, Christian Astrology (1647). La puntuación ponderada usa un peso por planeta (elección personal, ver abajo), no la tabla de dignidad accidental de Lilly. Distinta de la Modalidad cardinal/fija/mutable de los signos (pestaña Elementos).",
   },
   house_modality_dominant_title: { fr: "Modalité dominante", en: "Dominant modality", es: "Modalidad dominante" },
   house_modality_dominant_mismatch: {
-    fr: "Le simple décompte de planètes pointe plutôt vers {simple}, tandis que le score pondéré (dignité accidentelle de Lilly) pointe vers {weighted} — les deux sont présentés ensemble plutôt que de forcer un seul résultat.",
-    en: "The simple planet count points instead to {simple}, while the weighted score (Lilly's accidental dignity) points to {weighted} — both are shown together rather than forcing a single result.",
-    es: "El simple recuento de planetas apunta más bien a {simple}, mientras que la puntuación ponderada (dignidad accidental de Lilly) apunta a {weighted} — ambos se muestran juntos en vez de forzar un único resultado.",
+    fr: "Le simple décompte de planètes pointe plutôt vers {simple}, tandis que le score pondéré (poids par planète) pointe vers {weighted} — les deux sont présentés ensemble plutôt que de forcer un seul résultat.",
+    en: "The simple planet count points instead to {simple}, while the weighted score (per-planet weight) points to {weighted} — both are shown together rather than forcing a single result.",
+    es: "El simple recuento de planetas apunta más bien a {simple}, mientras que la puntuación ponderada (peso por planeta) apunta a {weighted} — ambos se muestran juntos en vez de forzar un único resultado.",
   },
   house_modality_per_planet_detail: { fr: "Détail par planète", en: "Detail by planet", es: "Detalle por planeta" },
   th_modality: { fr: "Modalité", en: "Modality", es: "Modalidad" },
   th_planet_count: { fr: "Nb. planètes", en: "Planet count", es: "N.º planetas" },
-  th_lilly_score: { fr: "Score Lilly", en: "Lilly score", es: "Puntuación Lilly" },
+  th_lilly_score: { fr: "Score pondéré", en: "Weighted score", es: "Puntuación ponderada" },
   th_quadrant: { fr: "Bloc", en: "Block", es: "Bloque" },
   th_houses: { fr: "Maisons", en: "Houses", es: "Casas" },
   house_quadrants_standard_title: { fr: "Découpage par quadrant (standard)", en: "Quadrant grouping (standard)", es: "Agrupación por cuadrante (estándar)" },
@@ -734,6 +734,7 @@ const UI_TEXT = {
   reading_tab_lots: { fr: "Lots", en: "Lots", es: "Suertes" },
   reading_tab_draconic: { fr: "Thème draconique", en: "Draconic chart", es: "Carta dracónica" },
   reading_tab_derived: { fr: "Maisons dérivées", en: "Derived houses", es: "Casas derivadas" },
+  reading_tab_house_modality: { fr: "Agir / Maintenir / Préparer", en: "Act / Maintain / Prepare", es: "Actuar / Mantener / Preparar" },
   reading_tab_timing: { fr: "Pronostic", en: "Forecast", es: "Pronóstico" },
   reading_tab_compatibility: { fr: "Compatibilité", en: "Compatibility", es: "Compatibilidad" },
 
@@ -823,6 +824,12 @@ const UI_TEXT = {
   error_loading_phases: { fr: "Impossible de charger les phases :", en: "Could not load phases:", es: "No se pudieron cargar las fases:" },
 
   btn_generate_derived_reading: { fr: "Générer la lecture des maisons dérivées", en: "Generate derived houses reading", es: "Generar lectura de casas derivadas" },
+  house_modality_reading_intro: {
+    fr: "Lecture ciblée sur la dynamique Angulaire (Agir) / Succédente (Maintenir) / Cadente (Préparer) des maisons occupées — voir l'onglet \"Dynamique\" du Thème natal pour le détail chiffré complet.",
+    en: "Focused reading on the Angular (Act) / Succedent (Maintain) / Cadent (Prepare) dynamic of occupied houses — see the \"Dynamics\" tab of the natal chart for the full numeric detail.",
+    es: "Lectura centrada en la dinámica Angular (Actuar) / Sucedente (Mantener) / Cadente (Preparar) de las casas ocupadas — ver la pestaña \"Dinámica\" de la carta natal para el detalle numérico completo.",
+  },
+  btn_generate_house_modality_reading: { fr: "Générer la lecture Agir/Maintenir/Préparer", en: "Generate Act/Maintain/Prepare reading", es: "Generar lectura Actuar/Mantener/Preparar" },
   label_relation_to_analyze: { fr: "Relation à analyser", en: "Relation to analyze", es: "Relación a analizar" },
   zr_relations_group_second_order: { fr: "Relations de second ordre", en: "Second-order relations", es: "Relaciones de segundo orden" },
   option_custom_relation: { fr: "Autre (avancé : composer une relation)…", en: "Other (advanced: build a relation)…", es: "Otra (avanzado: componer una relación)…" },

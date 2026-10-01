@@ -1,9 +1,10 @@
 """Classification angulaire/succédente/cadente des maisons (kentra/epanaphora/apoklima,
-tradition hellénistique systématisée par William Lilly), points de dignité accidentelle de
-Lilly par maison, et modalité dominante d'une carte (synthèse raisonnée : Lilly utilisait ces
-points planète par planète pour une question horaire ponctuelle, pas pour une tendance générale
-de toute la carte — voir app/reference_data/house_modality.json pour le statut épistémique
-détaillé de chaque couche, à toujours répercuter dans toute lecture).
+tradition hellénistique systématisée par William Lilly), pondérée par un poids PAR PLANÈTE
+(`planet_weight` — préférence personnelle de l'utilisateur de cette app, remplace le barème
+historique de dignité accidentelle de Lilly par maison, conservé dans la donnée de référence à
+titre documentaire uniquement) pour déterminer la modalité dominante d'une carte — voir
+app/reference_data/house_modality.json pour le statut épistémique détaillé de chaque couche, à
+toujours répercuter dans toute lecture.
 
 Ne couvre PAS les modificateurs additionnels documentés par Lilly (mouvement direct/rétrograde,
 vitesse, phase lunaire, combustion/cazimi — section 3.2 de la source) : volontairement hors
@@ -21,15 +22,17 @@ def classify_house(house_number: int) -> str:
     return house_modality_reference()["modality_by_house"][str(house_number)]
 
 
-def lilly_points_for_house(house_number: int) -> int:
-    return house_modality_reference()["lilly_dignity_points_by_house"][str(house_number)]
+def planet_weight_for(planet_name: str) -> int:
+    """Poids d'une planète (Soleil/Lune=4, Mercure/Vénus/Mars=3, Jupiter/Saturne=2,
+    Uranus/Neptune/Pluton=1) — voir `planet_weight_note` dans la donnée de référence. 0 pour
+    une planète absente de la table (ex. un astéroïde)."""
+    return house_modality_reference()["planet_weight"].get(planet_name, 0)
 
 
 def compute_house_modality_analysis(planets: list[dict], planet_names: list[str] | None = None) -> dict:
     """`planets` : la liste `chart_data["planets"]` (chaque élément a au moins `name`/`house`).
     `planet_names` : sous-ensemble à inclure (par défaut les 10 planètes classiques Soleil-
-    Pluton, cohérent avec elements_balance/modality_balance ailleurs dans l'app — la source
-    parle des '7 planètes classiques ou celles que gère votre app')."""
+    Pluton, cohérent avec elements_balance/modality_balance ailleurs dans l'app)."""
     include = set(planet_names or CLASSIC_PLANETS)
     ref = house_modality_reference()
 
@@ -42,10 +45,10 @@ def compute_house_modality_analysis(planets: list[dict], planet_names: list[str]
             continue
         house = planet["house"]
         modality = classify_house(house)
-        points = lilly_points_for_house(house)
+        points = planet_weight_for(planet["name"])
         counts[modality] += 1
         weighted[modality] += points
-        per_planet.append({"planet": planet["name"], "house": house, "modality": modality, "lilly_points": points})
+        per_planet.append({"planet": planet["name"], "house": house, "modality": modality, "points": points})
 
     dominant_simple = max(MODALITIES, key=lambda m: counts[m])
     dominant_weighted = max(MODALITIES, key=lambda m: weighted[m])

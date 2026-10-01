@@ -3,7 +3,7 @@ from app.core.house_modality import (
     compute_house_modality_analysis,
     group_houses_by_angle_centered_quadrant,
     group_houses_by_standard_quadrant,
-    lilly_points_for_house,
+    planet_weight_for,
 )
 
 
@@ -13,14 +13,22 @@ def test_classify_house_matches_documented_kentra_epanaphora_apoklima():
     assert {classify_house(h) for h in (3, 6, 9, 12)} == {"cadent"}
 
 
-def test_lilly_points_match_documented_table():
-    assert lilly_points_for_house(1) == 5
-    assert lilly_points_for_house(10) == 5
-    assert lilly_points_for_house(12) == -5
-    # La maison 3 (cadente) surclasse les maisons 6/8 (succédentes) : deux couches distinctes
-    # (modalité + "maison difficile"), pas une hiérarchie angulaire>succédente>cadente pure.
-    assert lilly_points_for_house(3) > lilly_points_for_house(6)
-    assert lilly_points_for_house(3) > lilly_points_for_house(8)
+def test_planet_weight_matches_preferred_scale():
+    # Luminaires > personnelles > sociales > lentes/générationnelles.
+    assert planet_weight_for("Sun") == 4
+    assert planet_weight_for("Moon") == 4
+    assert planet_weight_for("Mercury") == 3
+    assert planet_weight_for("Venus") == 3
+    assert planet_weight_for("Mars") == 3
+    assert planet_weight_for("Jupiter") == 2
+    assert planet_weight_for("Saturn") == 2
+    assert planet_weight_for("Uranus") == 1
+    assert planet_weight_for("Neptune") == 1
+    assert planet_weight_for("Pluto") == 1
+
+
+def test_planet_weight_unknown_planet_returns_zero():
+    assert planet_weight_for("ceres") == 0
 
 
 def test_compute_house_modality_analysis_counts_and_dominant():
@@ -53,20 +61,25 @@ def test_compute_house_modality_analysis_respects_planet_subset():
 
 
 def test_dominant_can_differ_between_simple_and_weighted():
-    # 3 planètes cadentes en maison 3 (+1 chacune = +3) vs 2 succédentes en maison 6/8 (-2
-    # chacune = -4) : comptage simple -> cadent (3 planètes) mais score pondéré -> aucune
-    # maison forte ici, le point est juste que les deux métriques sont indépendantes.
+    # 3 planètes lentes/générationnelles (poids 1 chacune) en maisons cadentes vs le Soleil et
+    # la Lune (poids 4 chacune) en maisons angulaires : plus nombreuses mais individuellement
+    # moins "personnelles" -> comptage simple favorise cadent, score pondéré favorise angular.
     planets = [
-        {"name": "Sun", "house": 3},
-        {"name": "Moon", "house": 3},
-        {"name": "Mercury", "house": 3},
-        {"name": "Venus", "house": 1},
-        {"name": "Mars", "house": 10},
+        {"name": "Uranus", "house": 3},
+        {"name": "Neptune", "house": 6},
+        {"name": "Pluto", "house": 9},
+        {"name": "Sun", "house": 1},
+        {"name": "Moon", "house": 10},
     ]
-    result = compute_house_modality_analysis(planets, planet_names=["Sun", "Moon", "Mercury", "Venus", "Mars"])
+    result = compute_house_modality_analysis(
+        planets, planet_names=["Uranus", "Neptune", "Pluto", "Sun", "Moon"]
+    )
     assert result["counts_by_modality"]["cadent"] == 3
+    assert result["counts_by_modality"]["angular"] == 2
     assert result["dominant_modality_simple"] == "cadent"
-    # Score pondéré : angular = 5+5=10, cadent = 1+1+1=3 -> dominant pondéré = angular.
+    # Score pondéré : angular = 4+4=8, cadent = 1+1+1=3 -> dominant pondéré = angular.
+    assert result["weighted_score_by_modality"]["angular"] == 8
+    assert result["weighted_score_by_modality"]["cadent"] == 3
     assert result["dominant_modality_weighted"] == "angular"
 
 

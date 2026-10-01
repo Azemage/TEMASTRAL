@@ -352,17 +352,24 @@ Implémenté :
   disposent de leurs données sans configuration supplémentaire.
 - Dynamique angulaire/succédente/cadente des maisons (`app/core/house_modality.py`) :
   classification hellénistique des maisons (kentra/epanaphora/apoklima, systématisée par
-  William Lilly) lue comme trois verbes — Angulaire = Agir, Succédente = Maintenir, Cadente =
-  Préparer. Calculée directement dans `calculate_natal_chart` (`computed_chart_data
-  .house_modality_analysis`) : comptage simple ET score pondéré (dignité accidentelle de
-  Lilly par maison) sur les 10 planètes classiques, modalité dominante selon chaque métrique
-  (présentées toutes les deux si elles divergent, jamais l'une forcée sur l'autre — le score
-  pondéré reflète aussi si une maison est traditionnellement "difficile", comme 6/8/12,
-  indépendamment de sa modalité). Onglet dédié "Dynamique" dans Thème natal, badges
-  Ang./Succ./Cad. dans l'onglet Planètes, et règle dédiée dans le prompt de lecture générale.
-  Deux découpages en quatre blocs de trois maisons sont aussi exposés
-  (`house_quadrants_standard` documenté, `house_quadrants_angle_centered` explicitement
-  étiqueté comme variante non vérifiée dans une source classique).
+  William Lilly) lue comme trois verbes avec leur point de vigilance — Angulaire = Agit
+  (attention au surengagement), Succédente = Maintient (attention à la difficulté à lâcher
+  prise), Cadente = Prépare/apprend/se retire/revient (attention à la dispersion). Calculée
+  directement dans `calculate_natal_chart` (`computed_chart_data.house_modality_analysis`) :
+  comptage simple ET score pondéré sur les 10 planètes classiques, modalité dominante selon
+  chaque métrique (présentées toutes les deux si elles divergent, jamais l'une forcée sur
+  l'autre). Le score pondéré utilise un poids PAR PLANÈTE — préférence personnelle de
+  l'utilisateur, qui remplace le barème historique de dignité accidentelle de Lilly par
+  maison (conservé dans `app/reference_data/house_modality.json` à titre documentaire) :
+  Soleil/Lune = 4, Mercure/Vénus/Mars = 3, Jupiter/Saturne = 2, Uranus/Neptune/Pluton = 1 —
+  les planètes personnelles pèsent plus que les lentes/générationnelles. Onglet dédié
+  "Dynamique" dans Thème natal, badges Ang./Succ./Cad. dans l'onglet Planètes, règle dédiée
+  dans le prompt de lecture générale, et une lecture spécialisée "Agir / Maintenir /
+  Préparer" (reading_type `house_modality`) structurée autour du découpage en quatre blocs
+  centré sur chaque angle (Identité 12-1-2, Racines 3-4-5, Relations 6-7-8, Vie publique
+  9-10-11 — `house_quadrants_angle_centered`, explicitement non vérifié dans une source
+  classique). Le découpage standard documenté (`house_quadrants_standard`, 1-2-3/4-5-6/
+  7-8-9/10-11-12) reste aussi exposé dans l'onglet Dynamique.
 - Web app simple pour saisir une naissance, visualiser le thème et générer une lecture,
   organisée en "Thème natal" (données calculées) et "Lecture interprétée" (générale + les
   6 lectures spécialisées, chacune affichant d'abord ses données puis un bouton de génération ;

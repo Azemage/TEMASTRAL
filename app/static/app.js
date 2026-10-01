@@ -982,6 +982,7 @@ function renderChart(chart) {
   renderBalanceTab(data);
   renderDispositorsTab(data);
   renderHouseModalityTab(data);
+  renderHouseModalityReadingDataPanel(data);
   renderLotsDataPanel(data);
   renderDraconicTab(data);
   renderDerivedHousesDataPanel(data);
@@ -1193,28 +1194,17 @@ function renderQuadrantTable(groups) {
   return `<table><thead><tr><th>${t("th_quadrant")}</th><th>${t("th_houses")}</th></tr></thead><tbody>${rows}</tbody></table>`;
 }
 
-function renderHouseModalityTab(data) {
-  const analysis = data.house_modality_analysis;
-  if (!analysis) {
-    document.getElementById("tab-modality").innerHTML = "";
-    return;
-  }
-
+function renderHouseModalitySummaryHtml(analysis) {
   const countsRows = MODALITY_ORDER.map(
     (m) => `<tr><td>${houseModalityLabel(m)}</td><td>${analysis.counts_by_modality[m] ?? 0}</td><td>${analysis.weighted_score_by_modality[m] ?? 0}</td></tr>`
   ).join("");
-
-  const perPlanetRows = analysis.per_planet
-    .map((e) => `<tr><td>${planetLabel(e.planet)}</td><td>${t("house_prefix")} ${e.house}</td><td>${houseModalityLabel(e.modality)}</td><td>${e.lilly_points}</td></tr>`)
-    .join("");
 
   const dominantNote =
     analysis.dominant_modality_simple !== analysis.dominant_modality_weighted
       ? `<p class="reading-section-intro">${tf("house_modality_dominant_mismatch", { simple: houseModalityLabel(analysis.dominant_modality_simple), weighted: houseModalityLabel(analysis.dominant_modality_weighted) })}</p>`
       : "";
 
-  document.getElementById("tab-modality").innerHTML = `
-    <p class="reading-section-intro" data-i18n="house_modality_section_intro">${t("house_modality_section_intro")}</p>
+  return `
     <h3>${t("house_modality_dominant_title")}</h3>
     <p><strong>${houseModalityLabel(analysis.dominant_modality_weighted)}</strong> — ${houseModalityReading(analysis.dominant_modality_weighted)}</p>
     ${dominantNote}
@@ -1223,6 +1213,23 @@ function renderHouseModalityTab(data) {
       <thead><tr><th>${t("th_modality")}</th><th>${t("th_planet_count")}</th><th>${t("th_lilly_score")}</th></tr></thead>
       <tbody>${countsRows}</tbody>
     </table>
+  `;
+}
+
+function renderHouseModalityTab(data) {
+  const analysis = data.house_modality_analysis;
+  if (!analysis) {
+    document.getElementById("tab-modality").innerHTML = "";
+    return;
+  }
+
+  const perPlanetRows = analysis.per_planet
+    .map((e) => `<tr><td>${planetLabel(e.planet)}</td><td>${t("house_prefix")} ${e.house}</td><td>${houseModalityLabel(e.modality)}</td><td>${e.points}</td></tr>`)
+    .join("");
+
+  document.getElementById("tab-modality").innerHTML = `
+    <p class="reading-section-intro" data-i18n="house_modality_section_intro">${t("house_modality_section_intro")}</p>
+    ${renderHouseModalitySummaryHtml(analysis)}
 
     <details>
       <summary>${t("house_modality_per_planet_detail")}</summary>
@@ -1240,6 +1247,13 @@ function renderHouseModalityTab(data) {
     <p class="warning-banner">${t("house_quadrants_alt_warning")}</p>
     ${renderQuadrantTable(data.house_quadrants_angle_centered || [])}
   `;
+}
+
+function renderHouseModalityReadingDataPanel(data) {
+  const container = document.getElementById("house-modality-reading-data-panel");
+  const analysis = data.house_modality_analysis;
+  if (!container || !analysis) return;
+  container.innerHTML = renderHouseModalitySummaryHtml(analysis);
 }
 
 // ---------------------------------------------------------------------
@@ -2287,6 +2301,16 @@ document.getElementById("generate-lots-reading-btn").addEventListener("click", (
     outputId: "lots-reading-output",
     defaultLabel: t("btn_generate_lots_reading"),
     requestBody: { reading_type: "lots" },
+  });
+});
+
+document.getElementById("generate-house-modality-reading-btn").addEventListener("click", () => {
+  generateSpecializedReading({
+    btnId: "generate-house-modality-reading-btn",
+    errorId: "house-modality-reading-error",
+    outputId: "house-modality-reading-output",
+    defaultLabel: t("btn_generate_house_modality_reading"),
+    requestBody: { reading_type: "house_modality" },
   });
 });
 

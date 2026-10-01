@@ -116,6 +116,26 @@ def test_lots_reading_payload_contains_only_lots_and_identity():
     assert set(payload["identity"].keys()) == {"sun", "moon", "ascendant", "is_day_chart"}
 
 
+def test_house_modality_reading_payload_contains_analysis_and_angle_centered_quadrants():
+    chart = _make_chart()
+    request = schemas.ReadingRequest(reading_type="house_modality")
+    payload = interpretation_service._build_user_payload(chart, request)
+
+    assert "chart_data" not in payload
+    assert set(payload["identity"].keys()) == {"sun", "moon", "ascendant", "is_day_chart"}
+    analysis = payload["house_modality_analysis"]
+    assert sum(analysis["counts_by_modality"].values()) == 10
+    assert analysis["dominant_modality_weighted"] in {"angular", "succedent", "cadent"}
+    quadrants = payload["house_quadrants_identity_centered"]
+    assert {g["key"] for g in quadrants} == {"identite", "racines", "relations", "vie_publique"}
+    json.dumps(payload)  # doit rester strictement sérialisable
+
+
+def test_house_modality_system_prompt_mentions_agir_maintenir_preparer():
+    prompt = interpretation_service._build_system_prompt(schemas.ReadingRequest(reading_type="house_modality"))
+    assert "AGIT" in prompt and "MAINTIENT" in prompt and "PRÉPARE" in prompt
+
+
 def test_draconic_reading_payload_contains_full_draconic_chart():
     chart = _make_chart()
     request = schemas.ReadingRequest(reading_type="draconic")
