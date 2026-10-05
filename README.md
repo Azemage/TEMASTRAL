@@ -409,6 +409,20 @@ Pour une naissance sans heure exacte connue :
      candidate renvoyée peut être appliquée d'un clic comme ascendant manuel ci-dessus.
      Avertissement méthodologique toujours renvoyé avec le résultat (`warning`).
 
+### Décans
+
+Chaque signe (30°) est divisé en trois décans de 10°, chacun régi par une planète classique
+selon le système chaldéen (`app/core/decans.py` / `app/reference_data/decans.json` — cycle
+continu des 7 planètes dans l'ordre chaldéen, premier décan du Bélier régi par Mars ; le
+second système existant, dorothéen/par triplicité, n'est volontairement pas implémenté).
+Calculé directement dans `calculate_natal_chart`, sans option dédiée à activer :
+- chaque planète du thème reçoit `decan_number`/`decan_ruler` dans `degree_analysis`, affiché
+  comme une étiquette discrète ("D1", "D2", "D3") à côté de son degré dans l'onglet Planètes ;
+- chaque maison reçoit `sign_decans` (les trois décans du signe occupé par sa cuspide,
+  indépendant du système de maisons) ; l'onglet Maisons affiche cette décomposition
+  uniquement quand le système choisi est "Signes intégraux" (`whole_sign`), seul cas où la
+  maison coïncide exactement avec les 30° du signe.
+
 ## Installation
 
 ```bash

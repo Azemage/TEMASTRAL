@@ -434,6 +434,17 @@ button:disabled { opacity: 0.6; cursor: wait; }
   vertical-align: middle;
 }
 
+.decan-tag {
+  display: inline-block;
+  font-size: 0.75rem;
+  color: var(--muted);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 0 0.4rem;
+  cursor: help;
+  vertical-align: middle;
+}
+
 .degree-badge-exaltation {
   background: rgba(163, 119, 31, 0.18);
   color: var(--gold);

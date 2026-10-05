@@ -134,6 +134,13 @@ def ascendant_rectification_traits() -> dict:
     return _load("ascendant_rectification_traits.json")
 
 
+def decans() -> dict:
+    """Régents des trois décans (10° chacun) de chaque signe, système chaldéen — voir
+    app/core/decans.py pour le calcul déterministe et le statut épistémique dans la donnée de
+    référence elle-même."""
+    return _load("decans.json")
+
+
 def world_cities() -> list[dict]:
     """Grandes villes mondiales (Natural Earth 110m populated places, domaine public) —
     capitales et métropoles majeures, utilisées comme bassin de candidats pour la suggestion

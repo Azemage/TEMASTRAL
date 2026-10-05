@@ -99,12 +99,22 @@ class Angles(BaseModel):
     imum_coeli: AnglePosition
 
 
+class SignDecan(BaseModel):
+    """Un des trois décans (10°) d'un signe — voir app/core/decans.py (système chaldéen)."""
+
+    decan_number: int
+    ruler: str
+    start_degree: int
+    end_degree: int
+
+
 class HouseCusp(BaseModel):
     number: int
     sign: str
     sign_fr: str
     degree: float
     absolute_longitude: float
+    sign_decans: list[SignDecan] = Field(default_factory=list)
 
 
 class Aspect(BaseModel):
@@ -273,13 +283,16 @@ class DegreeAnalysis(BaseModel):
     documenté mais d'origine populaire/XXe siècle, à ne jamais présenter comme une règle
     classique établie — contrairement à `is_exact_exaltation` (héritage babylonien/
     hellénistique/Ptolémée) et `is_critical_degree` (systématisé au XXe siècle mais très
-    largement cité)."""
+    largement cité). `decan_number`/`decan_ruler` (système chaldéen, voir app/core/decans.py)
+    sont un système distinct, indépendant des quatre couches ci-dessus."""
 
     planet: str
     sign: str
     sign_fr: str
     house: int
     degree_value: int
+    decan_number: int
+    decan_ruler: str
     is_pure_entry: bool
     is_anaretic: bool
     is_critical_degree: bool

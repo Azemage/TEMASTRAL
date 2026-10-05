@@ -931,6 +931,18 @@ const UI_TEXT = {
   th_body: { fr: "Corps", en: "Body", es: "Cuerpo" },
   th_degree: { fr: "Degré", en: "Degree", es: "Grado" },
   th_degree_notes: { fr: "Degré notable", en: "Notable degree", es: "Grado notable" },
+  th_decans: { fr: "Décans du signe", en: "Sign decans", es: "Decanatos del signo" },
+  decan_short: { fr: "D{number}", en: "D{number}", es: "D{number}" },
+  decan_tooltip: {
+    fr: "Décan {number} (système chaldéen) — régi par {ruler}.",
+    en: "Decan {number} (Chaldean system) — ruled by {ruler}.",
+    es: "Decanato {number} (sistema caldeo) — regido por {ruler}.",
+  },
+  house_decans_whole_sign_note: {
+    fr: "Maisons en signes intégraux : chaque maison couvre exactement les 30° de son signe, divisé ici en ses trois décans (système chaldéen) et leur planète régente.",
+    en: "Whole-sign houses: each house covers exactly the 30° of its sign, divided here into its three decans (Chaldean system) and their ruling planet.",
+    es: "Casas en signos enteros: cada casa cubre exactamente los 30° de su signo, dividido aquí en sus tres decanatos (sistema caldeo) y su planeta regente.",
+  },
   degree_exaltation_badge: { fr: "Exaltation exacte", en: "Exact exaltation", es: "Exaltación exacta" },
   degree_exaltation_tooltip: {
     fr: "Cette planète est exactement sur son degré d'exaltation (héritage hellénistique/Ptolémée) — sa forme la plus élevée et harmonieuse.",

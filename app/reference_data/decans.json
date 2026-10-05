@@ -1,0 +1,17 @@
+{
+  "description": "Décans : chaque signe (30°) divisé en trois tranches de 10°, chacune associée à une planète régente selon le système chaldéen [Documenté, cycle continu des 7 planètes classiques dans l'ordre chaldéen — Saturne, Jupiter, Mars, Soleil, Vénus, Mercure, Lune — répété sur les 36 décans du zodiaque, le premier décan du Bélier commençant par Mars, régent du signe]. Un second système existe et n'est PAS implémenté ici : les décans dorothéens/par triplicité (le premier décan régi par le maître du signe lui-même, les deux suivants par les maîtres des deux autres signes de la même triplicité) — à ne jamais mélanger avec la table chaldéenne ci-dessous si une future extension l'ajoutait.",
+  "decan_rulers_by_sign": {
+    "Aries": ["Mars", "Sun", "Venus"],
+    "Taurus": ["Mercury", "Moon", "Saturn"],
+    "Gemini": ["Jupiter", "Mars", "Sun"],
+    "Cancer": ["Venus", "Mercury", "Moon"],
+    "Leo": ["Saturn", "Jupiter", "Mars"],
+    "Virgo": ["Sun", "Venus", "Mercury"],
+    "Libra": ["Moon", "Saturn", "Jupiter"],
+    "Scorpio": ["Mars", "Sun", "Venus"],
+    "Sagittarius": ["Mercury", "Moon", "Saturn"],
+    "Capricorn": ["Jupiter", "Mars", "Sun"],
+    "Aquarius": ["Venus", "Mercury", "Moon"],
+    "Pisces": ["Saturn", "Jupiter", "Mars"]
+  }
+}

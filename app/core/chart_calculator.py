@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from app.core import ephemeris
 from app.core.aspects import BodyForAspect, compute_aspects
+from app.core.decans import analyze_decan, decan_breakdown_for_sign
 from app.core.derived_houses import compute_derived_houses
 from app.core.degrees import analyze_degree
 from app.core.dispositors import CLASSIC_PLANETS, compute_dispositors
@@ -100,7 +101,7 @@ def calculate_natal_chart(
         planets.append(_position_dict(name, raw.longitude, house, raw.retrograde))
         aspect_bodies.append(BodyForAspect(name=name, longitude=raw.longitude, speed_longitude=raw.speed_longitude))
         sign, degree = sign_and_degree(raw.longitude)
-        degree_analysis.append({**analyze_degree(name, sign, degree), "house": house})
+        degree_analysis.append({**analyze_degree(name, sign, degree), **analyze_decan(sign, degree), "house": house})
         if name in CLASSIC_PLANETS:
             planet_signs[name] = sign
 
@@ -132,6 +133,10 @@ def calculate_natal_chart(
                 "sign_fr": SIGNS_FR[sign],
                 "degree": round(degree, 2),
                 "absolute_longitude": round(cusp_longitude, 4),
+                # Décans du SIGNE de cette cuspide (pas de la maison elle-même) : pertinent
+                # tel quel en maisons de signes intégraux (whole sign), où la maison couvre
+                # exactement les 30° du signe — voir app/core/decans.py.
+                "sign_decans": decan_breakdown_for_sign(sign),
             }
         )
 

@@ -171,6 +171,17 @@ def test_chart_includes_house_modality_analysis_and_quadrants(client):
     assert any(g["is_most_loaded"] for g in quadrants)
 
 
+def test_chart_includes_decan_info_on_planets_and_houses(client):
+    res = client.post("/api/charts", json=VALID_CHART_PAYLOAD)
+    data = res.json()["computed_chart_data"]
+    for entry in data["degree_analysis"]:
+        assert entry["decan_number"] in {1, 2, 3}
+        assert entry["decan_ruler"]
+    for house in data["houses"]:
+        assert len(house["sign_decans"]) == 3
+        assert [d["decan_number"] for d in house["sign_decans"]] == [1, 2, 3]
+
+
 def test_timing_endpoint_returns_transits_and_profection(client):
     create_res = client.post("/api/charts", json=VALID_CHART_PAYLOAD)
     chart_id = create_res.json()["id"]

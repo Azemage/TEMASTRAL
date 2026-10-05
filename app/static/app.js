@@ -996,6 +996,12 @@ function renderChart(chart) {
 // badges directement dans le tableau des planètes, gratuit (pas de lecture LLM nécessaire
 // pour les voir) — cohérent avec le principe de l'app de toujours montrer le calcul
 // déterministe avant/à côté de l'interprétation.
+function decanTagHtml(planetName, data) {
+  const entry = (data.degree_analysis || []).find((d) => d.planet === planetName);
+  if (!entry) return "";
+  return `<span class="decan-tag" title="${escapeHtml(tf("decan_tooltip", { number: entry.decan_number, ruler: planetLabel(entry.decan_ruler) }))}">${tf("decan_short", { number: entry.decan_number })}</span>`;
+}
+
 function degreeBadgesHtml(planetName, data) {
   const entry = (data.degree_analysis || []).find((d) => d.planet === planetName);
   if (!entry) return "—";
@@ -1029,7 +1035,7 @@ function renderPlanetsTab(data) {
       <tr>
         <td>${planetLabel(p.name)}</td>
         <td>${signLabel(p.sign)}</td>
-        <td>${p.degree}°</td>
+        <td>${p.degree}° ${decanTagHtml(p.name, data)}</td>
         <td>${t("house_prefix")} ${p.house ?? "—"} ${modalityBadgeHtml(p.name, data)}</td>
         <td>${p.retrograde ? `<span class="retro">${t("retrograde")}</span>` : "—"}</td>
         <td>${degreeBadgesHtml(p.name, data)}</td>
@@ -1053,12 +1059,29 @@ function renderPlanetsTab(data) {
 }
 
 function renderHousesTab(data) {
+  const showDecans = currentChart && currentChart.house_system === "whole_sign";
+
+  const decanCellHtml = (house) =>
+    house.sign_decans
+      .map((d) => `${tf("decan_short", { number: d.decan_number })} ${planetLabel(d.ruler)} (${d.start_degree}-${d.end_degree}°)`)
+      .join(" · ");
+
   const rows = data.houses
-    .map((h) => `<tr><td>${t("house_prefix")} ${h.number}</td><td>${signLabel(h.sign)}</td><td>${h.degree}°</td></tr>`)
+    .map(
+      (h) => `
+      <tr>
+        <td>${t("house_prefix")} ${h.number}</td>
+        <td>${signLabel(h.sign)}</td>
+        <td>${h.degree}°</td>
+        ${showDecans ? `<td>${decanCellHtml(h)}</td>` : ""}
+      </tr>`
+    )
     .join("");
+
   document.getElementById("tab-houses").innerHTML = `
+    ${showDecans ? `<p class="reading-section-intro">${t("house_decans_whole_sign_note")}</p>` : ""}
     <table>
-      <thead><tr><th>${t("house_prefix")}</th><th>${t("th_sign")}</th><th>${t("th_degree")}</th></tr></thead>
+      <thead><tr><th>${t("house_prefix")}</th><th>${t("th_sign")}</th><th>${t("th_degree")}</th>${showDecans ? `<th>${t("th_decans")}</th>` : ""}</tr></thead>
       <tbody>${rows}</tbody>
     </table>
   `;
