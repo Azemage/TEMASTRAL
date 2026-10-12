@@ -898,7 +898,7 @@ th { color: var(--accent-2); }
 
 .wheel-svg {
   width: 100%;
-  max-width: 560px;
+  max-width: 650px;
   height: auto;
   cursor: default;
   position: relative;

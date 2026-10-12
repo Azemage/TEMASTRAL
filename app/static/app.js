@@ -799,26 +799,20 @@ function buildWheelSVG(data, { showMinorAspects }) {
 
     planetsSvg += `<line x1="${tickInner.x.toFixed(2)}" y1="${tickInner.y.toFixed(2)}" x2="${tickOuter.x.toFixed(2)}" y2="${tickOuter.y.toFixed(2)}" stroke="#8a7c5c" stroke-width="0.75" stroke-dasharray="2,2" />`;
 
-    // Repère exact de la position de la planète sur l'anneau du zodiaque : un petit trait
-    // perpendiculaire à l'anneau, à la position exacte (distinct du trait radial en
-    // pointillés ci-dessus, qui ne fait que relier le glyphe à ce point) + le degré exact
-    // dans le signe (toutes les décimales, pas arrondi à l'entier — un 0.xx° tronqué en "0°"
-    // serait trompeur), toujours affiché (pas seulement au survol). Le TEXTE (pas le trait,
-    // qui reste fixé à la position exacte) est décalé en rayon et en angle selon la "voie"
-    // (`lane`) déjà utilisée pour le glyphe, pour ne pas se chevaucher quand deux planètes
-    // sont proches en longitude (un décalage radial seul ne suffit pas partout sur le cercle,
-    // sa projection x/y pouvant presque s'annuler à certains angles). Une planète proche du
-    // MILIEU de son signe (~15°) tombe près du symbole du signe (centré sur l'anneau coloré,
-    // rayon (rOuter + rZodiacInner) / 2) : dans ce cas précis, le texte est pousssé au-delà du
-    // symbole plutôt qu'en-deçà, pour ne jamais s'y superposer.
-    const tickRingA = polarToXY(cx, cy, rZodiacInner - 6, trueAngle);
-    const tickRingB = polarToXY(cx, cy, rZodiacInner + 6, trueAngle);
+    // Repère exact de la position de la planète : un petit trait qui traverse l'anneau
+    // extérieur à la position exacte (distinct du trait radial en pointillés ci-dessus, qui ne
+    // fait que relier le glyphe à ce point) + le degré exact dans le signe (toutes les
+    // décimales, pas arrondi à l'entier — un 0.xx° tronqué en "0°" serait trompeur), affichés
+    // EN DEHORS de la roue plutôt que dans l'anneau coloré, toujours visibles (pas seulement
+    // au survol). Quand deux planètes sont à peu près au même niveau (proches en longitude),
+    // le texte (jamais le trait, qui reste à la position exacte) est décalé à la fois en rayon
+    // et en angle selon la "voie" (`lane`) déjà utilisée pour le glyphe, pour ne jamais tomber
+    // sur la même ligne qu'un voisin (un décalage radial seul ne suffit pas partout sur le
+    // cercle, sa projection x/y pouvant presque s'annuler à certains angles).
+    const tickRingA = polarToXY(cx, cy, rOuter - 6, trueAngle);
+    const tickRingB = polarToXY(cx, cy, rOuter + 6, trueAngle);
     const degreeLabelAngle = trueAngle + lane * 3;
-    const signIndex = ZODIAC_SIGNS_ORDER.indexOf(planet.sign);
-    const signSymbolAngle = longitudeToWheelAngle(signIndex * 30, ascendant) + 15;
-    const distToSignSymbol = Math.abs((((degreeLabelAngle - signSymbolAngle + 540) % 360) + 360) % 360 - 180);
-    const degreeLabelRadius = distToSignSymbol < 9 ? rOuter - 10 : rZodiacInner + 6 + lane * 4;
-    const degreeLabelPos = polarToXY(cx, cy, degreeLabelRadius, degreeLabelAngle);
+    const degreeLabelPos = polarToXY(cx, cy, rOuter + 16 + lane * 10, degreeLabelAngle);
     planetsSvg += `<line x1="${tickRingA.x.toFixed(2)}" y1="${tickRingA.y.toFixed(2)}" x2="${tickRingB.x.toFixed(2)}" y2="${tickRingB.y.toFixed(2)}" stroke="#2a2313" stroke-width="1.6" />`;
     planetsSvg += `<text x="${degreeLabelPos.x.toFixed(2)}" y="${degreeLabelPos.y.toFixed(2)}" class="wheel-degree-label" text-anchor="middle" dominant-baseline="middle">${planet.degree}°</text>`;
 
@@ -848,7 +842,7 @@ function buildWheelSVG(data, { showMinorAspects }) {
   });
 
   return `
-    <svg viewBox="0 0 600 600" class="wheel-svg" xmlns="http://www.w3.org/2000/svg">
+    <svg viewBox="-50 -50 700 700" class="wheel-svg" xmlns="http://www.w3.org/2000/svg">
       <circle cx="${cx}" cy="${cy}" r="${rOuter}" fill="#ecdfc0" />
       ${zodiacSvg}
       <circle cx="${cx}" cy="${cy}" r="${rZodiacInner}" fill="none" stroke="#b7a273" stroke-width="1.5" />
