@@ -969,6 +969,7 @@ const UI_TEXT = {
   th_natal_aspects: { fr: "Aspects natals", en: "Natal aspects", es: "Aspectos natales" },
   house_prefix: { fr: "Maison", en: "House", es: "Casa" },
   retrograde: { fr: "Rétrograde", en: "Retrograde", es: "Retrógrado" },
+  movement_direct: { fr: "Direct", en: "Direct", es: "Directo" },
   applying: { fr: "applicatif", en: "applying", es: "aplicativo" },
   separating: { fr: "séparatif", en: "separating", es: "separativo" },
   orb_prefix: { fr: "orbe", en: "orb", es: "orbe" },

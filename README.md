@@ -384,8 +384,10 @@ Implémenté :
   "Enregistrer en PDF" visible dès le calcul du thème (`#export-pdf-btn`) : s'appuie sur
   l'impression native du navigateur (`window.print()`, pas de bibliothèque PDF ajoutée) — une
   vue dédiée (`#pdf-export-view`, masquée à l'écran, seule affichée en impression via la règle
-  `@media print`) regroupe la roue et le tableau des aspects quel que soit l'onglet actif à
-  l'écran.
+  `@media print`) regroupe la roue, un tableau des planètes (signe/degré/maison/modalité
+  angulaire-succédente-cadente/mouvement, toujours en toutes lettres — pas de badge compact
+  avec info-bulle, invisible à l'impression) et le tableau des aspects, quel que soit l'onglet
+  actif à l'écran.
 
 Pas encore implémenté (voir cahier des charges fourni, section V2/V3) : révolution solaire,
 progressions secondaires, mode de compatibilité personne/entreprise, comptes utilisateurs.

@@ -1133,6 +1133,37 @@ function renderAspectsTab(data) {
 // supplémentaire à charger, et l'utilisateur peut choisir imprimante ou PDF indifféremment.
 // Voir la règle @media print dans style.css : seul #pdf-export-view est alors affiché.
 // ---------------------------------------------------------------------
+function buildPdfPlanetsTableHtml(data) {
+  // Version "dépliée", texte intégral (pas de badge compact + info-bulle au survol, qui ne
+  // s'affiche pas à l'impression) : modalité et mouvement toujours écrits en toutes lettres.
+  const modalityByPlanet = {};
+  (data.house_modality_analysis?.per_planet || []).forEach((e) => {
+    modalityByPlanet[e.planet] = e.modality;
+  });
+
+  const rows = data.planets
+    .map((p) => {
+      const modality = modalityByPlanet[p.name];
+      return `
+      <tr>
+        <td>${planetLabel(p.name)}</td>
+        <td>${signLabel(p.sign)}</td>
+        <td>${p.degree}°</td>
+        <td>${t("house_prefix")} ${p.house ?? "—"}</td>
+        <td>${modality ? houseModalityLabel(modality) : "—"}</td>
+        <td>${p.retrograde ? t("retrograde") : t("movement_direct")}</td>
+      </tr>`;
+    })
+    .join("");
+
+  return `
+    <table>
+      <thead><tr><th>${t("th_body")}</th><th>${t("th_sign")}</th><th>${t("th_degree")}</th><th>${t("house_prefix")}</th><th>${t("th_modality")}</th><th>${t("th_movement")}</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+  `;
+}
+
 function buildPdfExportHtml(chart) {
   const data = chart.computed_chart_data;
   const asc = data.angles.ascendant;
@@ -1152,6 +1183,8 @@ function buildPdfExportHtml(chart) {
       — ${planetLabel("ascendant")} ${signLabel(asc.sign)} ${asc.degree}°
     </p>
     <div class="pdf-wheel-wrapper">${buildWheelSVG(data, { showMinorAspects: showMinorAspectsInWheel })}</div>
+    <h2>${t("tab_planets")}</h2>
+    ${buildPdfPlanetsTableHtml(data)}
     <h2>${t("tab_aspects")}</h2>
     ${buildAspectsTableHtml(data)}
   `;
