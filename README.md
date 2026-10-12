@@ -378,7 +378,14 @@ Implémenté :
   6 lectures spécialisées, chacune affichant d'abord ses données puis un bouton de génération ;
   la lecture des phases de Libération zodiacale est un second bouton dans l'onglet Lots ;
   l'onglet Compatibilité permet de sélectionner une carte existante ou d'en créer une nouvelle
-  pour la deuxième personne, directement depuis cet onglet)
+  pour la deuxième personne, directement depuis cet onglet). Sur la roue, chaque planète porte
+  en plus de son glyphe un repère exact (petit trait perpendiculaire à l'anneau du zodiaque) et
+  le degré qu'elle occupe dans son signe, toujours affichés (pas seulement au survol). Bouton
+  "Enregistrer en PDF" visible dès le calcul du thème (`#export-pdf-btn`) : s'appuie sur
+  l'impression native du navigateur (`window.print()`, pas de bibliothèque PDF ajoutée) — une
+  vue dédiée (`#pdf-export-view`, masquée à l'écran, seule affichée en impression via la règle
+  `@media print`) regroupe la roue et le tableau des aspects quel que soit l'onglet actif à
+  l'écran.
 
 Pas encore implémenté (voir cahier des charges fourni, section V2/V3) : révolution solaire,
 progressions secondaires, mode de compatibilité personne/entreprise, comptes utilisateurs.

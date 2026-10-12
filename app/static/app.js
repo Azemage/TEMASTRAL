@@ -798,6 +798,17 @@ function buildWheelSVG(data, { showMinorAspects }) {
     );
 
     planetsSvg += `<line x1="${tickInner.x.toFixed(2)}" y1="${tickInner.y.toFixed(2)}" x2="${tickOuter.x.toFixed(2)}" y2="${tickOuter.y.toFixed(2)}" stroke="#8a7c5c" stroke-width="0.75" stroke-dasharray="2,2" />`;
+
+    // Repère exact de la position de la planète sur l'anneau du zodiaque : un petit trait
+    // perpendiculaire à l'anneau (distinct du trait radial en pointillés ci-dessus, qui ne
+    // fait que relier le glyphe à ce point) + le degré exact dans le signe, toujours affiché
+    // (pas seulement au survol), comme demandé.
+    const tickRingA = polarToXY(cx, cy, rZodiacInner - 6, trueAngle);
+    const tickRingB = polarToXY(cx, cy, rZodiacInner + 6, trueAngle);
+    const degreeLabelPos = polarToXY(cx, cy, rZodiacInner + 14, trueAngle);
+    planetsSvg += `<line x1="${tickRingA.x.toFixed(2)}" y1="${tickRingA.y.toFixed(2)}" x2="${tickRingB.x.toFixed(2)}" y2="${tickRingB.y.toFixed(2)}" stroke="#2a2313" stroke-width="1.6" />`;
+    planetsSvg += `<text x="${degreeLabelPos.x.toFixed(2)}" y="${degreeLabelPos.y.toFixed(2)}" class="wheel-degree-label" text-anchor="middle" dominant-baseline="middle">${Math.floor(planet.degree)}°</text>`;
+
     planetsSvg += `<g class="wheel-hoverable wheel-planet-glyph${planet.retrograde ? " is-retrograde" : ""}" data-tooltip="${planetTooltip}">`;
     planetsSvg += `<circle cx="${glyphPos.x.toFixed(2)}" cy="${glyphPos.y.toFixed(2)}" r="16" fill="transparent" pointer-events="all" />`;
     planetsSvg += `<circle cx="${glyphPos.x.toFixed(2)}" cy="${glyphPos.y.toFixed(2)}" r="11" fill="#f2e9d6" stroke="${planet.retrograde ? "#a13d3d" : "#2d3a6b"}" stroke-width="1.5" />`;
@@ -1087,10 +1098,9 @@ function renderHousesTab(data) {
   `;
 }
 
-function renderAspectsTab(data) {
+function buildAspectsTableHtml(data) {
   if (data.aspects.length === 0) {
-    document.getElementById("tab-aspects").innerHTML = `<p>${t("no_aspect_detected")}</p>`;
-    return;
+    return `<p>${t("no_aspect_detected")}</p>`;
   }
   const rows = data.aspects
     .map(
@@ -1104,13 +1114,54 @@ function renderAspectsTab(data) {
       </tr>`
     )
     .join("");
-  document.getElementById("tab-aspects").innerHTML = `
+  return `
     <table>
       <thead><tr><th>${t("th_body")} 1</th><th>${t("th_aspect")}</th><th>${t("th_body")} 2</th><th>${t("th_orb")}</th><th>${t("th_direction")}</th></tr></thead>
       <tbody>${rows}</tbody>
     </table>
   `;
 }
+
+function renderAspectsTab(data) {
+  document.getElementById("tab-aspects").innerHTML = buildAspectsTableHtml(data);
+}
+
+// ---------------------------------------------------------------------
+// Export PDF (roue + tableau des aspects) — via l'impression native du navigateur
+// ("Enregistrer en PDF" est une destination d'impression standard dans Chrome/Firefox/Edge/
+// Safari), plutôt qu'une bibliothèque de génération PDF côté client : pas de dépendance
+// supplémentaire à charger, et l'utilisateur peut choisir imprimante ou PDF indifféremment.
+// Voir la règle @media print dans style.css : seul #pdf-export-view est alors affiché.
+// ---------------------------------------------------------------------
+function buildPdfExportHtml(chart) {
+  const data = chart.computed_chart_data;
+  const asc = data.angles.ascendant;
+  const sun = data.planets.find((p) => p.name === "Sun");
+  const moon = data.planets.find((p) => p.name === "Moon");
+
+  return `
+    <h1>${escapeHtml(chart.subject_name || t("chart_default_name"))}</h1>
+    <p>
+      ${t("born_prefix")} ${t("on_date")} ${chart.birth_date}
+      ${chart.birth_time_known ? t("at_time") + " " + (chart.birth_time || "") : t("unknown_time_paren")}
+      ${t("in_city")} ${escapeHtml(chart.birth_city || "")}
+    </p>
+    <p>
+      ☉ ${planetLabel("Sun")} ${t("in_sign")} ${signLabel(sun.sign)} ${sun.degree}°
+      — ☽ ${planetLabel("Moon")} ${t("in_sign")} ${signLabel(moon.sign)} ${moon.degree}°
+      — ${planetLabel("ascendant")} ${signLabel(asc.sign)} ${asc.degree}°
+    </p>
+    <div class="pdf-wheel-wrapper">${buildWheelSVG(data, { showMinorAspects: showMinorAspectsInWheel })}</div>
+    <h2>${t("tab_aspects")}</h2>
+    ${buildAspectsTableHtml(data)}
+  `;
+}
+
+document.getElementById("export-pdf-btn").addEventListener("click", () => {
+  if (!currentChart) return;
+  document.getElementById("pdf-export-view").innerHTML = buildPdfExportHtml(currentChart);
+  window.print();
+});
 
 function balanceBar(label, value, max) {
   const pct = max > 0 ? Math.round((value / max) * 100) : 0;

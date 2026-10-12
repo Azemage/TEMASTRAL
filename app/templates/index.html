@@ -230,6 +230,7 @@
     <section id="results-section" class="card hidden">
       <h2 data-i18n="section2_title">2. Thème natal</h2>
       <div id="chart-summary"></div>
+      <button type="button" id="export-pdf-btn" data-i18n="btn_export_pdf">Enregistrer en PDF</button>
 
       <div class="tabs">
         <button class="tab-btn active" data-tab="wheel" data-i18n="tab_wheel">Roue</button>
@@ -661,6 +662,12 @@
   <footer>
     <p data-i18n="footer_note">Calculs déterministes (Swiss Ephemeris) — l'interprétation est générée par un modèle de langage et doit être lue comme un éclairage, pas une prédiction absolue.</p>
   </footer>
+
+  <!-- Rempli par JS juste avant l'impression (voir export-pdf-btn) : invisible à l'écran,
+       seul contenu affiché en mode impression (règle @media print, style.css) — permet
+       d'imprimer/"Enregistrer en PDF" la roue + le tableau des aspects indépendamment de
+       l'onglet actuellement affiché à l'écran. -->
+  <div id="pdf-export-view"></div>
 
   <script src="/static/i18n.js"></script>
   <script src="/static/app.js"></script>

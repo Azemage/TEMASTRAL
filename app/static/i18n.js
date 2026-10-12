@@ -691,6 +691,7 @@ const UI_TEXT = {
   },
 
   section2_title: { fr: "2. Thème natal", en: "2. Natal chart", es: "2. Carta natal" },
+  btn_export_pdf: { fr: "Enregistrer en PDF", en: "Save as PDF", es: "Guardar como PDF" },
   tab_wheel: { fr: "Roue", en: "Wheel", es: "Rueda" },
   tab_planets: { fr: "Planètes", en: "Planets", es: "Planetas" },
   tab_houses: { fr: "Maisons", en: "Houses", es: "Casas" },
