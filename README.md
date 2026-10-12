@@ -380,7 +380,11 @@ Implémenté :
   l'onglet Compatibilité permet de sélectionner une carte existante ou d'en créer une nouvelle
   pour la deuxième personne, directement depuis cet onglet). Sur la roue, chaque planète porte
   en plus de son glyphe un repère exact (petit trait perpendiculaire à l'anneau du zodiaque) et
-  le degré qu'elle occupe dans son signe, toujours affichés (pas seulement au survol). Bouton
+  le degré complet qu'elle occupe dans son signe (toutes les décimales, ex. "8.89°" — jamais
+  arrondi à l'entier, un 0.xx° tronqué en "0°" serait trompeur), toujours affichés (pas
+  seulement au survol). Le texte (pas le trait, qui reste à la position exacte) est décalé en
+  rayon et en angle pour deux planètes proches en longitude, et repoussé au-delà du symbole de
+  signe quand une planète tombe près du milieu de son signe. Bouton
   "Enregistrer en PDF" visible dès le calcul du thème (`#export-pdf-btn`) : s'appuie sur
   l'impression native du navigateur (`window.print()`, pas de bibliothèque PDF ajoutée) — une
   vue dédiée (`#pdf-export-view`, masquée à l'écran, seule affichée en impression via la règle
